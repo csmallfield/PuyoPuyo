@@ -181,14 +181,15 @@ func check_and_clear_matches():
 	clearing_matches = true
 	var matches_found = false
 	var visited = {}
+	var pieces_to_clear = []
 	
-	# Check every position for connected groups
+	# First pass: Find all colored matches (4+ connected same-color pieces)
 	for y in range(GameState.grid_height):
 		for x in range(GameState.grid_width):
 			var pos = Vector2(x, y)
 			
-			# Skip if empty, already visited, or already checked
-			if grid_data[y][x] == null or visited.has(pos):
+			# Skip if empty, already visited, or is a bubble piece
+			if grid_data[y][x] == null or visited.has(pos) or grid_data[y][x].is_bubble:
 				continue
 				
 			# Find connected group of same color
@@ -197,10 +198,33 @@ func check_and_clear_matches():
 			# If group has 4 or more pieces, mark for clearing
 			if group.size() >= 4:
 				matches_found = true
-				clear_group(group)
+				pieces_to_clear.append_array(group)
 	
+	# Second pass: Find bubbles adjacent to clearing pieces
 	if matches_found:
-		GameState.add_score(100)
+		var bubbles_to_clear = []
+		
+		for clear_pos in pieces_to_clear:
+			# Check all 4 adjacent positions for bubbles
+			var adjacent_positions = [
+				clear_pos + Vector2(1, 0),   # Right
+				clear_pos + Vector2(-1, 0),  # Left
+				clear_pos + Vector2(0, 1),   # Down
+				clear_pos + Vector2(0, -1)   # Up
+			]
+			
+			for adj_pos in adjacent_positions:
+				# Check bounds
+				if adj_pos.x >= 0 and adj_pos.x < GameState.grid_width and adj_pos.y >= 0 and adj_pos.y < GameState.grid_height:
+					var adj_piece = grid_data[adj_pos.y][adj_pos.x]
+					if adj_piece != null and adj_piece.is_bubble and not adj_pos in bubbles_to_clear:
+						bubbles_to_clear.append(adj_pos)
+		
+		# Clear colored matches and adjacent bubbles
+		clear_group(pieces_to_clear)
+		clear_group(bubbles_to_clear)
+		
+		GameState.add_score(100 + bubbles_to_clear.size() * 50)  # Bonus points for clearing bubbles
 		
 		# Apply gravity after clearing
 		apply_gravity()
@@ -228,8 +252,8 @@ func find_connected_group(start_pos, color, visited):
 		if pos.x < 0 or pos.x >= GameState.grid_width or pos.y < 0 or pos.y >= GameState.grid_height:
 			continue
 			
-		# Skip if empty or wrong color
-		if grid_data[pos.y][pos.x] == null or grid_data[pos.y][pos.x].color != color:
+		# Skip if empty, wrong color, or is a bubble piece
+		if grid_data[pos.y][pos.x] == null or grid_data[pos.y][pos.x].color != color or grid_data[pos.y][pos.x].is_bubble:
 			continue
 		
 		# Mark as visited and add to group

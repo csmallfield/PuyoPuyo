@@ -15,9 +15,19 @@ func create_pieces():
 	piece1 = piece_scene.instantiate()
 	piece2 = piece_scene.instantiate()
 	
-	# Random colors
-	piece1.set_color(GameState.colors[randi() % GameState.colors.size()])
-	piece2.set_color(GameState.colors[randi() % GameState.colors.size()])
+	# Determine if pieces should be bubbles
+	var piece1_is_bubble = randf() < GameState.bubble_spawn_chance
+	var piece2_is_bubble = randf() < GameState.bubble_spawn_chance
+	
+	if piece1_is_bubble:
+		piece1.set_as_bubble()
+	else:
+		piece1.set_color(GameState.colors[randi() % GameState.colors.size()])
+	
+	if piece2_is_bubble:
+		piece2.set_as_bubble()
+	else:
+		piece2.set_color(GameState.colors[randi() % GameState.colors.size()])
 	
 	add_child(piece1)
 	add_child(piece2)
