@@ -1,0 +1,32 @@
+[gd_scene load_steps=3 format=3 uid="uid://cd5kkia84y51d"]
+
+[ext_resource type="Script" uid="uid://boafdoprtonhb" path="res://scripts/Main.gd" id="1_rvslj"]
+[ext_resource type="PackedScene" uid="uid://bs77laa4v6qp2" path="res://scenes/Grid.tscn" id="2_0bbpv"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_rvslj")
+
+[node name="Grid" parent="." instance=ExtResource("2_0bbpv")]
+
+[node name="UI" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ScoreLabel" type="Label" parent="UI"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="GameOverPanel" type="Panel" parent="UI"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Label" type="Label" parent="UI/GameOverPanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Game Over! Press R to restart"
