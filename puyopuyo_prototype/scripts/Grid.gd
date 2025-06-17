@@ -22,13 +22,13 @@ func _draw():
 	var grid_color = Color.GRAY
 	grid_color.a = 0.3
 	
-	# Vertical lines
+	# Vertical lines - draw at cell boundaries
 	for x in range(GameState.grid_width + 1):
 		var start_pos = Vector2(x * CELL_SIZE, 0)
 		var end_pos = Vector2(x * CELL_SIZE, GameState.grid_height * CELL_SIZE)
 		draw_line(start_pos, end_pos, grid_color, 1)
 	
-	# Horizontal lines  
+	# Horizontal lines - draw at cell boundaries
 	for y in range(GameState.grid_height + 1):
 		var start_pos = Vector2(0, y * CELL_SIZE)
 		var end_pos = Vector2(GameState.grid_width * CELL_SIZE, y * CELL_SIZE)
@@ -301,4 +301,4 @@ func apply_gravity():
 						something_fell = true
 
 func grid_to_pixel(grid_pos):
-	return Vector2(grid_pos.x * CELL_SIZE, grid_pos.y * CELL_SIZE)
+	return Vector2(grid_pos.x * CELL_SIZE + CELL_SIZE/2, grid_pos.y * CELL_SIZE + CELL_SIZE/2)

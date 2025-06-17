@@ -22,7 +22,7 @@ var grid_height = 12
 var fall_speed = 1.0
 var colors = [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW]
 var bubble_color = Color.GRAY
-var bubble_spawn_chance = 0.1  # 10% chance for one piece in a pair to be a bubble
+var bubble_spawn_chance = 0.15  # 15% chance for one piece in a pair to be a bubble
 
 func _ready():
 	process_mode = Node.PROCESS_MODE_ALWAYS
