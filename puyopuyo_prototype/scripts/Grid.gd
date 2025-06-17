@@ -17,6 +17,29 @@ func _ready():
 	initialize_grid()
 	position = Vector2(50, 50)  # Offset from screen edge
 
+func _draw():
+	# Draw grid lines
+	var grid_color = Color.GRAY
+	grid_color.a = 0.3
+	
+	# Vertical lines
+	for x in range(GameState.grid_width + 1):
+		var start_pos = Vector2(x * CELL_SIZE, 0)
+		var end_pos = Vector2(x * CELL_SIZE, GameState.grid_height * CELL_SIZE)
+		draw_line(start_pos, end_pos, grid_color, 1)
+	
+	# Horizontal lines  
+	for y in range(GameState.grid_height + 1):
+		var start_pos = Vector2(0, y * CELL_SIZE)
+		var end_pos = Vector2(GameState.grid_width * CELL_SIZE, y * CELL_SIZE)
+		draw_line(start_pos, end_pos, grid_color, 1)
+	
+	# Draw border box
+	var border_color = Color.WHITE
+	var border_width = 3
+	var rect = Rect2(0, 0, GameState.grid_width * CELL_SIZE, GameState.grid_height * CELL_SIZE)
+	draw_rect(rect, border_color, false, border_width)
+
 func _process(delta):
 	if GameState.current_state != GameState.State.PLAYING:
 		return
@@ -117,43 +140,62 @@ func place_piece_pair():
 	var positions = current_piece_pair.get_piece_positions(current_piece_pair.grid_position)
 	var pieces = current_piece_pair.get_pieces()
 	
+	# Place pieces in grid and remove from piece pair
 	for i in range(positions.size()):
 		var pos = positions[i]
 		var piece = pieces[i]
 		if pos.y >= 0:
-			grid_data[pos.y][pos.x] = piece
+			# Remove piece from current parent and add to grid
 			piece.get_parent().remove_child(piece)
 			add_child(piece)
+			
+			# Store in grid data and set position
+			grid_data[pos.y][pos.x] = piece
 			piece.position = grid_to_pixel(pos)
 	
 	current_piece_pair.queue_free()
 	current_piece_pair = null
 	
-	# Check for matches after a short delay
-	await get_tree().create_timer(0.1).timeout
+	# Apply gravity immediately after placing
+	apply_gravity()
+	
+	# Check for matches after gravity settles
+	await get_tree().create_timer(0.2).timeout
 	check_and_clear_matches()
 
 func check_and_clear_matches():
 	clearing_matches = true
 	var matches_found = false
-	
-	# Simple 4+ connected match detection
 	var visited = {}
 	
+	# Check every position for connected groups
 	for y in range(GameState.grid_height):
 		for x in range(GameState.grid_width):
-			if grid_data[y][x] != null and not visited.has(Vector2(x, y)):
-				var group = find_connected_group(Vector2(x, y), grid_data[y][x].color, visited)
-				if group.size() >= 4:
-					matches_found = true
-					clear_group(group)
+			var pos = Vector2(x, y)
+			
+			# Skip if empty, already visited, or already checked
+			if grid_data[y][x] == null or visited.has(pos):
+				continue
+				
+			# Find connected group of same color
+			var group = find_connected_group(pos, grid_data[y][x].color, visited)
+			
+			# If group has 4 or more pieces, mark for clearing
+			if group.size() >= 4:
+				matches_found = true
+				clear_group(group)
 	
 	if matches_found:
 		GameState.add_score(100)
+		
+		# Apply gravity after clearing
 		apply_gravity()
+		
+		# Wait a bit then check for chain reactions
 		await get_tree().create_timer(0.3).timeout
-		check_and_clear_matches()  # Check for chain reactions
+		check_and_clear_matches()  # Recursive call for chains
 	else:
+		# No matches found, spawn next piece
 		clearing_matches = false
 		spawn_new_piece_pair()
 
@@ -163,22 +205,28 @@ func find_connected_group(start_pos, color, visited):
 	
 	while stack.size() > 0:
 		var pos = stack.pop_back()
+		
+		# Skip if already visited
 		if visited.has(pos):
 			continue
 			
-		visited[pos] = true
-		if pos.y < 0 or pos.y >= GameState.grid_height or pos.x < 0 or pos.x >= GameState.grid_width:
-			continue
-		if grid_data[pos.y][pos.x] == null or grid_data[pos.y][pos.x].color != color:
+		# Skip if out of bounds
+		if pos.x < 0 or pos.x >= GameState.grid_width or pos.y < 0 or pos.y >= GameState.grid_height:
 			continue
 			
+		# Skip if empty or wrong color
+		if grid_data[pos.y][pos.x] == null or grid_data[pos.y][pos.x].color != color:
+			continue
+		
+		# Mark as visited and add to group
+		visited[pos] = true
 		group.append(pos)
 		
-		# Check 4 directions
-		stack.append(pos + Vector2(0, 1))
-		stack.append(pos + Vector2(0, -1))
-		stack.append(pos + Vector2(1, 0))
-		stack.append(pos + Vector2(-1, 0))
+		# Add adjacent positions (only orthogonal, not diagonal)
+		stack.append(pos + Vector2(1, 0))   # Right
+		stack.append(pos + Vector2(-1, 0))  # Left  
+		stack.append(pos + Vector2(0, 1))   # Down
+		stack.append(pos + Vector2(0, -1))  # Up
 	
 	return group
 
@@ -189,15 +237,30 @@ func clear_group(group):
 			grid_data[pos.y][pos.x] = null
 
 func apply_gravity():
-	for x in range(GameState.grid_width):
-		var write_y = GameState.grid_height - 1
-		for read_y in range(GameState.grid_height - 1, -1, -1):
-			if grid_data[read_y][x] != null:
-				if write_y != read_y:
-					grid_data[write_y][x] = grid_data[read_y][x]
-					grid_data[read_y][x] = null
-					grid_data[write_y][x].position = grid_to_pixel(Vector2(x, write_y))
-				write_y -= 1
+	var something_fell = true
+	
+	# Keep applying gravity until nothing moves
+	while something_fell:
+		something_fell = false
+		
+		# Go through each column from bottom to top
+		for x in range(GameState.grid_width):
+			for y in range(GameState.grid_height - 2, -1, -1):  # Start from second-to-last row
+				if grid_data[y][x] != null:
+					# Check if this piece can fall
+					var target_y = y
+					
+					# Find the lowest position this piece can fall to
+					while target_y + 1 < GameState.grid_height and grid_data[target_y + 1][x] == null:
+						target_y += 1
+					
+					# If the piece can fall, move it
+					if target_y != y:
+						var piece = grid_data[y][x]
+						grid_data[y][x] = null
+						grid_data[target_y][x] = piece
+						piece.position = grid_to_pixel(Vector2(x, target_y))
+						something_fell = true
 
 func grid_to_pixel(grid_pos):
 	return Vector2(grid_pos.x * CELL_SIZE, grid_pos.y * CELL_SIZE)

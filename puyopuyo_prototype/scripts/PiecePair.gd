@@ -58,17 +58,14 @@ func get_piece_positions(base_pos):
 		1:  # Horizontal, piece1 on left
 			positions.append(base_pos)
 			positions.append(base_pos + Vector2(1, 0))
-		2:  # Vertical, piece2 on top
+		2:  # Vertical, piece1 on bottom (piece2 on top)
 			positions.append(base_pos + Vector2(0, 1))
 			positions.append(base_pos)
-		3:  # Horizontal, piece2 on left
+		3:  # Horizontal, piece1 on right (piece2 on left)
 			positions.append(base_pos + Vector2(1, 0))
 			positions.append(base_pos)
 	return positions
 
 func get_pieces():
-	match piece_rotation:
-		0, 1:
-			return [piece1, piece2]
-		2, 3:
-			return [piece2, piece1]
+	# Always return pieces in the same order regardless of rotation
+	return [piece1, piece2]
