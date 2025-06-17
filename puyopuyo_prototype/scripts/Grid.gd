@@ -163,18 +163,18 @@ func place_piece_pair():
 			piece.get_parent().remove_child(piece)
 			add_child(piece)
 			
-			# Store in grid data and set position
+			# Store in grid data and set position immediately (no animation for placement)
 			grid_data[pos.y][pos.x] = piece
-			piece.position = grid_to_pixel(pos)
+			piece.set_position_immediately(grid_to_pixel(pos))
 	
 	current_piece_pair.queue_free()
 	current_piece_pair = null
 	
-	# Apply gravity immediately after placing
+	# Apply gravity with smooth animations
 	apply_gravity()
 	
-	# Check for matches after gravity settles
-	await get_tree().create_timer(0.2).timeout
+	# Wait longer for animations to complete before checking matches
+	await get_tree().create_timer(0.4).timeout
 	check_and_clear_matches()
 
 func check_and_clear_matches():
@@ -229,8 +229,8 @@ func check_and_clear_matches():
 		# Apply gravity after clearing
 		apply_gravity()
 		
-		# Wait a bit then check for chain reactions
-		await get_tree().create_timer(0.3).timeout
+		# Wait longer for animations to complete then check for chain reactions
+		await get_tree().create_timer(0.5).timeout
 		check_and_clear_matches()  # Recursive call for chains
 	else:
 		# No matches found, spawn next piece
@@ -297,7 +297,7 @@ func apply_gravity():
 						var piece = grid_data[y][x]
 						grid_data[y][x] = null
 						grid_data[target_y][x] = piece
-						piece.position = grid_to_pixel(Vector2(x, target_y))
+						piece.animate_to_position(grid_to_pixel(Vector2(x, target_y)))
 						something_fell = true
 
 func grid_to_pixel(grid_pos):

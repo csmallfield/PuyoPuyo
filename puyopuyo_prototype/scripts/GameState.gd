@@ -24,6 +24,17 @@ var colors = [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW]
 var bubble_color = Color.GRAY
 var bubble_spawn_chance = 0.15  # 15% chance for one piece in a pair to be a bubble
 
+# Animation settings
+var piece_fall_speed = 200.0  # pixels per second for smooth falling
+var use_sprites = true  # Set to true to use sprite files instead of generated circles
+var sprite_paths = {
+	Color.RED: "res://assets/red_piece.png",
+	Color.BLUE: "res://assets/blue_piece.png", 
+	Color.GREEN: "res://assets/green_piece.png",
+	Color.YELLOW: "res://assets/yellow_piece.png",
+	Color.GRAY: "res://assets/bubble_piece.png"
+}
+
 func _ready():
 	process_mode = Node.PROCESS_MODE_ALWAYS
 

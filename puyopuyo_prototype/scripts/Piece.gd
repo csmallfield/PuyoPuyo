@@ -4,16 +4,43 @@ extends Node2D
 var color = Color.WHITE
 var is_bubble = false
 var sprite = null
+var target_position = Vector2.ZERO
+var is_animating = false
 
 func _ready():
 	# Create the sprite node
 	sprite = Sprite2D.new()
 	add_child(sprite)
 	
-	# Create a simple colored circle texture
+	# Create texture
 	create_piece_texture()
 
+func _process(delta):
+	# Smooth animation towards target position
+	if is_animating:
+		var distance = target_position.distance_to(position)
+		if distance > 2.0:  # Still moving
+			var direction = (target_position - position).normalized()
+			position += direction * GameState.piece_fall_speed * delta
+		else:
+			# Close enough, snap to target
+			position = target_position
+			is_animating = false
+
 func create_piece_texture():
+	if GameState.use_sprites and GameState.sprite_paths.has(color):
+		# Try to load sprite file
+		var texture = load(GameState.sprite_paths[color])
+		if texture:
+			sprite.texture = texture
+			return
+		else:
+			print("Could not load sprite: ", GameState.sprite_paths[color])
+	
+	# Fall back to procedural generation
+	create_procedural_texture()
+
+func create_procedural_texture():
 	var texture = ImageTexture.new()
 	var image = Image.create(32, 32, false, Image.FORMAT_RGBA8)
 	image.fill(Color.TRANSPARENT)
@@ -52,3 +79,12 @@ func set_as_bubble():
 	color = GameState.bubble_color
 	if sprite:
 		create_piece_texture()
+
+func animate_to_position(new_position):
+	target_position = new_position
+	is_animating = true
+
+func set_position_immediately(new_position):
+	position = new_position
+	target_position = new_position
+	is_animating = false
