@@ -102,6 +102,8 @@ func _input(event):
 		rotate_piece()
 	elif event.is_action_pressed("move_down"):
 		move_piece_down()
+	elif event.is_action_pressed("fast_drop"):
+		fast_drop_piece()
 
 func move_piece_horizontal(direction):
 	var new_pos = current_piece_pair.grid_position + Vector2(direction, 0)
@@ -116,6 +118,18 @@ func move_piece_down():
 		current_piece_pair.set_pixel_position(grid_to_pixel(new_pos))
 	else:
 		place_piece_pair()
+
+func fast_drop_piece():
+	# Keep moving down until we can't anymore
+	while true:
+		var new_pos = current_piece_pair.grid_position + Vector2(0, 1)
+		if can_place_piece_pair(current_piece_pair, new_pos):
+			current_piece_pair.set_grid_position(new_pos)
+			current_piece_pair.set_pixel_position(grid_to_pixel(new_pos))
+		else:
+			# Can't move down anymore, place the piece
+			place_piece_pair()
+			break
 
 func rotate_piece():
 	current_piece_pair.rotate_pieces()

@@ -2,14 +2,17 @@ extends Node2D
 # Piece.gd - Individual piece (puyo)
 
 var color = Color.WHITE
-@onready var sprite = $Sprite2D
+var sprite = null
 
 func _ready():
-	if not sprite:
-		sprite = Sprite2D.new()
-		add_child(sprite)
+	# Create the sprite node
+	sprite = Sprite2D.new()
+	add_child(sprite)
 	
-	# Create a simple colored circle
+	# Create a simple colored circle texture
+	create_piece_texture()
+
+func create_piece_texture():
 	var texture = ImageTexture.new()
 	var image = Image.create(32, 32, false, Image.FORMAT_RGBA8)
 	image.fill(Color.TRANSPARENT)
@@ -29,4 +32,4 @@ func _ready():
 func set_color(new_color):
 	color = new_color
 	if sprite:
-		_ready()  # Recreate the texture with new color
+		create_piece_texture()
