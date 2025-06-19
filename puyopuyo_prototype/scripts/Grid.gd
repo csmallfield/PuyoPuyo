@@ -15,7 +15,7 @@ var clearing_matches = false
 
 func _ready():
 	initialize_grid()
-	position = Vector2(50, 50)  # Offset from screen edge
+	position = Vector2(200, 50)  # Offset from screen edge
 
 func _draw():
 	# Draw grid lines
@@ -177,6 +177,9 @@ func place_piece_pair():
 	await get_tree().create_timer(0.4).timeout
 	check_and_clear_matches()
 
+# This is just the updated check_and_clear_matches function from Grid.gd
+# Replace the existing function with this one:
+
 func check_and_clear_matches():
 	clearing_matches = true
 	var matches_found = false
@@ -224,7 +227,12 @@ func check_and_clear_matches():
 		clear_group(pieces_to_clear)
 		clear_group(bubbles_to_clear)
 		
-		GameState.add_score(100 + bubbles_to_clear.size() * 50)  # Bonus points for clearing bubbles
+		# Calculate base score (before multiplier)
+		var base_points = 100 + bubbles_to_clear.size() * 50
+		GameState.add_score(base_points)
+		
+		# Optional: Show floating text with points earned
+		# You can add this feature later if desired
 		
 		# Apply gravity after clearing
 		apply_gravity()
