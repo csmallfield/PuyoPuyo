@@ -3,6 +3,7 @@ extends Node2D
 
 var color = Color.WHITE
 var is_bubble = false
+var is_bomb = false
 var sprite = null
 var target_position = Vector2.ZERO
 var is_animating = false
@@ -45,7 +46,16 @@ func create_procedural_texture():
 	var image = Image.create(32, 32, false, Image.FORMAT_RGBA8)
 	image.fill(Color.TRANSPARENT)
 	
-	if is_bubble:
+	if is_bomb:
+		# Draw bomb piece - solid black circle
+		for y in range(32):
+			for x in range(32):
+				var dist = Vector2(x - 16, y - 16).length()
+				if dist < 14:
+					image.set_pixel(x, y, Color.BLACK)
+				elif dist < 16:
+					image.set_pixel(x, y, Color.WHITE)  # White outline for bombs
+	elif is_bubble:
 		# Draw bubble piece with different pattern
 		for y in range(32):
 			for x in range(32):
@@ -76,7 +86,15 @@ func set_color(new_color):
 
 func set_as_bubble():
 	is_bubble = true
+	is_bomb = false
 	color = GameState.bubble_color
+	if sprite:
+		create_piece_texture()
+
+func set_as_bomb():
+	is_bomb = true
+	is_bubble = false
+	color = GameState.bomb_color
 	if sprite:
 		create_piece_texture()
 

@@ -15,19 +15,33 @@ func create_pieces():
 	piece1 = piece_scene.instantiate()
 	piece2 = piece_scene.instantiate()
 	
-	# Determine if pieces should be bubbles
-	var piece1_is_bubble = randf() < GameState.bubble_spawn_chance
-	var piece2_is_bubble = randf() < GameState.bubble_spawn_chance
+	# Determine piece types - ensure no bomb+bomb pairs
+	var piece1_is_bomb = randf() < GameState.bomb_spawn_chance
+	var piece2_is_bomb = false
 	
-	if piece1_is_bubble:
-		piece1.set_as_bubble()
-	else:
-		piece1.set_color(GameState.colors[randi() % GameState.colors.size()])
+	# If piece1 is not a bomb, piece2 can be a bomb
+	if not piece1_is_bomb:
+		piece2_is_bomb = randf() < GameState.bomb_spawn_chance
 	
-	if piece2_is_bubble:
-		piece2.set_as_bubble()
+	# Set piece1 type
+	if piece1_is_bomb:
+		piece1.set_as_bomb()
 	else:
-		piece2.set_color(GameState.colors[randi() % GameState.colors.size()])
+		var piece1_is_bubble = randf() < GameState.bubble_spawn_chance
+		if piece1_is_bubble:
+			piece1.set_as_bubble()
+		else:
+			piece1.set_color(GameState.colors[randi() % GameState.colors.size()])
+	
+	# Set piece2 type
+	if piece2_is_bomb:
+		piece2.set_as_bomb()
+	else:
+		var piece2_is_bubble = randf() < GameState.bubble_spawn_chance
+		if piece2_is_bubble:
+			piece2.set_as_bubble()
+		else:
+			piece2.set_color(GameState.colors[randi() % GameState.colors.size()])
 	
 	add_child(piece1)
 	add_child(piece2)

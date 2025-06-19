@@ -153,6 +153,7 @@ func can_place_piece_pair(piece_pair, pos):
 func place_piece_pair():
 	var positions = current_piece_pair.get_piece_positions(current_piece_pair.grid_position)
 	var pieces = current_piece_pair.get_pieces()
+	var bombs_to_activate = []
 	
 	# Place pieces in grid and remove from piece pair
 	for i in range(positions.size()):
@@ -166,9 +167,17 @@ func place_piece_pair():
 			# Store in grid data and set position immediately (no animation for placement)
 			grid_data[pos.y][pos.x] = piece
 			piece.set_position_immediately(grid_to_pixel(pos))
+			
+			# Check if this piece is a bomb
+			if piece.is_bomb:
+				bombs_to_activate.append(pos)
 	
 	current_piece_pair.queue_free()
 	current_piece_pair = null
+	
+	# Activate bombs first (before gravity)
+	for bomb_pos in bombs_to_activate:
+		activate_bomb(bomb_pos)
 	
 	# Apply gravity with smooth animations
 	apply_gravity()
@@ -177,8 +186,58 @@ func place_piece_pair():
 	await get_tree().create_timer(0.4).timeout
 	check_and_clear_matches()
 
-# This is just the updated check_and_clear_matches function from Grid.gd
-# Replace the existing function with this one:
+func activate_bomb(bomb_pos):
+	print("Activating bomb at position: ", bomb_pos)
+	
+	# Find target color using priority: down, up, left, right
+	var target_color = null
+	var target_is_bubble = false
+	var check_positions = [
+		bomb_pos + Vector2(0, 1),   # Down
+		bomb_pos + Vector2(0, -1),  # Up
+		bomb_pos + Vector2(-1, 0),  # Left
+		bomb_pos + Vector2(1, 0)    # Right
+	]
+	
+	for check_pos in check_positions:
+		# Check bounds
+		if check_pos.x >= 0 and check_pos.x < GameState.grid_width and check_pos.y >= 0 and check_pos.y < GameState.grid_height:
+			var adjacent_piece = grid_data[check_pos.y][check_pos.x]
+			if adjacent_piece != null and not adjacent_piece.is_bomb:
+				target_color = adjacent_piece.color
+				target_is_bubble = adjacent_piece.is_bubble
+				break
+	
+	# If no target found, bomb does nothing (shouldn't happen with proper placement)
+	if target_color == null:
+		print("Bomb found no target - removing bomb only")
+		grid_data[bomb_pos.y][bomb_pos.x].queue_free()
+		grid_data[bomb_pos.y][bomb_pos.x] = null
+		return
+	
+	print("Bomb targeting color: ", target_color, " (is_bubble: ", target_is_bubble, ")")
+	
+	# Clear all pieces of the target color/type from the board
+	var pieces_cleared = 0
+	for y in range(GameState.grid_height):
+		for x in range(GameState.grid_width):
+			var piece = grid_data[y][x]
+			if piece != null:
+				# Clear if it matches the target (either color match or both are bubbles)
+				if (target_is_bubble and piece.is_bubble) or (not target_is_bubble and not piece.is_bubble and piece.color == target_color):
+					piece.queue_free()
+					grid_data[y][x] = null
+					pieces_cleared += 1
+	
+	# Remove the bomb itself
+	grid_data[bomb_pos.y][bomb_pos.x].queue_free()
+	grid_data[bomb_pos.y][bomb_pos.x] = null
+	
+	# Add score for pieces cleared by bomb (small amount per piece)
+	if pieces_cleared > 0:
+		var bomb_points = pieces_cleared * 10  # 10 points per piece cleared
+		GameState.add_score(bomb_points)
+		print("Bomb cleared ", pieces_cleared, " pieces for ", bomb_points, " points")
 
 func check_and_clear_matches():
 	clearing_matches = true
@@ -191,8 +250,8 @@ func check_and_clear_matches():
 		for x in range(GameState.grid_width):
 			var pos = Vector2(x, y)
 			
-			# Skip if empty, already visited, or is a bubble piece
-			if grid_data[y][x] == null or visited.has(pos) or grid_data[y][x].is_bubble:
+			# Skip if empty, already visited, is a bubble piece, or is a bomb
+			if grid_data[y][x] == null or visited.has(pos) or grid_data[y][x].is_bubble or grid_data[y][x].is_bomb:
 				continue
 				
 			# Find connected group of same color
@@ -231,9 +290,6 @@ func check_and_clear_matches():
 		var base_points = 100 + bubbles_to_clear.size() * 50
 		GameState.add_score(base_points)
 		
-		# Optional: Show floating text with points earned
-		# You can add this feature later if desired
-		
 		# Apply gravity after clearing
 		apply_gravity()
 		
@@ -260,8 +316,8 @@ func find_connected_group(start_pos, color, visited):
 		if pos.x < 0 or pos.x >= GameState.grid_width or pos.y < 0 or pos.y >= GameState.grid_height:
 			continue
 			
-		# Skip if empty, wrong color, or is a bubble piece
-		if grid_data[pos.y][pos.x] == null or grid_data[pos.y][pos.x].color != color or grid_data[pos.y][pos.x].is_bubble:
+		# Skip if empty, wrong color, is a bubble piece, or is a bomb
+		if grid_data[pos.y][pos.x] == null or grid_data[pos.y][pos.x].color != color or grid_data[pos.y][pos.x].is_bubble or grid_data[pos.y][pos.x].is_bomb:
 			continue
 		
 		# Mark as visited and add to group
