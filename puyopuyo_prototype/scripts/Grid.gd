@@ -153,7 +153,6 @@ func can_place_piece_pair(piece_pair, pos):
 func place_piece_pair():
 	var positions = current_piece_pair.get_piece_positions(current_piece_pair.grid_position)
 	var pieces = current_piece_pair.get_pieces()
-	var bombs_to_activate = []
 	
 	# Place pieces in grid and remove from piece pair
 	for i in range(positions.size()):
@@ -167,24 +166,41 @@ func place_piece_pair():
 			# Store in grid data and set position immediately (no animation for placement)
 			grid_data[pos.y][pos.x] = piece
 			piece.set_position_immediately(grid_to_pixel(pos))
-			
-			# Check if this piece is a bomb
-			if piece.is_bomb:
-				bombs_to_activate.append(pos)
 	
 	current_piece_pair.queue_free()
 	current_piece_pair = null
 	
-	# Activate bombs first (before gravity)
+	# Apply gravity with smooth animations FIRST
+	apply_gravity()
+	
+	# Wait for gravity animations to complete
+	await get_tree().create_timer(0.4).timeout
+	
+	# THEN activate any bombs that have settled
+	activate_bombs_after_gravity()
+	
+	# Finally check for matches
+	check_and_clear_matches()
+
+func activate_bombs_after_gravity():
+	# Find all bombs on the board and activate them
+	var bombs_to_activate = []
+	
+	for y in range(GameState.grid_height):
+		for x in range(GameState.grid_width):
+			var piece = grid_data[y][x]
+			if piece != null and piece.is_bomb:
+				bombs_to_activate.append(Vector2(x, y))
+	
+	# Activate each bomb found
 	for bomb_pos in bombs_to_activate:
 		activate_bomb(bomb_pos)
 	
-	# Apply gravity with smooth animations
-	apply_gravity()
-	
-	# Wait longer for animations to complete before checking matches
-	await get_tree().create_timer(0.4).timeout
-	check_and_clear_matches()
+	# If any bombs were activated, apply gravity again to fill the gaps
+	if bombs_to_activate.size() > 0:
+		apply_gravity()
+		# Wait for gravity animations to complete
+		await get_tree().create_timer(0.4).timeout
 
 func activate_bomb(bomb_pos):
 	print("Activating bomb at position: ", bomb_pos)

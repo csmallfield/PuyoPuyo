@@ -25,7 +25,7 @@ var colors = [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW]
 var bubble_color = Color.GRAY
 var bomb_color = Color.BLACK
 var bubble_spawn_chance = 0.15  # 15% chance for one piece in a pair to be a bubble
-var bomb_spawn_chance = 0.25  # 25% chance for one piece in a pair to be a bomb (for testing)
+var bomb_spawn_chance = 0.02  # 2% chance for one piece in a pair to be a bomb 
 
 # Speed level system - easily tunable arrays
 var level_thresholds = [
