@@ -10,6 +10,8 @@ extends Control
 @onready var game_over_panel = $UI/GameOverPanel
 @onready var level_up_notification = $UI/LevelUpNotification
 @onready var level_up_text = $UI/LevelUpNotification/LevelUpText
+@onready var pause_panel = $UI/PausePanel
+@onready var pause_restart_button = $UI/PausePanel/VBoxContainer/RestartButton
 
 func _ready():
 	# Connect signals
@@ -18,8 +20,12 @@ func _ready():
 	GameState.connect("game_over", _on_game_over)
 	grid.connect("game_over", _on_grid_game_over)
 	
+	# Connect pause screen restart button
+	pause_restart_button.connect("pressed", _on_pause_restart_pressed)
+	
 	# Hide notifications initially
 	level_up_notification.modulate.a = 0.0
+	pause_panel.hide()
 	
 	# Start the game
 	start_new_game()
@@ -27,12 +33,38 @@ func _ready():
 func _input(event):
 	if event.is_action_pressed("restart") and GameState.current_state == GameState.State.GAME_OVER:
 		start_new_game()
+	elif event.is_action_pressed("pause"):
+		toggle_pause()
+
+func toggle_pause():
+	if GameState.current_state == GameState.State.PLAYING:
+		# Pause the game
+		GameState.set_state(GameState.State.PAUSED)
+		pause_panel.show()
+		get_tree().paused = true
+	elif GameState.current_state == GameState.State.PAUSED:
+		# Unpause the game
+		GameState.set_state(GameState.State.PLAYING)
+		pause_panel.hide()
+		get_tree().paused = false
 
 func start_new_game():
 	game_over_panel.hide()
+	pause_panel.hide()
+	get_tree().paused = false
+	
+	# Force immediate cleanup of any lingering piece pairs
+	if grid.current_piece_pair:
+		grid.current_piece_pair.queue_free()
+		grid.current_piece_pair = null
+	if grid.next_piece_pair:
+		grid.next_piece_pair.queue_free()
+		grid.next_piece_pair = null
+	
 	GameState.reset_game()
 	grid.start_game()
 	update_ui()
+	
 
 func update_ui():
 	# Update all UI elements
@@ -79,3 +111,7 @@ func _on_game_over():
 
 func _on_grid_game_over():
 	GameState.set_state(GameState.State.GAME_OVER)
+
+func _on_pause_restart_pressed():
+	# Unpause and start a new game
+	start_new_game()
