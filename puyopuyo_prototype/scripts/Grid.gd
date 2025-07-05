@@ -4,12 +4,19 @@ extends Node2D
 signal game_over
 
 const CELL_SIZE = 32
+const LANDING_GRACE_PERIOD = 0.5  # Time in seconds players can move after landing
 const Piece = preload("res://scenes/Piece.tscn")
+
 var grid_data = []
 var current_piece_pair = null
 var next_piece_pair = null
 var fall_timer = 0.0
 var clearing_matches = false
+
+# Landing grace period variables
+var landing_grace_timer = 0.0
+var is_in_grace_period = false
+var piece_has_landed = false
 
 @onready var piece_pair_scene = preload("res://scenes/PiecePair.tscn")
 
@@ -45,10 +52,18 @@ func _process(delta):
 		return
 		
 	if current_piece_pair and not clearing_matches:
-		fall_timer += delta
-		if fall_timer >= GameState.get_fall_speed():
-			fall_timer = 0.0
-			move_piece_down()
+		# Handle landing grace period
+		if is_in_grace_period:
+			landing_grace_timer += delta
+			# If grace period expires, lock the piece
+			if landing_grace_timer >= LANDING_GRACE_PERIOD:
+				force_place_piece()
+		else:
+			# Normal falling behavior
+			fall_timer += delta
+			if fall_timer >= GameState.get_fall_speed():
+				fall_timer = 0.0
+				move_piece_down()
 
 func initialize_grid():
 	grid_data = []
@@ -75,6 +90,9 @@ func spawn_new_piece_pair():
 		current_piece_pair = piece_pair_scene.instantiate()
 		add_child(current_piece_pair)
 	
+	# Reset landing state for new piece
+	reset_landing_state()
+	
 	# Position at top center
 	var start_pos = Vector2(GameState.grid_width / 2, 0)
 	current_piece_pair.set_grid_position(start_pos)
@@ -90,16 +108,36 @@ func spawn_new_piece_pair():
 	add_child(next_piece_pair)
 	next_piece_pair.set_pixel_position(Vector2(250, 50))  # Show next piece area
 
+func reset_landing_state():
+	is_in_grace_period = false
+	piece_has_landed = false
+	landing_grace_timer = 0.0
+
+func start_grace_period():
+	if not is_in_grace_period:  # Only start grace period once
+		is_in_grace_period = true
+		landing_grace_timer = 0.0
+		piece_has_landed = true
+
 func _input(event):
 	if GameState.current_state != GameState.State.PLAYING or not current_piece_pair:
 		return
 		
 	if event.is_action_pressed("move_left"):
 		move_piece_horizontal(-1)
+		# Reset grace timer on movement
+		if is_in_grace_period:
+			landing_grace_timer = 0.0
 	elif event.is_action_pressed("move_right"):
 		move_piece_horizontal(1)
+		# Reset grace timer on movement
+		if is_in_grace_period:
+			landing_grace_timer = 0.0
 	elif event.is_action_pressed("rotate_piece"):
 		rotate_piece()
+		# Reset grace timer on rotation
+		if is_in_grace_period:
+			landing_grace_timer = 0.0
 	elif event.is_action_pressed("move_down"):
 		move_piece_down()
 	elif event.is_action_pressed("fast_drop"):
@@ -117,9 +155,16 @@ func move_piece_down():
 		current_piece_pair.set_grid_position(new_pos)
 		current_piece_pair.set_pixel_position(grid_to_pixel(new_pos))
 	else:
-		place_piece_pair()
+		# Piece has hit something - start grace period if not already started
+		if not piece_has_landed:
+			start_grace_period()
 
 func fast_drop_piece():
+	# Fast drop immediately ends grace period and places piece
+	if is_in_grace_period:
+		force_place_piece()
+		return
+	
 	# Keep moving down until we can't anymore
 	while true:
 		var new_pos = current_piece_pair.grid_position + Vector2(0, 1)
@@ -127,9 +172,13 @@ func fast_drop_piece():
 			current_piece_pair.set_grid_position(new_pos)
 			current_piece_pair.set_pixel_position(grid_to_pixel(new_pos))
 		else:
-			# Can't move down anymore, place the piece
+			# Can't move down anymore, place the piece immediately
 			place_piece_pair()
 			break
+
+func force_place_piece():
+	# Force placement regardless of grace period
+	place_piece_pair()
 
 func rotate_piece():
 	current_piece_pair.rotate_pieces()
@@ -153,6 +202,9 @@ func can_place_piece_pair(piece_pair, pos):
 func place_piece_pair():
 	var positions = current_piece_pair.get_piece_positions(current_piece_pair.grid_position)
 	var pieces = current_piece_pair.get_pieces()
+	
+	# Reset landing state
+	reset_landing_state()
 	
 	# Place pieces in grid and remove from piece pair
 	for i in range(positions.size()):
