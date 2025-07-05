@@ -350,19 +350,19 @@ func check_and_clear_matches():
 					if adj_piece != null and adj_piece.is_bubble and not adj_pos in bubbles_to_clear:
 						bubbles_to_clear.append(adj_pos)
 		
-		# Clear colored matches and adjacent bubbles
-		clear_group(pieces_to_clear)
-		clear_group(bubbles_to_clear)
+		# Clear colored matches and adjacent bubbles with pop animations
+		await clear_group(pieces_to_clear)
+		await clear_group(bubbles_to_clear)
 		
-		# Calculate base score (before multiplier)
+		# Calculate base score (after clearing animations complete)
 		var base_points = 100 + bubbles_to_clear.size() * 50
 		GameState.add_score(base_points)
 		
 		# Apply gravity after clearing
 		apply_gravity()
 		
-		# Wait longer for animations to complete then check for chain reactions
-		await get_tree().create_timer(0.5).timeout
+		# Wait for gravity animations to complete then check for chain reactions
+		await get_tree().create_timer(0.4).timeout
 		check_and_clear_matches()  # Recursive call for chains
 	else:
 		# No matches found, spawn next piece
@@ -401,6 +401,29 @@ func find_connected_group(start_pos, color, visited):
 	return group
 
 func clear_group(group):
+	# Start pop animations for all pieces in the group
+	var pop_duration = 0.25
+	var tweens = []
+	
+	for pos in group:
+		var piece = grid_data[pos.y][pos.x]
+		if piece:
+			# Create a tween for this piece
+			var tween = create_tween()
+			tweens.append(tween)
+			
+			# Scale up quickly, then down to 0
+			tween.tween_property(piece, "scale", Vector2(1.5, 1.5), pop_duration * 0.3)
+			tween.tween_property(piece, "scale", Vector2(0, 0), pop_duration * 0.7)
+			
+			# Add a slight rotation for extra juice
+			tween.parallel().tween_property(piece, "rotation", PI * 0.5, pop_duration)
+	
+	# Wait for all animations to complete
+	if tweens.size() > 0:
+		await tweens[0].finished  # Wait for any tween to finish (they should all finish at the same time)
+	
+	# Now actually remove the pieces
 	for pos in group:
 		if grid_data[pos.y][pos.x]:
 			grid_data[pos.y][pos.x].queue_free()
