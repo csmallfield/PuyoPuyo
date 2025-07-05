@@ -124,3 +124,14 @@ vertical_alignment = 1
 [node name="RestartButton" type="Button" parent="UI/PausePanel/VBoxContainer"]
 layout_mode = 2
 text = "Restart Game"
+
+[node name="Instructions" type="Label" parent="UI"]
+layout_mode = 0
+offset_left = 726.0
+offset_top = 22.0
+offset_right = 923.0
+offset_bottom = 123.0
+text = "Left / Right to Move Piece
+Up to Spin
+Space to Fast Drop
+P to Pause game"

@@ -4,7 +4,8 @@ extends Node2D
 signal game_over
 
 const CELL_SIZE = 32
-const LANDING_GRACE_PERIOD = 0.5  # Time in seconds players can move after landing
+const LANDING_GRACE_PERIOD = 0.25  # Time in seconds players can move after landing
+const BOMB_SHAKE_INTENSITY = 8.0  # Pixels of shake - adjustable
 const Piece = preload("res://scenes/Piece.tscn")
 
 var grid_data = []
@@ -18,11 +19,18 @@ var landing_grace_timer = 0.0
 var is_in_grace_period = false
 var piece_has_landed = false
 
+# Camera shake variables
+var original_position = Vector2.ZERO
+var shake_timer = 0.0
+var shake_duration = 0.0
+var is_shaking = false
+
 @onready var piece_pair_scene = preload("res://scenes/PiecePair.tscn")
 
 func _ready():
 	initialize_grid()
-	position = Vector2(200, 50)  # Offset from screen edge
+	original_position = Vector2(200, 50)  # Store original offset
+	position = original_position
 
 func _draw():
 	# Draw grid lines
@@ -50,6 +58,22 @@ func _draw():
 func _process(delta):
 	if GameState.current_state != GameState.State.PLAYING:
 		return
+	
+	# Handle camera shake
+	if is_shaking:
+		shake_timer += delta
+		if shake_timer >= shake_duration:
+			# Shake finished
+			is_shaking = false
+			position = original_position
+		else:
+			# Apply shake offset
+			var shake_strength = (1.0 - (shake_timer / shake_duration)) * BOMB_SHAKE_INTENSITY
+			var shake_offset = Vector2(
+				randf_range(-shake_strength, shake_strength),
+				randf_range(-shake_strength, shake_strength)
+			)
+			position = original_position + shake_offset
 		
 	if current_piece_pair and not clearing_matches:
 		# Handle landing grace period
@@ -107,6 +131,11 @@ func spawn_new_piece_pair():
 	next_piece_pair = piece_pair_scene.instantiate()
 	add_child(next_piece_pair)
 	next_piece_pair.set_pixel_position(Vector2(250, 50))  # Show next piece area
+
+func start_camera_shake(duration: float):
+	is_shaking = true
+	shake_timer = 0.0
+	shake_duration = duration
 
 func reset_landing_state():
 	is_in_grace_period = false
@@ -235,7 +264,7 @@ func place_piece_pair():
 	check_and_clear_matches()
 
 func activate_bombs_after_gravity():
-	# Find all bombs on the board and activate them
+	# Find all bombs on the board
 	var bombs_to_activate = []
 	
 	for y in range(GameState.grid_height):
@@ -244,18 +273,51 @@ func activate_bombs_after_gravity():
 			if piece != null and piece.is_bomb:
 				bombs_to_activate.append(Vector2(x, y))
 	
-	# Activate each bomb found
-	for bomb_pos in bombs_to_activate:
-		activate_bomb(bomb_pos)
-	
-	# If any bombs were activated, apply gravity again to fill the gaps
+	# If any bombs found, activate them all with dramatic effect
 	if bombs_to_activate.size() > 0:
+		await activate_bombs_with_effects(bombs_to_activate)
+		
+		# Apply gravity again to fill the gaps
 		apply_gravity()
 		# Wait for gravity animations to complete
 		await get_tree().create_timer(0.4).timeout
 
-func activate_bomb(bomb_pos):
-	print("Activating bomb at position: ", bomb_pos)
+func activate_bombs_with_effects(bomb_positions: Array):
+	print("Activating ", bomb_positions.size(), " bombs with effects")
+	
+	# Collect all pieces that will be affected by all bombs
+	var all_affected_pieces = []
+	var all_affected_positions = []
+	
+	# Process each bomb to find what it affects
+	for bomb_pos in bomb_positions:
+		var affected_pieces = get_bomb_affected_pieces(bomb_pos)
+		
+		# Add bomb itself to affected pieces
+		affected_pieces.append(bomb_pos)
+		
+		# Merge with total affected pieces (avoid duplicates)
+		for piece_pos in affected_pieces:
+			if not piece_pos in all_affected_positions:
+				all_affected_positions.append(piece_pos)
+				all_affected_pieces.append(grid_data[piece_pos.y][piece_pos.x])
+	
+	# Phase 1: Blink effect on all affected pieces
+	await create_blink_effect(all_affected_pieces)
+	
+	# Phase 2: Explosion effect with camera shake
+	start_camera_shake(0.4)
+	await create_explosion_effect(all_affected_positions)
+	
+	# Calculate and award points
+	var pieces_cleared = all_affected_positions.size()
+	if pieces_cleared > 0:
+		var bomb_points = pieces_cleared * 10
+		GameState.add_score(bomb_points)
+		print("Bombs cleared ", pieces_cleared, " pieces for ", bomb_points, " points")
+
+func get_bomb_affected_pieces(bomb_pos: Vector2) -> Array:
+	print("Analyzing bomb at position: ", bomb_pos)
 	
 	# Find target color using priority: down, up, left, right
 	var target_color = null
@@ -276,36 +338,81 @@ func activate_bomb(bomb_pos):
 				target_is_bubble = adjacent_piece.is_bubble
 				break
 	
-	# If no target found, bomb does nothing (shouldn't happen with proper placement)
+	# If no target found, bomb affects nothing
 	if target_color == null:
-		print("Bomb found no target - removing bomb only")
-		grid_data[bomb_pos.y][bomb_pos.x].queue_free()
-		grid_data[bomb_pos.y][bomb_pos.x] = null
-		return
+		print("Bomb found no target")
+		return []
 	
 	print("Bomb targeting color: ", target_color, " (is_bubble: ", target_is_bubble, ")")
 	
-	# Clear all pieces of the target color/type from the board
-	var pieces_cleared = 0
+	# Find all pieces of the target color/type
+	var affected_positions = []
 	for y in range(GameState.grid_height):
 		for x in range(GameState.grid_width):
 			var piece = grid_data[y][x]
-			if piece != null:
-				# Clear if it matches the target (either color match or both are bubbles)
+			if piece != null and not piece.is_bomb:
+				# Include if it matches the target (either color match or both are bubbles)
 				if (target_is_bubble and piece.is_bubble) or (not target_is_bubble and not piece.is_bubble and piece.color == target_color):
-					piece.queue_free()
-					grid_data[y][x] = null
-					pieces_cleared += 1
+					affected_positions.append(Vector2(x, y))
 	
-	# Remove the bomb itself
-	grid_data[bomb_pos.y][bomb_pos.x].queue_free()
-	grid_data[bomb_pos.y][bomb_pos.x] = null
+	return affected_positions
+
+func create_blink_effect(affected_pieces: Array):
+	var blink_duration = 0.3
+	var blink_count = 3
+	var blink_interval = blink_duration / (blink_count * 2)
 	
-	# Add score for pieces cleared by bomb (small amount per piece)
-	if pieces_cleared > 0:
-		var bomb_points = pieces_cleared * 10  # 10 points per piece cleared
-		GameState.add_score(bomb_points)
-		print("Bomb cleared ", pieces_cleared, " pieces for ", bomb_points, " points")
+	# Store original colors
+	var original_colors = []
+	for piece in affected_pieces:
+		if piece != null:
+			original_colors.append(piece.color)
+	
+	# Blink sequence
+	for blink in range(blink_count):
+		# Flash to white
+		for i in range(affected_pieces.size()):
+			var piece = affected_pieces[i]
+			if piece != null:
+				piece.modulate = Color.WHITE
+		
+		await get_tree().create_timer(blink_interval).timeout
+		
+		# Flash back to original
+		for i in range(affected_pieces.size()):
+			var piece = affected_pieces[i]
+			if piece != null:
+				piece.modulate = Color(original_colors[i])
+		
+		await get_tree().create_timer(blink_interval).timeout
+
+func create_explosion_effect(affected_positions: Array):
+	var explosion_duration = 0.3
+	var tweens = []
+	
+	# Create explosion animation for all affected pieces
+	for pos in affected_positions:
+		var piece = grid_data[pos.y][pos.x]
+		if piece != null:
+			var tween = create_tween()
+			tweens.append(tween)
+			
+			# Scale up larger than normal matches, then down to 0
+			tween.tween_property(piece, "scale", Vector2(2.0, 2.0), explosion_duration * 0.4)
+			tween.tween_property(piece, "scale", Vector2(0, 0), explosion_duration * 0.6)
+			
+			# Add more dramatic rotation
+			tween.parallel().tween_property(piece, "rotation", PI * 1.0, explosion_duration)
+	
+	# Wait for all animations to complete
+	if tweens.size() > 0:
+		await tweens[0].finished
+	
+	# Remove all affected pieces
+	for pos in affected_positions:
+		if grid_data[pos.y][pos.x] != null:
+			grid_data[pos.y][pos.x].queue_free()
+			grid_data[pos.y][pos.x] = null
 
 func check_and_clear_matches():
 	clearing_matches = true
