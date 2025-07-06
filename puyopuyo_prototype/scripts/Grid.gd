@@ -268,7 +268,7 @@ func place_piece_pair():
 	await get_tree().create_timer(0.4).timeout
 	
 	# THEN activate any bombs that have settled
-	activate_bombs_after_gravity()
+	await activate_bombs_after_gravity()
 	
 	# Finally check for matches
 	check_and_clear_matches()
