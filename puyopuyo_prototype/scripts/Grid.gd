@@ -177,12 +177,22 @@ func move_piece_horizontal(direction):
 	if can_place_piece_pair(current_piece_pair, new_pos):
 		current_piece_pair.set_grid_position(new_pos)
 		current_piece_pair.set_pixel_position(grid_to_pixel(new_pos))
+		
+		# Check if piece can now fall again after horizontal movement
+		var can_fall = can_place_piece_pair(current_piece_pair, new_pos + Vector2(0, 1))
+		if can_fall and is_in_grace_period:
+			# Reset landing state since piece can fall again
+			reset_landing_state()
 
 func move_piece_down():
 	var new_pos = current_piece_pair.grid_position + Vector2(0, 1)
 	if can_place_piece_pair(current_piece_pair, new_pos):
 		current_piece_pair.set_grid_position(new_pos)
 		current_piece_pair.set_pixel_position(grid_to_pixel(new_pos))
+		
+		# If we were in grace period but can now fall, reset it
+		if is_in_grace_period:
+			reset_landing_state()
 	else:
 		# Piece has hit something - start grace period if not already started
 		if not piece_has_landed:
