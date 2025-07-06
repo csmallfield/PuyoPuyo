@@ -414,7 +414,18 @@ func create_explosion_effect(affected_positions: Array):
 			grid_data[pos.y][pos.x].queue_free()
 			grid_data[pos.y][pos.x] = null
 
+func is_animating():
+	for y in range(GameState.grid_height):
+		for x in range(GameState.grid_width):
+			var piece = grid_data[y][x]
+			if piece != null and piece.is_animating:
+				return true
+		return false
+
 func check_and_clear_matches():
+	while is_animating():
+		await get_tree().create_timer(0.05).timeout
+
 	clearing_matches = true
 	var matches_found = false
 	var visited = {}
