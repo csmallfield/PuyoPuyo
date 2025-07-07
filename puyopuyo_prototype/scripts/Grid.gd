@@ -3,7 +3,7 @@ extends Node2D
 
 signal game_over
 
-const CELL_SIZE = 32
+const CELL_SIZE = 64  # Changed from 32 to 64
 const LANDING_GRACE_PERIOD = 0.25  # Time in seconds players can move after landing
 const BOMB_SHAKE_INTENSITY = 8.0  # Pixels of shake - adjustable
 const Piece = preload("res://scenes/Piece.tscn")
@@ -29,7 +29,7 @@ var is_shaking = false
 
 func _ready():
 	initialize_grid()
-	original_position = Vector2(200, 50)  # Store original offset
+	original_position = Vector2(400, 100)  # Changed from Vector2(200, 50)
 	position = original_position
 
 func _draw():
@@ -130,7 +130,7 @@ func spawn_new_piece_pair():
 	# Prepare next piece
 	next_piece_pair = piece_pair_scene.instantiate()
 	add_child(next_piece_pair)
-	next_piece_pair.set_pixel_position(Vector2(250, 50))  # Show next piece area
+	next_piece_pair.set_pixel_position(Vector2(500, 100))  # Changed from Vector2(250, 50)
 
 func start_camera_shake(duration: float):
 	is_shaking = true
@@ -430,7 +430,7 @@ func is_animating():
 			var piece = grid_data[y][x]
 			if piece != null and piece.is_animating:
 				return true
-		return false
+	return false  # Fixed: moved outside the loops
 
 func check_and_clear_matches():
 	while is_animating():
@@ -580,6 +580,7 @@ func apply_gravity():
 						var piece = grid_data[y][x]
 						grid_data[y][x] = null
 						grid_data[target_y][x] = piece
+						# Use the improved animation system
 						piece.animate_to_position(grid_to_pixel(Vector2(x, target_y)))
 						something_fell = true
 

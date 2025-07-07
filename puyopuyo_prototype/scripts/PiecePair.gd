@@ -59,15 +59,15 @@ func update_piece_positions():
 	match piece_rotation:
 		0:  # Vertical, piece1 on top
 			piece1.position = Vector2(0, 0)
-			piece2.position = Vector2(0, 32)
+			piece2.position = Vector2(0, 64)
 		1:  # Horizontal, piece1 on left
 			piece1.position = Vector2(0, 0)
-			piece2.position = Vector2(32, 0)
+			piece2.position = Vector2(64, 0)
 		2:  # Vertical, piece2 on top
-			piece1.position = Vector2(0, 32)
+			piece1.position = Vector2(0, 64)
 			piece2.position = Vector2(0, 0)
 		3:  # Horizontal, piece2 on left
-			piece1.position = Vector2(32, 0)
+			piece1.position = Vector2(64, 0)
 			piece2.position = Vector2(0, 0)
 
 func rotate_pieces():

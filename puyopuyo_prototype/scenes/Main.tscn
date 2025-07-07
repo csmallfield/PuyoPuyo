@@ -18,50 +18,64 @@ offset_bottom = 40.0
 
 [node name="ScoreLabel" type="Label" parent="UI"]
 layout_mode = 0
-offset_right = 40.0
-offset_bottom = 23.0
+offset_left = 11.0
+offset_top = 6.0
+offset_right = 51.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 24
 
 [node name="GameOverPanel" type="Panel" parent="UI"]
 layout_mode = 0
 offset_left = 480.0
-offset_top = 270.0
+offset_top = 275.0
 offset_right = 720.0
-offset_bottom = 350.0
+offset_bottom = 355.0
 
 [node name="Label" type="Label" parent="UI/GameOverPanel"]
 layout_mode = 0
 offset_right = 40.0
 offset_bottom = 23.0
-text = "Game Over! Press R to restart"
+theme_override_font_sizes/font_size = 26
+text = "Game Over! 
+Press R to restart"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="LevelLabel" type="Label" parent="UI"]
 layout_mode = 0
-offset_top = 30.0
-offset_right = 54.0
-offset_bottom = 53.0
+offset_left = 11.0
+offset_top = 39.0
+offset_right = 91.0
+offset_bottom = 73.0
+theme_override_font_sizes/font_size = 24
 text = "Level 1"
 
 [node name="SpeedLabel" type="Label" parent="UI"]
 layout_mode = 0
-offset_top = 60.0
-offset_right = 40.0
-offset_bottom = 83.0
+offset_left = 11.0
+offset_top = 105.0
+offset_right = 108.0
+offset_bottom = 131.0
+theme_override_font_sizes/font_size = 18
 text = "Speed: 1.0s"
 
 [node name="MultiplierLabel" type="Label" parent="UI"]
 layout_mode = 0
-offset_top = 90.0
-offset_right = 40.0
-offset_bottom = 113.0
+offset_left = 11.0
+offset_top = 137.0
+offset_right = 51.0
+offset_bottom = 160.0
 theme_override_colors/font_color = Color(1, 1, 0, 1)
 text = "x1.0"
 
 [node name="NextLevelLabel" type="Label" parent="UI"]
 layout_mode = 0
-offset_top = 120.0
-offset_right = 40.0
-offset_bottom = 143.0
+offset_left = 14.0
+offset_top = 76.0
+offset_right = 233.0
+offset_bottom = 103.0
 theme_override_colors/font_color = Color(0.515867, 0.515867, 0.515867, 1)
+theme_override_font_sizes/font_size = 19
 text = "Next level in: 500 points"
 
 [node name="LevelUpNotification" type="Panel" parent="UI"]
@@ -81,6 +95,7 @@ grow_vertical = 2
 theme_override_font_sizes/font_size = 24
 text = "LEVEL UP!"
 horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="PausePanel" type="Panel" parent="UI"]
 visible = false
@@ -127,10 +142,11 @@ text = "Restart Game"
 
 [node name="Instructions" type="Label" parent="UI"]
 layout_mode = 0
-offset_left = 726.0
-offset_top = 22.0
-offset_right = 923.0
-offset_bottom = 123.0
+offset_left = 26.0
+offset_top = 891.0
+offset_right = 320.0
+offset_bottom = 1036.0
+theme_override_font_sizes/font_size = 24
 text = "Left / Right to Move Piece
 Up to Spin
 Space to Fast Drop

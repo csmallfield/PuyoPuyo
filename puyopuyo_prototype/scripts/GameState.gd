@@ -68,7 +68,7 @@ var level_multipliers = [
 ]
 
 # Animation settings
-var piece_fall_speed = 200.0  # pixels per second for smooth falling
+var piece_fall_speed = 400.0  # pixels per second for smooth falling
 var use_sprites = true  # Set to true to use sprite files instead of generated circles
 var sprite_paths = {
 	Color.RED: "res://assets/red_piece.png",
