@@ -19,6 +19,7 @@ func _ready():
 	GameState.connect("level_changed", _on_level_changed)
 	GameState.connect("game_over", _on_game_over)
 	grid.connect("game_over", _on_grid_game_over)
+	grid.connect("chain_bonus", _on_chain_bonus)  # New signal connection
 	
 	# Connect pause screen restart button
 	pause_restart_button.connect("pressed", _on_pause_restart_pressed)
@@ -64,7 +65,6 @@ func start_new_game():
 	GameState.reset_game()
 	grid.start_game()
 	update_ui()
-	
 
 func update_ui():
 	# Update all UI elements
@@ -105,6 +105,22 @@ func show_level_up_notification(level):
 	
 	# Fade out
 	tween.tween_property(level_up_notification, "modulate:a", 0.0, 0.5)
+
+func _on_chain_bonus(chain_count):
+	# Show chain bonus notification using the same system as level up
+	level_up_text.text = str(chain_count) + "x Chain Bonus!"
+	
+	# Create a tween for the chain bonus notification animation
+	var tween = create_tween()
+	
+	# Fade in quickly
+	tween.tween_property(level_up_notification, "modulate:a", 1.0, 0.2)
+	
+	# Hold for shorter time than level up
+	tween.tween_interval(1.0)
+	
+	# Fade out
+	tween.tween_property(level_up_notification, "modulate:a", 0.0, 0.3)
 
 func _on_game_over():
 	game_over_panel.show()

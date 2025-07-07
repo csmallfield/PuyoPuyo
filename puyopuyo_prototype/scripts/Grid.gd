@@ -2,10 +2,11 @@ extends Node2D
 # Grid.gd - Manages the game grid and piece placement
 
 signal game_over
+signal chain_bonus(chain_count)  # New signal for chain bonus notification
 
-const CELL_SIZE = 64  # Changed from 32 to 64
-const LANDING_GRACE_PERIOD = 0.25  # Time in seconds players can move after landing
-const BOMB_SHAKE_INTENSITY = 8.0  # Pixels of shake - adjustable
+const CELL_SIZE = 64
+const LANDING_GRACE_PERIOD = 0.25
+const BOMB_SHAKE_INTENSITY = 8.0
 const Piece = preload("res://scenes/Piece.tscn")
 
 var grid_data = []
@@ -13,6 +14,10 @@ var current_piece_pair = null
 var next_piece_pair = null
 var fall_timer = 0.0
 var clearing_matches = false
+
+# Chain tracking for cascade bonuses
+var current_chain_count = 0
+var is_cascading = false
 
 # Landing grace period variables
 var landing_grace_timer = 0.0
@@ -29,7 +34,7 @@ var is_shaking = false
 
 func _ready():
 	initialize_grid()
-	original_position = Vector2(400, 100)  # Changed from Vector2(200, 50)
+	original_position = Vector2(400, 100)
 	position = original_position
 
 func _draw():
@@ -130,7 +135,7 @@ func spawn_new_piece_pair():
 	# Prepare next piece
 	next_piece_pair = piece_pair_scene.instantiate()
 	add_child(next_piece_pair)
-	next_piece_pair.set_pixel_position(Vector2(500, 100))  # Changed from Vector2(250, 50)
+	next_piece_pair.set_pixel_position(Vector2(500, 100))
 
 func start_camera_shake(duration: float):
 	is_shaking = true
@@ -245,6 +250,10 @@ func place_piece_pair():
 	# Reset landing state
 	reset_landing_state()
 	
+	# Initialize chain tracking for new turn
+	current_chain_count = 0
+	is_cascading = false
+	
 	# Place pieces in grid and remove from piece pair
 	for i in range(positions.size()):
 		var pos = positions[i]
@@ -270,7 +279,7 @@ func place_piece_pair():
 	# THEN activate any bombs that have settled
 	await activate_bombs_after_gravity()
 	
-	# Finally check for matches
+	# Finally check for matches (this will handle cascading)
 	check_and_clear_matches()
 
 func activate_bombs_after_gravity():
@@ -430,7 +439,7 @@ func is_animating():
 			var piece = grid_data[y][x]
 			if piece != null and piece.is_animating:
 				return true
-	return false  # Fixed: moved outside the loops
+	return false
 
 func check_and_clear_matches():
 	while is_animating():
@@ -439,9 +448,9 @@ func check_and_clear_matches():
 	clearing_matches = true
 	var matches_found = false
 	var visited = {}
-	var pieces_to_clear = []
+	var match_groups = []  # Store each match group separately for individual scoring
 	
-	# First pass: Find all colored matches (4+ connected same-color pieces)
+	# Find all colored matches (4+ connected same-color pieces)
 	for y in range(GameState.grid_height):
 		for x in range(GameState.grid_width):
 			var pos = Vector2(x, y)
@@ -456,35 +465,66 @@ func check_and_clear_matches():
 			# If group has 4 or more pieces, mark for clearing
 			if group.size() >= 4:
 				matches_found = true
-				pieces_to_clear.append_array(group)
+				match_groups.append(group)
 	
-	# Second pass: Find bubbles adjacent to clearing pieces
 	if matches_found:
-		var bubbles_to_clear = []
+		# Increment chain count for cascade bonus
+		current_chain_count += 1
+		is_cascading = true
 		
-		for clear_pos in pieces_to_clear:
-			# Check all 4 adjacent positions for bubbles
-			var adjacent_positions = [
-				clear_pos + Vector2(1, 0),   # Right
-				clear_pos + Vector2(-1, 0),  # Left
-				clear_pos + Vector2(0, 1),   # Down
-				clear_pos + Vector2(0, -1)   # Up
-			]
+		# Calculate scores for each match group
+		var total_base_score = 0
+		var all_pieces_to_clear = []
+		var all_bubbles_to_clear = []
+		
+		# Process each match group individually
+		for group in match_groups:
+			# Calculate match size bonus: 100 + (pieces_over_4 * 10)
+			var match_size = group.size()
+			var match_score = 100 + ((match_size - 4) * 10)
+			total_base_score += match_score
 			
-			for adj_pos in adjacent_positions:
-				# Check bounds
-				if adj_pos.x >= 0 and adj_pos.x < GameState.grid_width and adj_pos.y >= 0 and adj_pos.y < GameState.grid_height:
-					var adj_piece = grid_data[adj_pos.y][adj_pos.x]
-					if adj_piece != null and adj_piece.is_bubble and not adj_pos in bubbles_to_clear:
-						bubbles_to_clear.append(adj_pos)
+			print("Match of ", match_size, " pieces scores ", match_score, " points")
+			
+			# Add to clearing list
+			all_pieces_to_clear.append_array(group)
+			
+			# Find bubbles adjacent to this match group
+			for clear_pos in group:
+				var adjacent_positions = [
+					clear_pos + Vector2(1, 0),   # Right
+					clear_pos + Vector2(-1, 0),  # Left
+					clear_pos + Vector2(0, 1),   # Down
+					clear_pos + Vector2(0, -1)   # Up
+				]
+				
+				for adj_pos in adjacent_positions:
+					# Check bounds
+					if adj_pos.x >= 0 and adj_pos.x < GameState.grid_width and adj_pos.y >= 0 and adj_pos.y < GameState.grid_height:
+						var adj_piece = grid_data[adj_pos.y][adj_pos.x]
+						if adj_piece != null and adj_piece.is_bubble and not adj_pos in all_bubbles_to_clear:
+							all_bubbles_to_clear.append(adj_pos)
 		
-		# Clear colored matches and adjacent bubbles with pop animations
-		await clear_group(pieces_to_clear)
-		await clear_group(bubbles_to_clear)
+		# Add bubble bonus to total
+		var bubble_bonus = all_bubbles_to_clear.size() * 50
+		total_base_score += bubble_bonus
 		
-		# Calculate base score (after clearing animations complete)
-		var base_points = 100 + bubbles_to_clear.size() * 50
-		GameState.add_score(base_points)
+		# Add chain cascade bonus: 100 * chain_number
+		var chain_bonus = current_chain_count * 100
+		total_base_score += chain_bonus
+		
+		print("Chain ", current_chain_count, " - Base score: ", total_base_score, " (includes ", chain_bonus, " chain bonus)")
+		
+		# Show chain bonus notification if 2+ chains
+		if current_chain_count >= 2:
+			emit_signal("chain_bonus", current_chain_count)
+		
+		# Clear pieces with animations
+		await clear_group(all_pieces_to_clear)
+		await clear_group(all_bubbles_to_clear)
+		
+		# Award points (will be multiplied by level multiplier in GameState)
+		GameState.add_score(total_base_score)
 		
 		# Apply gravity after clearing
 		apply_gravity()
@@ -493,8 +533,10 @@ func check_and_clear_matches():
 		await get_tree().create_timer(0.4).timeout
 		check_and_clear_matches()  # Recursive call for chains
 	else:
-		# No matches found, spawn next piece
+		# No matches found, end cascading and spawn next piece
 		clearing_matches = false
+		is_cascading = false
+		current_chain_count = 0
 		spawn_new_piece_pair()
 
 func find_connected_group(start_pos, color, visited):
@@ -549,7 +591,7 @@ func clear_group(group):
 	
 	# Wait for all animations to complete
 	if tweens.size() > 0:
-		await tweens[0].finished  # Wait for any tween to finish (they should all finish at the same time)
+		await tweens[0].finished
 	
 	# Now actually remove the pieces
 	for pos in group:
@@ -580,7 +622,6 @@ func apply_gravity():
 						var piece = grid_data[y][x]
 						grid_data[y][x] = null
 						grid_data[target_y][x] = piece
-						# Use the improved animation system
 						piece.animate_to_position(grid_to_pixel(Vector2(x, target_y)))
 						something_fell = true
 
