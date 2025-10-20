@@ -85,20 +85,27 @@ var sequence_index = 0   # Current position in sequence
 var generate_ahead = 50  # How many pieces to generate ahead
 
 # Nuisance/Garbage system settings
-var nuisance_points_per_piece = 8  # Points awarded per piece cleared (lower points is less garbage, more is heavy garbage game)
+var nuisance_points_per_piece = 6  # Points awarded per piece cleared (lower points is less garbage, more is heavy garbage game)
 var nuisance_points_per_garbage_row = 90  # Points needed to send 1 row of garbage (6 bubbles) more points needed helps
 
 # Chain multipliers - exponential scaling for powerful chains
 var chain_multipliers = [
-	0,    # Chain 0 (shouldn't happen)
-	1,    # Chain 1 - base multiplier
-	8,    # Chain 2 - significant jump
-	16,   # Chain 3 - double chain 2
-	32,   # Chain 4 - double chain 3
-	64,   # Chain 5 - massive
-	96,   # Chain 6 - extreme
-	128,  # Chain 7 - devastating
-	160,  # Chain 8+
+	
+	# Initial Arrangement (it's pretty intense)
+	#0,    # Chain 0 (shouldn't happen)
+	#1,    # Chain 1 - base multiplier
+	#8,    # Chain 2 - significant jump
+	#16,   # Chain 3 - double chain 2
+	#32,   # Chain 4 - double chain 3
+	#64,   # Chain 5 - massive
+	#96,   # Chain 6 - extreme
+	#128,  # Chain 7 - devastating
+	#160,  # Chain 8+
+	
+	#0, 1, 5, 10, 20, 35, 55, 80, 110 #Moderate Intensity
+	#0, 1, 3, 6, 12, 20, 30, 42, 56 #Need a lot of chains
+	0, 1, 2, 3, 4, 5, 6, 7, 8 #Linear Chains
+	
 ]
 
 func _ready():

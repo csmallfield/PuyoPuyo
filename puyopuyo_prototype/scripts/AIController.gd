@@ -34,11 +34,11 @@ var weight_group_of_two = 80.0
 var weight_height_penalty = 8.0
 var weight_height_variance = 25.0
 var weight_center_preference = 5.0
-var weight_random_variety = 3.0
+var weight_random_variety = 15.0
 
 # AI behavior settings
-var move_delay = 0.5  # Time between AI decisions
-var move_animation_speed = 0.1  # Speed of AI movements
+var move_delay = 0.7  # Time between AI decisions
+var move_animation_speed = 0.15  # Speed of AI movements
 
 # ============================================
 # RUNTIME VARIABLES
@@ -80,7 +80,7 @@ func configure_level_0():
 	use_chain_detection = false
 	
 	weight_height_penalty = 10.0
-	weight_random_variety = 5.0
+	weight_random_variety = 10.0
 	
 	move_delay = 0.5
 	move_animation_speed = 0.15
@@ -101,10 +101,10 @@ func configure_level_1():
 	weight_height_penalty = 8.0
 	weight_height_variance = 25.0
 	weight_center_preference = 5.0
-	weight_random_variety = 3.0
+	weight_random_variety = 10.0
 	
-	move_delay = 0.5
-	move_animation_speed = 0.1
+	move_delay = 0.7
+	move_animation_speed = 0.15
 
 func configure_level_2():
 	"""Chain-aware AI (future implementation)"""
@@ -532,24 +532,34 @@ func execute_move(target_column: int, target_rotation: int):
 	var rotations_needed = (target_rotation - current_rotation) % 4
 	
 	for i in range(rotations_needed):
+		if not grid or not grid.current_piece_pair:  # Add check in loop
+			return
 		grid.rotate_piece()
 		await get_tree().create_timer(move_animation_speed).timeout
 	
 	# Move to target column
+	if not grid or not grid.current_piece_pair:  # Add check before getting position
+		return
 	var current_column = int(grid.current_piece_pair.grid_position.x)
 	var columns_to_move = target_column - current_column
 	
 	if columns_to_move > 0:
 		for i in range(columns_to_move):
+			if not grid or not grid.current_piece_pair:  # Add check in loop
+				return
 			grid.move_piece_horizontal(1)
 			await get_tree().create_timer(move_animation_speed).timeout
 	elif columns_to_move < 0:
 		for i in range(abs(columns_to_move)):
+			if not grid or not grid.current_piece_pair:  # Add check in loop
+				return
 			grid.move_piece_horizontal(-1)
 			await get_tree().create_timer(move_animation_speed).timeout
 	
 	# Fast drop
 	await get_tree().create_timer(0.2).timeout
+	if not grid or not grid.current_piece_pair:  # Add check before fast drop
+		return
 	grid.fast_drop_piece()
 	
 	# Reset decision flag for next piece
