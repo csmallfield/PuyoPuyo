@@ -15,40 +15,26 @@ func create_pieces():
 	piece1 = piece_scene.instantiate()
 	piece2 = piece_scene.instantiate()
 	
-	# DEBUG: Log the random values and spawn chances
-	var rand1 = randf()
-	var rand2 = randf()
-	print("Level: ", GameState.level, " | Bomb chance: ", GameState.bomb_spawn_chance, " | Rand1: ", rand1, " | Rand2: ", rand2)
-	
-	# Determine piece types - ensure no bomb+bomb pairs
-	var piece1_is_bomb = rand1 < GameState.bomb_spawn_chance
-	var piece2_is_bomb = false
-	
-	# If piece1 is not a bomb, piece2 can be a bomb
-	if not piece1_is_bomb:
-		piece2_is_bomb = rand2 < GameState.bomb_spawn_chance
-	
-	print("Piece1 bomb: ", piece1_is_bomb, " | Piece2 bomb: ", piece2_is_bomb)
+	# Get piece data from GameState's shared sequence
+	var piece_data = GameState.get_next_piece_pair_data()
 	
 	# Set piece1 type
-	if piece1_is_bomb:
-		piece1.set_as_bomb()
-	else:
-		var piece1_is_bubble = randf() < GameState.bubble_spawn_chance
-		if piece1_is_bubble:
+	match piece_data.piece1.type:
+		"bomb":
+			piece1.set_as_bomb()
+		"bubble":
 			piece1.set_as_bubble()
-		else:
-			piece1.set_color(GameState.colors[randi() % GameState.colors.size()])
+		"normal":
+			piece1.set_color(piece_data.piece1.color)
 	
 	# Set piece2 type
-	if piece2_is_bomb:
-		piece2.set_as_bomb()
-	else:
-		var piece2_is_bubble = randf() < GameState.bubble_spawn_chance
-		if piece2_is_bubble:
+	match piece_data.piece2.type:
+		"bomb":
+			piece2.set_as_bomb()
+		"bubble":
 			piece2.set_as_bubble()
-		else:
-			piece2.set_color(GameState.colors[randi() % GameState.colors.size()])
+		"normal":
+			piece2.set_color(piece_data.piece2.color)
 	
 	add_child(piece1)
 	add_child(piece2)

@@ -79,6 +79,12 @@ var sprite_paths = {
 	Color.BLACK: "res://assets/bomb_piece.png"
 }
 
+# Piece sequence management for VS mode
+var piece_sequence = []  # Queue of pre-generated piece pairs
+var sequence_index = 0   # Current position in sequence
+var generate_ahead = 50  # How many pieces to generate ahead
+
+
 func _ready():
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
@@ -114,6 +120,7 @@ func reset_game():
 	current_state = State.PLAYING
 	emit_signal("score_changed", score)
 	emit_signal("level_changed", level)
+	start_piece_sequence()
 
 func set_state(new_state):
 	current_state = new_state
@@ -157,3 +164,73 @@ func get_speed_display_text():
 func get_level_display_text():
 	# Return a formatted string showing the current level
 	return "Level " + str(level)
+	
+func start_piece_sequence():
+	"""Initialize a new piece sequence for a game"""
+	piece_sequence = []
+	sequence_index = 0
+	generate_piece_sequence()
+
+func generate_piece_sequence():
+	"""Generate a batch of piece pairs ahead of time"""
+	for i in range(generate_ahead):
+		var piece_data = generate_piece_pair_data()
+		piece_sequence.append(piece_data)
+
+func generate_piece_pair_data():
+	"""Generate data for one piece pair (colors and special types)"""
+	var pair_data = {
+		"piece1": {},
+		"piece2": {}
+	}
+	
+	# Generate piece1
+	var rand1 = randf()
+	var piece1_is_bomb = rand1 < bomb_spawn_chance
+	
+	if piece1_is_bomb:
+		pair_data.piece1.type = "bomb"
+		pair_data.piece1.color = bomb_color
+	else:
+		var piece1_is_bubble = randf() < bubble_spawn_chance
+		if piece1_is_bubble:
+			pair_data.piece1.type = "bubble"
+			pair_data.piece1.color = bubble_color
+		else:
+			pair_data.piece1.type = "normal"
+			pair_data.piece1.color = colors[randi() % colors.size()]
+	
+	# Generate piece2 (ensure no bomb+bomb pairs)
+	var piece2_is_bomb = false
+	if not piece1_is_bomb:
+		var rand2 = randf()
+		piece2_is_bomb = rand2 < bomb_spawn_chance
+	
+	if piece2_is_bomb:
+		pair_data.piece2.type = "bomb"
+		pair_data.piece2.color = bomb_color
+	else:
+		var piece2_is_bubble = randf() < bubble_spawn_chance
+		if piece2_is_bubble:
+			pair_data.piece2.type = "bubble"
+			pair_data.piece2.color = bubble_color
+		else:
+			pair_data.piece2.type = "normal"
+			pair_data.piece2.color = colors[randi() % colors.size()]
+	
+	return pair_data
+
+func get_next_piece_pair_data():
+	"""Get the next piece pair from the sequence"""
+	# If we're running low, generate more
+	if sequence_index >= piece_sequence.size() - 10:
+		generate_piece_sequence()
+	
+	var data = piece_sequence[sequence_index]
+	sequence_index += 1
+	return data
+
+func reset_piece_sequence():
+	"""Reset the piece sequence (for new games)"""
+	piece_sequence = []
+	sequence_index = 0

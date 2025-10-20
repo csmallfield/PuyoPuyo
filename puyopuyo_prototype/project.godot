@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="PuyoPuyo_Prototype"
-run/main_scene="uid://cd5kkia84y51d"
+run/main_scene="uid://c8nc1dtop540g"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
 
