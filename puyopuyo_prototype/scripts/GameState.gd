@@ -84,6 +84,22 @@ var piece_sequence = []  # Queue of pre-generated piece pairs
 var sequence_index = 0   # Current position in sequence
 var generate_ahead = 50  # How many pieces to generate ahead
 
+# Nuisance/Garbage system settings
+var nuisance_points_per_piece = 10  # Points awarded per piece cleared
+var nuisance_points_per_garbage_row = 70  # Points needed to send 1 row of garbage (6 bubbles)
+
+# Chain multipliers - exponential scaling for powerful chains
+var chain_multipliers = [
+	0,    # Chain 0 (shouldn't happen)
+	1,    # Chain 1 - base multiplier
+	8,    # Chain 2 - significant jump
+	16,   # Chain 3 - double chain 2
+	32,   # Chain 4 - double chain 3
+	64,   # Chain 5 - massive
+	96,   # Chain 6 - extreme
+	128,  # Chain 7 - devastating
+	160,  # Chain 8+
+]
 
 func _ready():
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -140,6 +156,13 @@ func get_current_multiplier():
 		return level_multipliers[level - 1]
 	else:
 		return level_multipliers[level_multipliers.size() - 1]  # Cap at max multiplier
+
+func get_chain_multiplier(chain_count: int) -> int:
+	"""Get the multiplier for a given chain count"""
+	if chain_count < chain_multipliers.size():
+		return chain_multipliers[chain_count]
+	else:
+		return chain_multipliers[chain_multipliers.size() - 1]  # Cap at max
 
 func get_next_level_threshold():
 	# Return points needed for next level

@@ -33,6 +33,12 @@ var enable_camera_shake = true  # Disable for VS mode
 
 var enable_input = true  # Allow external control of input handling
 
+# Garbage/Nuisance system
+signal garbage_sent(nuisance_points)  # Signal to send garbage to opponent
+var incoming_garbage_points = 0  # Nuisance points waiting to be dropped
+var pending_garbage_drop = false  # Whether garbage should drop after current piece
+
+
 @onready var piece_pair_scene = preload("res://scenes/PiecePair.tscn")
 
 func _ready():
@@ -284,6 +290,10 @@ func place_piece_pair():
 	current_piece_pair.queue_free()
 	current_piece_pair = null
 	
+	# DROP GARBAGE if pending (before gravity/matches)
+	if pending_garbage_drop:
+		await drop_garbage()
+	
 	# Apply gravity with smooth animations FIRST
 	apply_gravity()
 	
@@ -488,6 +498,7 @@ func check_and_clear_matches():
 		
 		# Calculate scores for each match group
 		var total_base_score = 0
+		var total_pieces_cleared = 0
 		var all_pieces_to_clear = []
 		var all_bubbles_to_clear = []
 		
@@ -497,6 +508,7 @@ func check_and_clear_matches():
 			var match_size = group.size()
 			var match_score = 100 + ((match_size - 4) * 10)
 			total_base_score += match_score
+			total_pieces_cleared += match_size
 			
 			print("Match of ", match_size, " pieces scores ", match_score, " points")
 			
@@ -522,6 +534,7 @@ func check_and_clear_matches():
 		# Add bubble bonus to total
 		var bubble_bonus = all_bubbles_to_clear.size() * 50
 		total_base_score += bubble_bonus
+		total_pieces_cleared += all_bubbles_to_clear.size()
 		
 		# Add chain cascade bonus: 100 * chain_number
 		var chain_bonus = current_chain_count * 100
@@ -532,6 +545,9 @@ func check_and_clear_matches():
 		# Show chain bonus notification if 2+ chains
 		if current_chain_count >= 2:
 			emit_signal("chain_bonus", current_chain_count)
+		
+		# CALCULATE AND SEND GARBAGE - ADD THIS
+		calculate_and_send_garbage(total_pieces_cleared, current_chain_count)
 		
 		# Clear pieces with animations
 		await clear_group(all_pieces_to_clear)
@@ -552,6 +568,124 @@ func check_and_clear_matches():
 		is_cascading = false
 		current_chain_count = 0
 		spawn_new_piece_pair()
+		
+		
+func calculate_and_send_garbage(pieces_cleared: int, chain_number: int):
+	"""Calculate nuisance points and handle garbage offsetting/sending"""
+	# Calculate nuisance points for this clear
+	var base_points = pieces_cleared * GameState.nuisance_points_per_piece
+	var chain_multiplier = GameState.get_chain_multiplier(chain_number)
+	var nuisance_generated = base_points * chain_multiplier
+	
+	print("Generated ", nuisance_generated, " nuisance points (", pieces_cleared, " pieces × ", chain_multiplier, "x chain)")
+	
+	# Offset: reduce incoming garbage first
+	if incoming_garbage_points > 0:
+		if nuisance_generated >= incoming_garbage_points:
+			# Cleared all incoming garbage and have leftover to send
+			var leftover = nuisance_generated - incoming_garbage_points
+			print("Offset: Cleared ", incoming_garbage_points, " incoming garbage, sending ", leftover, " to opponent")
+			incoming_garbage_points = 0
+			pending_garbage_drop = false
+			
+			if leftover > 0:
+				emit_signal("garbage_sent", leftover)
+		else:
+			# Reduced incoming garbage but didn't clear it all
+			incoming_garbage_points -= nuisance_generated
+			print("Offset: Reduced incoming garbage to ", incoming_garbage_points)
+	else:
+		# No incoming garbage, send directly to opponent
+		print("Sending ", nuisance_generated, " nuisance points to opponent")
+		emit_signal("garbage_sent", nuisance_generated)
+
+func receive_garbage(nuisance_points: int):
+	"""Receive garbage nuisance points from opponent"""
+	incoming_garbage_points += nuisance_points
+	pending_garbage_drop = true
+	print("Received ", nuisance_points, " nuisance points. Total incoming: ", incoming_garbage_points)
+
+func drop_garbage():
+	"""Drop garbage (bubbles) onto the grid"""
+	if incoming_garbage_points <= 0:
+		pending_garbage_drop = false
+		return
+	
+	# Convert nuisance points to garbage count
+	var garbage_count = int(incoming_garbage_points / GameState.nuisance_points_per_garbage_row) * GameState.grid_width
+	var leftover_points = incoming_garbage_points % GameState.nuisance_points_per_garbage_row
+	
+	# Keep leftover points for next time
+	incoming_garbage_points = leftover_points
+	
+	if garbage_count <= 0:
+		pending_garbage_drop = false
+		return
+	
+	print("Dropping ", garbage_count, " garbage bubbles")
+	
+	# Drop garbage bubbles from top in random columns
+	var columns_to_fill = []
+	
+	# If full rows, fill all columns equally
+	var full_rows = garbage_count / GameState.grid_width
+	var remaining_bubbles = garbage_count % GameState.grid_width
+	
+	# Generate random column order for remaining bubbles
+	var available_columns = []
+	for x in range(GameState.grid_width):
+		available_columns.append(x)
+	available_columns.shuffle()
+	
+	# Drop garbage
+	for x in range(GameState.grid_width):
+		var bubbles_in_column = full_rows
+		
+		# Add extra bubble if this column is selected for remainder
+		if x < remaining_bubbles:
+			bubbles_in_column += 1
+		
+		# Drop bubbles from top
+		for i in range(bubbles_in_column):
+			var bubble = Piece.instantiate()
+			add_child(bubble)
+			bubble.set_as_bubble()
+			
+			# Find the topmost empty position in this column
+			var drop_y = -1
+			for y in range(GameState.grid_height):
+				if grid_data[y][x] == null:
+					drop_y = y
+					break
+			
+			if drop_y >= 0:
+				# Place bubble
+				grid_data[drop_y][x] = bubble
+				bubble.set_position_immediately(grid_to_pixel(Vector2(x, drop_y)))
+	
+	pending_garbage_drop = false
+	
+	# Apply gravity after dropping garbage
+	apply_gravity()
+	await get_tree().create_timer(0.4).timeout
+	
+	# DON'T call check_and_clear_matches here - let place_piece_pair handle it
+	# The normal flow will check for matches after this function returns
+	
+func get_garbage_meter_fill() -> float:
+	"""Return percentage fill of garbage meter (0.0 to 1.0+)"""
+	if incoming_garbage_points <= 0:
+		return 0.0
+	
+	# Calculate how many rows worth of garbage
+	var rows_worth = float(incoming_garbage_points) / float(GameState.nuisance_points_per_garbage_row)
+	
+	# Return as percentage (cap at some reasonable max for display, like 10 rows = 100%)
+	return min(rows_worth / 10.0, 1.0)
+
+func get_garbage_row_count() -> int:
+	"""Return number of garbage rows waiting to drop"""
+	return int(incoming_garbage_points / GameState.nuisance_points_per_garbage_row)
 
 func find_connected_group(start_pos, color, visited):
 	var group = []

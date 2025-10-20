@@ -1,10 +1,140 @@
 extends Node
-# AIController.gd - Color-Aware AI opponent
+# AIController.gd - Configurable AI opponent with difficulty levels
+
+# ============================================
+# AI CONFIGURATION
+# ============================================
+
+enum Difficulty {
+	LEVEL_0,  # Basic height-only AI (original)
+	LEVEL_1,  # Color-aware AI with grouping
+	LEVEL_2,  # Chain setup AI (future)
+	LEVEL_3,  # Strategic chain AI (future)
+}
+
+# Main difficulty setting
+var ai_difficulty = Difficulty.LEVEL_1
+
+# Feature flags - can be toggled individually for testing
+var use_color_adjacency = true
+var use_group_potential = true
+var use_height_variance = true
+var use_special_piece_strategy = true
+var use_center_preference = true
+
+# Future features (for Level 2+)
+var use_next_piece_lookahead = false
+var use_chain_detection = false
+var use_defensive_play = false
+
+# Scoring weights - can be tuned per difficulty level
+var weight_color_adjacency = 50.0
+var weight_group_of_three = 200.0
+var weight_group_of_two = 80.0
+var weight_height_penalty = 8.0
+var weight_height_variance = 25.0
+var weight_center_preference = 5.0
+var weight_random_variety = 3.0
+
+# AI behavior settings
+var move_delay = 0.5  # Time between AI decisions
+var move_animation_speed = 0.1  # Speed of AI movements
+
+# ============================================
+# RUNTIME VARIABLES
+# ============================================
 
 var grid = null
 var move_timer = 0.0
-var move_delay = 0.5  # AI makes a decision every 0.5 seconds
 var decision_made = false
+
+# ============================================
+# INITIALIZATION
+# ============================================
+
+func _ready():
+	configure_difficulty(ai_difficulty)
+
+func configure_difficulty(difficulty: Difficulty):
+	"""Configure AI behavior based on difficulty level"""
+	ai_difficulty = difficulty
+	
+	match difficulty:
+		Difficulty.LEVEL_0:
+			configure_level_0()
+		Difficulty.LEVEL_1:
+			configure_level_1()
+		Difficulty.LEVEL_2:
+			configure_level_2()
+		Difficulty.LEVEL_3:
+			configure_level_3()
+
+func configure_level_0():
+	"""Basic AI - only considers height"""
+	use_color_adjacency = false
+	use_group_potential = false
+	use_height_variance = false
+	use_special_piece_strategy = false
+	use_center_preference = false
+	use_next_piece_lookahead = false
+	use_chain_detection = false
+	
+	weight_height_penalty = 10.0
+	weight_random_variety = 5.0
+	
+	move_delay = 0.5
+	move_animation_speed = 0.15
+
+func configure_level_1():
+	"""Color-aware AI with grouping strategy"""
+	use_color_adjacency = true
+	use_group_potential = true
+	use_height_variance = true
+	use_special_piece_strategy = true
+	use_center_preference = true
+	use_next_piece_lookahead = false
+	use_chain_detection = false
+	
+	weight_color_adjacency = 50.0
+	weight_group_of_three = 200.0
+	weight_group_of_two = 80.0
+	weight_height_penalty = 8.0
+	weight_height_variance = 25.0
+	weight_center_preference = 5.0
+	weight_random_variety = 3.0
+	
+	move_delay = 0.5
+	move_animation_speed = 0.1
+
+func configure_level_2():
+	"""Chain-aware AI (future implementation)"""
+	configure_level_1()  # Start with Level 1 settings
+	
+	use_next_piece_lookahead = true
+	use_chain_detection = true
+	
+	# Increase strategic weights
+	weight_group_of_three = 300.0
+	weight_color_adjacency = 70.0
+	
+	move_delay = 0.4
+	move_animation_speed = 0.08
+
+func configure_level_3():
+	"""Advanced strategic AI (future implementation)"""
+	configure_level_2()  # Start with Level 2 settings
+	
+	use_defensive_play = true
+	
+	# Even more strategic
+	weight_group_of_three = 400.0
+	
+	move_delay = 0.3
+	move_animation_speed = 0.05
+
+# ============================================
+# CORE AI LOGIC
+# ============================================
 
 func _process(delta):
 	if not grid or not grid.current_piece_pair or not grid.is_processing():
@@ -25,7 +155,7 @@ func make_move():
 	
 	decision_made = true
 	
-	# Simple AI: analyze all possible placements and pick the best
+	# Analyze all possible placements and pick the best
 	var best_score = -999999
 	var best_column = 0
 	var best_rotation = 0
@@ -55,7 +185,7 @@ func make_move():
 	execute_move(best_column, best_rotation)
 
 func evaluate_placement(column: int, rotation: int) -> float:
-	"""Evaluate how good a placement would be using color-aware strategy"""
+	"""Evaluate how good a placement would be based on configured features"""
 	
 	# Get the piece positions for this placement
 	var test_position = Vector2(column, 0)
@@ -74,43 +204,45 @@ func evaluate_placement(column: int, rotation: int) -> float:
 		var landing_y = find_landing_y(pos.x, pos.y)
 		landing_positions.append(Vector2(pos.x, landing_y))
 	
-	# Calculate score based on multiple factors
+	# Calculate score based on enabled features
 	var score = 0.0
 	
-	# Factor 1: Color adjacency - reward placing next to same colors
-	score += evaluate_color_adjacency(landing_positions, pieces)
+	# LEVEL 1+ FEATURES
+	if use_color_adjacency:
+		score += evaluate_color_adjacency(landing_positions, pieces)
 	
-	# Factor 2: Group formation - huge bonus for almost-matches (groups of 3)
-	score += evaluate_group_potential(landing_positions, pieces)
+	if use_group_potential:
+		score += evaluate_group_potential(landing_positions, pieces)
 	
-	# Factor 3: Height management - prefer lower columns
+	if use_special_piece_strategy:
+		score += evaluate_special_pieces(landing_positions, pieces)
+	
+	if use_center_preference:
+		score += evaluate_center_preference(landing_positions)
+	
+	# LEVEL 0+ FEATURES (always used)
 	score += evaluate_height_penalty(landing_positions)
 	
-	# Factor 4: Height variance - avoid creating very tall columns
-	score += evaluate_height_variance(landing_positions)
+	if use_height_variance:
+		score += evaluate_height_variance(landing_positions)
 	
-	# Factor 5: Special piece handling - bombs and bubbles
-	score += evaluate_special_pieces(landing_positions, pieces)
+	# LEVEL 2+ FEATURES (future)
+	if use_next_piece_lookahead:
+		# score += evaluate_next_piece(landing_positions, pieces)
+		pass
 	
-	# Factor 6: Center preference - slight bonus for center columns
-	score += evaluate_center_preference(landing_positions)
+	if use_chain_detection:
+		# score += evaluate_chain_potential(landing_positions, pieces)
+		pass
 	
-	# Small random factor to add variety and prevent identical games
-	score += randf() * 3
+	# Random variety factor
+	score += randf() * weight_random_variety
 	
 	return score
 
-func find_landing_y(x: int, start_y: int) -> int:
-	"""Find where a piece would land if dropped in column x"""
-	var landing_y = start_y
-	
-	# Drop until we hit something
-	while landing_y + 1 < GameState.grid_height:
-		if grid.grid_data[landing_y + 1][x] != null:
-			break
-		landing_y += 1
-	
-	return landing_y
+# ============================================
+# EVALUATION FUNCTIONS
+# ============================================
 
 func evaluate_color_adjacency(landing_positions: Array, pieces: Array) -> float:
 	"""Reward placing pieces next to same-colored pieces"""
@@ -146,7 +278,7 @@ func evaluate_color_adjacency(landing_positions: Array, pieces: Array) -> float:
 			
 			if existing_piece and not existing_piece.is_bomb and not existing_piece.is_bubble:
 				if existing_piece.color == color:
-					score += 50  # Good! Same color neighbor
+					score += weight_color_adjacency
 	
 	return score
 
@@ -169,60 +301,11 @@ func evaluate_group_potential(landing_positions: Array, pieces: Array) -> float:
 		
 		# Reward based on group size
 		if group_size >= 3:
-			score += 200  # Great! Close to a match
+			score += weight_group_of_three
 		elif group_size == 2:
-			score += 80   # Good! Building toward a match
+			score += weight_group_of_two
 	
 	return score
-
-func count_connected_group(start_pos: Vector2, color: Color, landing_positions: Array, pieces: Array) -> int:
-	"""Count how many same-colored pieces are connected to this position"""
-	var visited = {}
-	var stack = [start_pos]
-	var count = 0
-	
-	while stack.size() > 0:
-		var pos = stack.pop_back()
-		
-		# Skip if already visited
-		if visited.has(pos):
-			continue
-		
-		# Skip if out of bounds
-		if pos.x < 0 or pos.x >= GameState.grid_width or pos.y < 0 or pos.y >= GameState.grid_height:
-			continue
-		
-		# Check if there's a same-color piece here
-		var piece_here = get_piece_at_position(pos, landing_positions, pieces)
-		if not piece_here or piece_here.is_bomb or piece_here.is_bubble:
-			continue
-		if piece_here.color != color:
-			continue
-		
-		# Mark as visited and count it
-		visited[pos] = true
-		count += 1
-		
-		# Add adjacent positions to check
-		stack.append(Vector2(pos.x + 1, pos.y))
-		stack.append(Vector2(pos.x - 1, pos.y))
-		stack.append(Vector2(pos.x, pos.y + 1))
-		stack.append(Vector2(pos.x, pos.y - 1))
-	
-	return count
-
-func get_piece_at_position(pos: Vector2, landing_positions: Array, pieces: Array):
-	"""Get the piece at a position, checking both grid and landing pieces"""
-	# First check if it's one of the landing pieces
-	for i in range(landing_positions.size()):
-		if landing_positions[i] == pos:
-			return pieces[i]
-	
-	# Otherwise check the grid
-	if pos.y >= 0 and pos.y < GameState.grid_height and pos.x >= 0 and pos.x < GameState.grid_width:
-		return grid.grid_data[pos.y][pos.x]
-	
-	return null
 
 func evaluate_height_penalty(landing_positions: Array) -> float:
 	"""Penalize placing in tall columns"""
@@ -230,7 +313,7 @@ func evaluate_height_penalty(landing_positions: Array) -> float:
 	
 	for pos in landing_positions:
 		var column_height = GameState.grid_height - pos.y
-		score -= column_height * 8  # Moderate penalty for height
+		score -= column_height * weight_height_penalty
 	
 	return score
 
@@ -255,7 +338,7 @@ func evaluate_height_variance(landing_positions: Array) -> float:
 		var height_diff = new_height - avg_height
 		
 		if height_diff > 3:
-			score -= (height_diff - 3) * 25  # Strong penalty for very tall columns
+			score -= (height_diff - 3) * weight_height_variance
 	
 	return score
 
@@ -335,6 +418,83 @@ func evaluate_bubble_placement(bubble_pos: Vector2) -> float:
 	
 	return score
 
+func evaluate_center_preference(landing_positions: Array) -> float:
+	"""Slight bonus for keeping center columns available"""
+	var score = 0.0
+	var center = GameState.grid_width / 2
+	
+	for pos in landing_positions:
+		var distance_from_center = abs(pos.x - center)
+		# Small bonus for being near center (gives flexibility)
+		score += (3 - distance_from_center) * weight_center_preference
+	
+	return score
+
+# ============================================
+# HELPER FUNCTIONS
+# ============================================
+
+func find_landing_y(x: int, start_y: int) -> int:
+	"""Find where a piece would land if dropped in column x"""
+	var landing_y = start_y
+	
+	# Drop until we hit something
+	while landing_y + 1 < GameState.grid_height:
+		if grid.grid_data[landing_y + 1][x] != null:
+			break
+		landing_y += 1
+	
+	return landing_y
+
+func count_connected_group(start_pos: Vector2, color: Color, landing_positions: Array, pieces: Array) -> int:
+	"""Count how many same-colored pieces are connected to this position"""
+	var visited = {}
+	var stack = [start_pos]
+	var count = 0
+	
+	while stack.size() > 0:
+		var pos = stack.pop_back()
+		
+		# Skip if already visited
+		if visited.has(pos):
+			continue
+		
+		# Skip if out of bounds
+		if pos.x < 0 or pos.x >= GameState.grid_width or pos.y < 0 or pos.y >= GameState.grid_height:
+			continue
+		
+		# Check if there's a same-color piece here
+		var piece_here = get_piece_at_position(pos, landing_positions, pieces)
+		if not piece_here or piece_here.is_bomb or piece_here.is_bubble:
+			continue
+		if piece_here.color != color:
+			continue
+		
+		# Mark as visited and count it
+		visited[pos] = true
+		count += 1
+		
+		# Add adjacent positions to check
+		stack.append(Vector2(pos.x + 1, pos.y))
+		stack.append(Vector2(pos.x - 1, pos.y))
+		stack.append(Vector2(pos.x, pos.y + 1))
+		stack.append(Vector2(pos.x, pos.y - 1))
+	
+	return count
+
+func get_piece_at_position(pos: Vector2, landing_positions: Array, pieces: Array):
+	"""Get the piece at a position, checking both grid and landing pieces"""
+	# First check if it's one of the landing pieces
+	for i in range(landing_positions.size()):
+		if landing_positions[i] == pos:
+			return pieces[i]
+	
+	# Otherwise check the grid
+	if pos.y >= 0 and pos.y < GameState.grid_height and pos.x >= 0 and pos.x < GameState.grid_width:
+		return grid.grid_data[pos.y][pos.x]
+	
+	return null
+
 func count_nearby_same_color(pos: Vector2, color: Color) -> int:
 	"""Count same-colored pieces adjacent to this position"""
 	var count = 0
@@ -355,18 +515,6 @@ func count_nearby_same_color(pos: Vector2, color: Color) -> int:
 	
 	return count
 
-func evaluate_center_preference(landing_positions: Array) -> float:
-	"""Slight bonus for keeping center columns available"""
-	var score = 0.0
-	var center = GameState.grid_width / 2
-	
-	for pos in landing_positions:
-		var distance_from_center = abs(pos.x - center)
-		# Small bonus for being near center (gives flexibility)
-		score += (3 - distance_from_center) * 5
-	
-	return score
-
 func get_column_height(column: int) -> int:
 	"""Get the current height of a column"""
 	for y in range(GameState.grid_height):
@@ -385,7 +533,7 @@ func execute_move(target_column: int, target_rotation: int):
 	
 	for i in range(rotations_needed):
 		grid.rotate_piece()
-		await get_tree().create_timer(0.1).timeout
+		await get_tree().create_timer(move_animation_speed).timeout
 	
 	# Move to target column
 	var current_column = int(grid.current_piece_pair.grid_position.x)
@@ -394,11 +542,11 @@ func execute_move(target_column: int, target_rotation: int):
 	if columns_to_move > 0:
 		for i in range(columns_to_move):
 			grid.move_piece_horizontal(1)
-			await get_tree().create_timer(0.1).timeout
+			await get_tree().create_timer(move_animation_speed).timeout
 	elif columns_to_move < 0:
 		for i in range(abs(columns_to_move)):
 			grid.move_piece_horizontal(-1)
-			await get_tree().create_timer(0.1).timeout
+			await get_tree().create_timer(move_animation_speed).timeout
 	
 	# Fast drop
 	await get_tree().create_timer(0.2).timeout
