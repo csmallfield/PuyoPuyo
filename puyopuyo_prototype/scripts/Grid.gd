@@ -214,13 +214,17 @@ func move_piece_down():
 			start_grace_period()
 
 func fast_drop_piece():
+	# Check if piece still exists
+	if not current_piece_pair:
+		return
+	
 	# Fast drop immediately ends grace period and places piece
 	if is_in_grace_period:
 		force_place_piece()
 		return
 	
 	# Keep moving down until we can't anymore
-	while true:
+	while current_piece_pair:  # Add null check here
 		var new_pos = current_piece_pair.grid_position + Vector2(0, 1)
 		if can_place_piece_pair(current_piece_pair, new_pos):
 			current_piece_pair.set_grid_position(new_pos)
