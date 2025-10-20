@@ -7,13 +7,20 @@ extends Control
 @onready var ai_score_label = $GameContainer/AISide/AIScoreLabel
 @onready var result_panel = $ResultPanel
 @onready var result_label = $ResultPanel/VBoxContainer/ResultLabel
-@onready var restart_button = $ResultPanel/VBoxContainer/RestartButton
-@onready var menu_button = $ResultPanel/VBoxContainer/MenuButton
+@onready var result_restart_button = $ResultPanel/VBoxContainer/RestartButton
+@onready var result_menu_button = $ResultPanel/VBoxContainer/MenuButton
+
+@onready var pause_panel: Panel = $PausePanel
+@onready var pause_resume_button: Button = $PausePanel/VBoxContainer/ResumeButton
+@onready var pause_restart_button: Button = $PausePanel/VBoxContainer/RestartButton
+@onready var pause_menu_button: Button = $PausePanel/VBoxContainer/PauseMenuButton
+
 
 var player_grid = null
 var ai_grid = null
 var ai_controller = null
 var game_active = false
+var is_paused = false
 
 # Track scores separately for each player
 var player_score = 0
@@ -27,9 +34,14 @@ func _ready():
 	# Set process mode to always so pause doesn't affect this
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
-	# Connect buttons
-	restart_button.connect("pressed", _on_restart_pressed)
-	menu_button.connect("pressed", _on_menu_pressed)
+	# Connect result panel buttons
+	result_restart_button.connect("pressed", _on_result_restart_pressed)
+	result_menu_button.connect("pressed", _on_result_menu_pressed)
+	
+	# Connect pause panel buttons
+	pause_resume_button.connect("pressed", _on_pause_resume_pressed)
+	pause_restart_button.connect("pressed", _on_pause_restart_pressed)
+	pause_menu_button.connect("pressed", _on_pause_menu_pressed)
 	
 	# Connect to GameState score changes
 	GameState.connect("score_changed", _on_global_score_changed)
@@ -81,9 +93,12 @@ func start_new_game():
 	player_grid.start_game()
 	ai_grid.start_game()
 	
-	# Hide result panel
+	# Hide panels
 	result_panel.hide()
+	pause_panel.hide()
+	
 	game_active = true
+	is_paused = false
 	
 	# Update UI
 	update_score_labels()
@@ -102,7 +117,7 @@ func _on_global_score_changed(new_score):
 			ai_score += score_delta
 
 func _process(_delta):
-	if game_active:
+	if game_active and not is_paused:
 		update_score_labels()
 
 func update_score_labels():
@@ -110,7 +125,12 @@ func update_score_labels():
 	ai_score_label.text = "Score: " + str(ai_score)
 
 func _input(event):
-	if not game_active:
+	# Handle pause
+	if event.is_action_pressed("pause") and game_active:
+		toggle_pause()
+		return
+	
+	if not game_active or is_paused:
 		return
 	
 	# Route input only to player grid
@@ -125,6 +145,66 @@ func _input(event):
 			player_grid.move_piece_down()
 		elif event.is_action_pressed("fast_drop"):
 			player_grid.fast_drop_piece()
+
+func toggle_pause():
+	if not game_active:
+		return
+	
+	if not is_paused:
+		# Pause the game
+		is_paused = true
+		pause_panel.show()
+		
+		# Stop grid processing
+		if player_grid:
+			player_grid.set_process(false)
+		if ai_grid:
+			ai_grid.set_process(false)
+		if ai_controller:
+			ai_controller.set_process(false)
+		
+		# Grab focus on resume button
+		await get_tree().create_timer(0.01).timeout
+		pause_resume_button.grab_focus()
+	else:
+		# Unpause the game
+		is_paused = false
+		pause_panel.hide()
+		
+		# Resume grid processing
+		if player_grid:
+			player_grid.set_process(true)
+		if ai_grid:
+			ai_grid.set_process(true)
+		if ai_controller:
+			ai_controller.set_process(true)
+
+func _on_pause_resume_pressed():
+	toggle_pause()
+
+func _on_pause_restart_pressed():
+	# Unpause first if needed
+	if is_paused:
+		is_paused = false
+		if player_grid:
+			player_grid.set_process(true)
+		if ai_grid:
+			ai_grid.set_process(true)
+		if ai_controller:
+			ai_controller.set_process(true)
+	start_new_game()
+
+func _on_pause_menu_pressed():
+	# Unpause first if needed
+	if is_paused:
+		is_paused = false
+		if player_grid:
+			player_grid.set_process(true)
+		if ai_grid:
+			ai_grid.set_process(true)
+		if ai_controller:
+			ai_controller.set_process(true)
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 func _on_player_game_over():
 	if not game_active:
@@ -142,6 +222,10 @@ func _on_player_game_over():
 	
 	result_label.text = "AI WINS!"
 	result_panel.show()
+	
+	# Grab focus on restart button
+	await get_tree().create_timer(0.1).timeout
+	result_restart_button.grab_focus()
 
 func _on_ai_game_over():
 	if not game_active:
@@ -159,9 +243,13 @@ func _on_ai_game_over():
 	
 	result_label.text = "YOU WIN!"
 	result_panel.show()
+	
+	# Grab focus on restart button
+	await get_tree().create_timer(0.1).timeout
+	result_restart_button.grab_focus()
 
-func _on_restart_pressed():
+func _on_result_restart_pressed():
 	start_new_game()
 
-func _on_menu_pressed():
+func _on_result_menu_pressed():
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")

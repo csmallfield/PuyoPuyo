@@ -7,15 +7,22 @@
 [node name="Main" type="Control"]
 process_mode = 3
 layout_mode = 3
-anchors_preset = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_rvslj")
 
 [node name="Grid" parent="." instance=ExtResource("2_0bbpv")]
 
 [node name="UI" type="Control" parent="."]
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="ScoreLabel" type="Label" parent="UI"]
 layout_mode = 0
@@ -26,21 +33,49 @@ offset_bottom = 40.0
 theme_override_font_sizes/font_size = 24
 
 [node name="GameOverPanel" type="Panel" parent="UI"]
-layout_mode = 0
-offset_left = 480.0
-offset_top = 275.0
-offset_right = 720.0
-offset_bottom = 355.0
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -150.0
+offset_right = 150.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="Label" type="Label" parent="UI/GameOverPanel"]
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/GameOverPanel"]
 layout_mode = 0
 offset_right = 40.0
-offset_bottom = 23.0
-theme_override_font_sizes/font_size = 26
-text = "Game Over! 
-Press R to restart"
+offset_bottom = 40.0
+
+[node name="GameOverLabel" type="Label" parent="UI/GameOverPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "GAME OVER"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="UI/GameOverPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="RestartButtonSP" type="Button" parent="UI/GameOverPanel/VBoxContainer"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../MenuButtonSP")
+focus_neighbor_bottom = NodePath("../MenuButtonSP")
+text = "Restart"
+
+[node name="MenuButtonSP" type="Button" parent="UI/GameOverPanel/VBoxContainer"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../RestartButtonSP")
+focus_neighbor_bottom = NodePath("../RestartButtonSP")
+text = "Main Menu"
 
 [node name="LevelLabel" type="Label" parent="UI"]
 layout_mode = 0
@@ -80,11 +115,19 @@ theme_override_font_sizes/font_size = 19
 text = "Next level in: 500 points"
 
 [node name="LevelUpNotification" type="Panel" parent="UI"]
-layout_mode = 0
-offset_left = 480.0
-offset_top = 270.0
-offset_right = 680.0
-offset_bottom = 350.0
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -40.0
+offset_right = 100.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="LevelUpText" type="Label" parent="UI/LevelUpNotification"]
 layout_mode = 1
@@ -99,23 +142,22 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="PausePanel" type="Panel" parent="UI"]
-visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -20.0
-offset_right = 280.0
-offset_bottom = 280.0
+offset_left = -150.0
+offset_top = -150.0
+offset_right = 150.0
+offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/PausePanel"]
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = -1
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -129,17 +171,29 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="UI/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 
-[node name="InstructionLabel" type="Label" parent="UI/PausePanel/VBoxContainer"]
+[node name="ResumeButton" type="Button" parent="UI/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-text = "Press \"P\" to Resume"
-horizontal_alignment = 1
-vertical_alignment = 1
+focus_neighbor_top = NodePath("../PauseMenuButton")
+focus_neighbor_bottom = NodePath("../RestartButton")
+text = "Resume Game"
 
 [node name="RestartButton" type="Button" parent="UI/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
+focus_neighbor_top = NodePath("../ResumeButton")
+focus_neighbor_bottom = NodePath("../PauseMenuButton")
 text = "Restart Game"
+
+[node name="PauseMenuButton" type="Button" parent="UI/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../RestartButton")
+focus_neighbor_bottom = NodePath("../ResumeButton")
+text = "Main Menu"
 
 [node name="Instructions" type="Label" parent="UI"]
 layout_mode = 0

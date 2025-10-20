@@ -11,7 +11,11 @@ extends Control
 @onready var level_up_notification = $UI/LevelUpNotification
 @onready var level_up_text = $UI/LevelUpNotification/LevelUpText
 @onready var pause_panel = $UI/PausePanel
+@onready var game_over_restart_button = $UI/GameOverPanel/VBoxContainer/RestartButtonSP
+@onready var game_over_menu_button = $UI/GameOverPanel/VBoxContainer/MenuButtonSP
+@onready var pause_resume_button = $UI/PausePanel/VBoxContainer/ResumeButton
 @onready var pause_restart_button = $UI/PausePanel/VBoxContainer/RestartButton
+@onready var pause_menu_button = $UI/PausePanel/VBoxContainer/PauseMenuButton
 
 func _ready():
 	# Connect signals
@@ -19,16 +23,28 @@ func _ready():
 	GameState.connect("level_changed", _on_level_changed)
 	GameState.connect("game_over", _on_game_over)
 	grid.connect("game_over", _on_grid_game_over)
-	grid.connect("chain_bonus", _on_chain_bonus)  # New signal connection
+	grid.connect("chain_bonus", _on_chain_bonus)
 	
-	# Connect pause screen restart button
-	pause_restart_button.connect("pressed", _on_pause_restart_pressed)
+	# Connect pause screen buttons
+	if pause_resume_button:
+		pause_resume_button.connect("pressed", _on_pause_resume_pressed)
+	if pause_restart_button:
+		pause_restart_button.connect("pressed", _on_pause_restart_pressed)
+	if pause_menu_button:
+		pause_menu_button.connect("pressed", _on_pause_menu_pressed)
+	
+	# Connect game over buttons
+	if game_over_restart_button:
+		game_over_restart_button.connect("pressed", _on_game_over_restart_pressed)
+	if game_over_menu_button:
+		game_over_menu_button.connect("pressed", _on_game_over_menu_pressed)
 	
 	# Hide notifications initially
 	level_up_notification.modulate.a = 0.0
 	pause_panel.hide()
 	
 	# Start the game
+	start_new_game()
 	start_new_game()
 
 func _input(event):
@@ -43,6 +59,11 @@ func toggle_pause():
 		GameState.set_state(GameState.State.PAUSED)
 		pause_panel.show()
 		get_tree().paused = true
+		
+		# Grab focus on resume button
+		if pause_resume_button:
+			await get_tree().create_timer(0.01).timeout
+			pause_resume_button.grab_focus()
 	elif GameState.current_state == GameState.State.PAUSED:
 		# Unpause the game
 		GameState.set_state(GameState.State.PLAYING)
@@ -124,10 +145,33 @@ func _on_chain_bonus(chain_count):
 
 func _on_game_over():
 	game_over_panel.show()
+	
+	# Grab focus on the restart button after a brief delay
+	if game_over_restart_button:
+		await get_tree().create_timer(0.1).timeout
+		game_over_restart_button.grab_focus()
 
 func _on_grid_game_over():
 	GameState.set_state(GameState.State.GAME_OVER)
 
+func _on_pause_resume_pressed():
+	# Resume the game (same as pressing P)
+	toggle_pause()
+
 func _on_pause_restart_pressed():
-	# Unpause and start a new game
+	# Unpause first, then restart
+	if GameState.current_state == GameState.State.PAUSED:
+		get_tree().paused = false
 	start_new_game()
+
+func _on_pause_menu_pressed():
+	# Unpause first, then go to menu
+	if GameState.current_state == GameState.State.PAUSED:
+		get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+func _on_game_over_restart_pressed():
+	start_new_game()
+
+func _on_game_over_menu_pressed():
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")

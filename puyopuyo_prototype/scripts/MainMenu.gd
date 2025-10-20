@@ -10,6 +10,9 @@ func _ready():
 	single_player_button.connect("pressed", _on_single_player_pressed)
 	vs_ai_button.connect("pressed", _on_vs_ai_pressed)
 	quit_button.connect("pressed", _on_quit_pressed)
+	
+	# Set initial focus
+	single_player_button.grab_focus()
 
 func _on_single_player_pressed():
 	# Load the existing single player game
