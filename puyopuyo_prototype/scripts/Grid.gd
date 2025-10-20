@@ -29,6 +29,7 @@ var original_position = Vector2.ZERO
 var shake_timer = 0.0
 var shake_duration = 0.0
 var is_shaking = false
+var enable_camera_shake = true  # Disable for VS mode
 
 var enable_input = true  # Allow external control of input handling
 
@@ -140,6 +141,9 @@ func spawn_new_piece_pair():
 	next_piece_pair.set_pixel_position(Vector2(500, 100))
 
 func start_camera_shake(duration: float):
+	if not enable_camera_shake:
+		return
+	
 	is_shaking = true
 	shake_timer = 0.0
 	shake_duration = duration

@@ -18,6 +18,7 @@ var game_active = false
 # Track scores separately for each player
 var player_score = 0
 var ai_score = 0
+var last_global_score = 0
 
 const Grid = preload("res://scenes/Grid.tscn")
 const AIController = preload("res://scripts/AIController.gd")
@@ -29,6 +30,9 @@ func _ready():
 	# Connect buttons
 	restart_button.connect("pressed", _on_restart_pressed)
 	menu_button.connect("pressed", _on_menu_pressed)
+	
+	# Connect to GameState score changes
+	GameState.connect("score_changed", _on_global_score_changed)
 	
 	# Start the game
 	start_new_game()
@@ -48,20 +52,25 @@ func start_new_game():
 	# Reset scores
 	player_score = 0
 	ai_score = 0
+	last_global_score = 0
 	
 	# Create player grid
 	player_grid = Grid.instantiate()
 	player_grid_container.add_child(player_grid)
-	player_grid.position = Vector2(0, 0)
-	player_grid.enable_input = false  # ADD THIS LINE - disable grid's own input handling
+	player_grid.position = Vector2(192, 0)
+	player_grid.enable_input = false
+	player_grid.enable_camera_shake = false
 	player_grid.connect("game_over", _on_player_game_over)
+	player_grid.set_meta("owner_type", "player")
 	
 	# Create AI grid
 	ai_grid = Grid.instantiate()
 	ai_grid_container.add_child(ai_grid)
-	ai_grid.position = Vector2(0, 0)
-	ai_grid.enable_input = false  # ADD THIS LINE - disable grid's own input handling
+	ai_grid.position = Vector2(192, 0)
+	ai_grid.enable_input = false
+	ai_grid.enable_camera_shake = false
 	ai_grid.connect("game_over", _on_ai_game_over)
+	ai_grid.set_meta("owner_type", "ai")
 	
 	# Create AI controller
 	ai_controller = AIController.new()
@@ -79,13 +88,24 @@ func start_new_game():
 	# Update UI
 	update_score_labels()
 
+func _on_global_score_changed(new_score):
+	# This is a workaround: we track which grid just scored
+	# by checking which one is currently clearing matches
+	var score_delta = new_score - last_global_score
+	last_global_score = new_score
+	
+	if score_delta > 0:
+		# Check which grid is clearing (has clearing_matches = true)
+		if player_grid and player_grid.clearing_matches:
+			player_score += score_delta
+		elif ai_grid and ai_grid.clearing_matches:
+			ai_score += score_delta
+
 func _process(_delta):
 	if game_active:
 		update_score_labels()
 
 func update_score_labels():
-	# Each grid calculates its own score through GameState
-	# We need to track them separately
 	player_score_label.text = "Score: " + str(player_score)
 	ai_score_label.text = "Score: " + str(ai_score)
 
@@ -94,7 +114,6 @@ func _input(event):
 		return
 	
 	# Route input only to player grid
-	# Add null check for current_piece_pair
 	if player_grid and player_grid.current_piece_pair:
 		if event.is_action_pressed("move_left"):
 			player_grid.move_piece_horizontal(-1)
@@ -112,6 +131,15 @@ func _on_player_game_over():
 		return
 	
 	game_active = false
+	
+	# Stop both grids
+	if player_grid:
+		player_grid.set_process(false)
+	if ai_grid:
+		ai_grid.set_process(false)
+	if ai_controller:
+		ai_controller.set_process(false)
+	
 	result_label.text = "AI WINS!"
 	result_panel.show()
 
@@ -120,6 +148,15 @@ func _on_ai_game_over():
 		return
 	
 	game_active = false
+	
+	# Stop both grids
+	if player_grid:
+		player_grid.set_process(false)
+	if ai_grid:
+		ai_grid.set_process(false)
+	if ai_controller:
+		ai_controller.set_process(false)
+	
 	result_label.text = "YOU WIN!"
 	result_panel.show()
 

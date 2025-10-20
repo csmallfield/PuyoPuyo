@@ -7,7 +7,7 @@ var move_delay = 0.5  # AI makes a decision every 0.5 seconds
 var decision_made = false
 
 func _process(delta):
-	if not grid or not grid.current_piece_pair:
+	if not grid or not grid.current_piece_pair or not grid.is_processing():
 		decision_made = false
 		return
 	
