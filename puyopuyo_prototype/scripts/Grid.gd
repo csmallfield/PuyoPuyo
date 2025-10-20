@@ -194,6 +194,10 @@ func _input(event):
 		fast_drop_piece()
 
 func move_piece_horizontal(direction):
+	# Add null check
+	if not current_piece_pair:
+		return
+	
 	var new_pos = current_piece_pair.grid_position + Vector2(direction, 0)
 	if can_place_piece_pair(current_piece_pair, new_pos):
 		current_piece_pair.set_grid_position(new_pos)
