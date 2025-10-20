@@ -30,6 +30,8 @@ var shake_timer = 0.0
 var shake_duration = 0.0
 var is_shaking = false
 
+var enable_input = true  # Allow external control of input handling
+
 @onready var piece_pair_scene = preload("res://scenes/PiecePair.tscn")
 
 func _ready():
@@ -154,6 +156,10 @@ func start_grace_period():
 		piece_has_landed = true
 
 func _input(event):
+	# Allow external disabling of input (for VS mode)
+	if not enable_input:
+		return
+		
 	if GameState.current_state != GameState.State.PLAYING or not current_piece_pair:
 		return
 		

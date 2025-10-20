@@ -1,0 +1,119 @@
+[gd_scene load_steps=2 format=3 uid="uid://bxd6dtfvo73f7"]
+
+[ext_resource type="Script" uid="uid://b6jyw8ysm54rn" path="res://scripts/VSMode.gd" id="1_xtck3"]
+
+[node name="VSMode" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_xtck3")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1782, 0.27, 0.23175, 1)
+
+[node name="GameContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 40
+
+[node name="PlayerSide" type="VBoxContainer" parent="GameContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlayerLabel" type="Label" parent="GameContainer/PlayerSide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "PLAYER"
+horizontal_alignment = 1
+
+[node name="PlayerGridContainer" type="Control" parent="GameContainer/PlayerSide"]
+custom_minimum_size = Vector2(384, 768)
+layout_mode = 2
+
+[node name="PlayerScoreLabel" type="Label" parent="GameContainer/PlayerSide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Score:0"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="GameContainer"]
+custom_minimum_size = Vector2(4, 0)
+layout_mode = 2
+
+[node name="AISide" type="VBoxContainer" parent="GameContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AILabel" type="Label" parent="GameContainer/AISide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "AI OPPONENT"
+horizontal_alignment = 1
+
+[node name="AIGridContainer" type="Control" parent="GameContainer/AISide"]
+custom_minimum_size = Vector2(384, 768)
+layout_mode = 2
+
+[node name="AIScoreLabel" type="Label" parent="GameContainer/AISide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Score:0"
+horizontal_alignment = 1
+
+[node name="ResultPanel" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -150.0
+offset_right = 200.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ResultPanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResultLabel" type="Label" parent="ResultPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_font_sizes/font_size = 48
+text = "YOU WIN!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RestartButton" type="Button" parent="ResultPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Restart"
+
+[node name="MenuButton" type="Button" parent="ResultPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Main Menu"
