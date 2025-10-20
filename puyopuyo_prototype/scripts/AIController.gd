@@ -37,8 +37,8 @@ var weight_center_preference = 5.0
 var weight_random_variety = 15.0
 
 # AI behavior settings
-var move_delay = 0.7  # Time between AI decisions
-var move_animation_speed = 0.15  # Speed of AI movements
+var move_delay = 0.8  # Time between AI decisions
+var move_animation_speed = 0.17  # Speed of AI movements
 
 # ============================================
 # RUNTIME VARIABLES

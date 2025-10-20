@@ -75,6 +75,9 @@ func start_new_game():
 	pause_panel.hide()
 	get_tree().paused = false
 	
+	# Configure for single player mode BEFORE resetting game
+	GameState.configure_for_game_mode(GameState.GameMode.SINGLE_PLAYER)
+	
 	# Force immediate cleanup of any lingering piece pairs
 	if grid.current_piece_pair:
 		grid.current_piece_pair.queue_free()

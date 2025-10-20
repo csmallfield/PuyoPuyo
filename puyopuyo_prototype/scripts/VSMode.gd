@@ -68,6 +68,9 @@ func start_new_game():
 	if ai_controller:
 		ai_controller.queue_free()
 	
+	# Configure for VS mode BEFORE resetting game
+	GameState.configure_for_game_mode(GameState.GameMode.VS_MODE)
+	
 	# Reset GameState
 	GameState.reset_game()
 	

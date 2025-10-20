@@ -27,6 +27,17 @@ var bomb_color = Color.BLACK
 var bubble_spawn_chance = 0.15  # 15% chance for one piece in a pair to be a bubble
 var bomb_spawn_chance = 0.02  # 2% chance for one piece in a pair to be a bomb 
 
+var allow_bubble_pieces = true  # Toggle to disable bubbles in piece pairs
+
+# Game mode presets
+enum GameMode {
+	SINGLE_PLAYER,
+	VS_MODE
+}
+
+var current_game_mode = GameMode.SINGLE_PLAYER
+
+
 # Speed level system - easily tunable arrays
 var level_thresholds = [
 	0,      # Level 1
@@ -103,8 +114,8 @@ var chain_multipliers = [
 	#160,  # Chain 8+
 	
 	#0, 1, 5, 10, 20, 35, 55, 80, 110 #Moderate Intensity
-	#0, 1, 3, 6, 12, 20, 30, 42, 56 #Need a lot of chains
-	0, 1, 2, 3, 4, 5, 6, 7, 8 #Linear Chains
+	0, 1, 3, 6, 12, 20, 30, 42, 56 #Need a lot of chains
+	#0, 1, 2, 3, 4, 5, 6, 7, 8 #Linear Chains
 	
 ]
 
@@ -144,6 +155,29 @@ func reset_game():
 	emit_signal("score_changed", score)
 	emit_signal("level_changed", level)
 	start_piece_sequence()
+
+func configure_for_game_mode(mode: GameMode):
+	"""Configure piece generation for different game modes"""
+	current_game_mode = mode
+	
+	match mode:
+		GameMode.SINGLE_PLAYER:
+			configure_single_player_mode()
+		GameMode.VS_MODE:
+			configure_vs_mode()
+
+func configure_single_player_mode():
+	"""Standard single player settings"""
+	allow_bubble_pieces = true
+	bubble_spawn_chance = 0.15  # 15%
+	bomb_spawn_chance = 0.02    # 2%
+
+func configure_vs_mode():
+	"""VS mode settings - no bubbles in pairs, more bombs"""
+	allow_bubble_pieces = false  # Bubbles only come from garbage
+	bubble_spawn_chance = 0.0    # No bubbles in piece generation
+	bomb_spawn_chance = 0.05     # 5% chance (increased from 2%)
+
 
 func set_state(new_state):
 	current_state = new_state
@@ -222,7 +256,7 @@ func generate_piece_pair_data():
 		pair_data.piece1.type = "bomb"
 		pair_data.piece1.color = bomb_color
 	else:
-		var piece1_is_bubble = randf() < bubble_spawn_chance
+		var piece1_is_bubble = allow_bubble_pieces and (randf() < bubble_spawn_chance)
 		if piece1_is_bubble:
 			pair_data.piece1.type = "bubble"
 			pair_data.piece1.color = bubble_color
@@ -240,7 +274,7 @@ func generate_piece_pair_data():
 		pair_data.piece2.type = "bomb"
 		pair_data.piece2.color = bomb_color
 	else:
-		var piece2_is_bubble = randf() < bubble_spawn_chance
+		var piece2_is_bubble = allow_bubble_pieces and (randf() < bubble_spawn_chance)
 		if piece2_is_bubble:
 			pair_data.piece2.type = "bubble"
 			pair_data.piece2.color = bubble_color
