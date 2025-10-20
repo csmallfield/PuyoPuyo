@@ -245,6 +245,10 @@ func force_place_piece():
 	place_piece_pair()
 
 func rotate_piece():
+	# Add null check
+	if not current_piece_pair:
+		return
+	
 	current_piece_pair.rotate_pieces()
 	# Check if rotation is valid, if not, rotate back
 	if not can_place_piece_pair(current_piece_pair, current_piece_pair.grid_position):
