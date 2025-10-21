@@ -96,8 +96,8 @@ var sequence_index = 0   # Current position in sequence
 var generate_ahead = 50  # How many pieces to generate ahead
 
 # Nuisance/Garbage system settings
-var nuisance_points_per_piece = 7  # Points awarded per piece cleared (lower points is less garbage, more is heavy garbage game)
-var nuisance_points_per_garbage_row = 80  # Points needed to send 1 row of garbage (6 bubbles) more points needed helps
+var nuisance_points_per_piece = 5  # Points awarded per piece cleared (lower points is less garbage, more is heavy garbage game)
+var nuisance_points_per_garbage_row = 75  # Points needed to send 1 row of garbage (6 bubbles) more points needed helps
 
 # Chain multipliers - exponential scaling for powerful chains
 var chain_multipliers = [

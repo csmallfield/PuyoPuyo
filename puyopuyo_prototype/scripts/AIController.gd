@@ -13,8 +13,10 @@ enum Difficulty {
 }
 
 # Main difficulty setting
+var ai_difficulty = Difficulty.LEVEL_0
 #var ai_difficulty = Difficulty.LEVEL_1
-var ai_difficulty = Difficulty.LEVEL_2
+#var ai_difficulty = Difficulty.LEVEL_2
+#var ai_difficulty = Difficulty.LEVEL_3
 
 # Feature flags - can be toggled individually for testing
 var use_color_adjacency = true
@@ -130,15 +132,24 @@ func configure_level_2():
 	move_animation_speed = 0.08
 
 func configure_level_3():
-	"""Advanced strategic AI (future implementation)"""
-	configure_level_2()  # Start with Level 2 settings
+	"""Advanced strategic AI with defensive play"""
+	# Start with Level 2 settings
+	configure_level_2()
 	
+	# Enable Level 3 features
 	use_defensive_play = true
 	
-	# Even more strategic
-	weight_group_of_three = 400.0
+	# Maximum strategic weights
+	weight_color_adjacency = 80.0
+	weight_group_of_three = 500.0
+	weight_group_of_two = 120.0
+	weight_height_penalty = 5.0  # Less height-averse (more aggressive)
+	weight_height_variance = 15.0  # Less worried about variance
+	weight_center_preference = 10.0
+	weight_random_variety = 0.5  # Minimal randomness
 	
-	move_delay = 0.3
+	# Even faster and more responsive
+	move_delay = 0.2
 	move_animation_speed = 0.05
 
 # ============================================
@@ -225,6 +236,9 @@ func evaluate_placement(column: int, rotation: int) -> float:
 	
 	if use_special_piece_strategy:
 		score += evaluate_special_pieces(landing_positions, pieces)
+		# Level 3: Advanced bomb strategy
+		if use_defensive_play:
+			score += evaluate_advanced_bomb_strategy(landing_positions, pieces)
 	
 	if use_center_preference:
 		score += evaluate_center_preference(landing_positions)
@@ -241,6 +255,14 @@ func evaluate_placement(column: int, rotation: int) -> float:
 	
 	if use_chain_detection:
 		score += evaluate_chain_potential(landing_positions, pieces)
+		# Level 3: Advanced chain patterns
+		if use_defensive_play:
+			score += evaluate_stair_pattern(landing_positions, pieces)
+	
+	# LEVEL 3+ FEATURES
+	if use_defensive_play:
+		score += evaluate_color_distribution(landing_positions, pieces)
+		score += evaluate_defensive_positioning(landing_positions, pieces)
 	
 	# Random variety factor
 	score += randf() * weight_random_variety
@@ -642,6 +664,210 @@ func evaluate_next_piece_lookahead(landing_positions: Array, pieces: Array) -> f
 					score += 50.0  # Next piece could complete a trio
 				elif group_size == 3:
 					score += 100.0  # Next piece could trigger a match!
+	
+	return score
+
+func evaluate_color_distribution(landing_positions: Array, pieces: Array) -> float:
+	"""Analyze color distribution on board and prioritize abundant colors"""
+	if not use_defensive_play:  # Using defensive_play flag for this feature
+		return 0.0
+	
+	var score = 0.0
+	
+	# Count colors on the board
+	var color_counts = {}
+	var total_pieces = 0
+	
+	for y in range(GameState.grid_height):
+		for x in range(GameState.grid_width):
+			var piece = grid.grid_data[y][x]
+			if piece and not piece.is_bomb and not piece.is_bubble:
+				var color_key = str(piece.color)
+				if not color_counts.has(color_key):
+					color_counts[color_key] = 0
+				color_counts[color_key] += 1
+				total_pieces += 1
+	
+	# If board is mostly empty, no strong preference
+	if total_pieces < 10:
+		return 0.0
+	
+	# For each piece we're placing
+	for i in range(landing_positions.size()):
+		var piece = pieces[i]
+		
+		if piece.is_bomb or piece.is_bubble:
+			continue
+		
+		var color_key = str(piece.color)
+		var count = color_counts.get(color_key, 0)
+		
+		# Bonus for matching abundant colors (easier to make matches)
+		if count > total_pieces * 0.25:  # If color is >25% of board
+			score += 40.0
+		elif count > total_pieces * 0.15:  # If color is >15% of board
+			score += 20.0
+	
+	return score
+
+func evaluate_stair_pattern(landing_positions: Array, pieces: Array) -> float:
+	"""Detect and reward building stair-step chain patterns"""
+	if not use_chain_detection:
+		return 0.0
+	
+	var score = 0.0
+	
+	# Stair pattern: pieces arranged in ascending/descending heights
+	# that will chain together when bottom is cleared
+	
+	for i in range(landing_positions.size()):
+		var pos = landing_positions[i]
+		var piece = pieces[i]
+		
+		if piece.is_bomb or piece.is_bubble:
+			continue
+		
+		var color = piece.color
+		
+		# Check for stair pattern: same color pieces at different heights
+		# in adjacent columns
+		var stair_potential = 0
+		
+		# Check left column
+		if pos.x > 0:
+			var left_col_height = get_column_height(int(pos.x) - 1)
+			var current_height = GameState.grid_height - int(pos.y)
+			
+			# Look for same-color pieces in left column at different height
+			for check_y in range(GameState.grid_height):
+				if grid.grid_data[check_y][int(pos.x) - 1] != null:
+					var left_piece = grid.grid_data[check_y][int(pos.x) - 1]
+					if not left_piece.is_bomb and not left_piece.is_bubble:
+						if left_piece.color == color:
+							var left_height = GameState.grid_height - check_y
+							var height_diff = abs(left_height - current_height)
+							
+							# Perfect stair if 1-2 rows difference
+							if height_diff >= 1 and height_diff <= 2:
+								stair_potential += 1
+		
+		# Check right column
+		if pos.x < GameState.grid_width - 1:
+			for check_y in range(GameState.grid_height):
+				if grid.grid_data[check_y][int(pos.x) + 1] != null:
+					var right_piece = grid.grid_data[check_y][int(pos.x) + 1]
+					if not right_piece.is_bomb and not right_piece.is_bubble:
+						if right_piece.color == color:
+							var right_height = GameState.grid_height - check_y
+							var current_height = GameState.grid_height - int(pos.y)
+							var height_diff = abs(right_height - current_height)
+							
+							if height_diff >= 1 and height_diff <= 2:
+								stair_potential += 1
+		
+		if stair_potential > 0:
+			score += stair_potential * 80.0
+			print("AI detected stair pattern potential!")
+	
+	return score
+
+func evaluate_defensive_positioning(landing_positions: Array, pieces: Array) -> float:
+	"""Penalize placements that create dangerous board states"""
+	if not use_defensive_play:
+		return 0.0
+	
+	var score = 0.0
+	
+	# Get average board height
+	var total_height = 0
+	var max_height = 0
+	
+	for x in range(GameState.grid_width):
+		var height = get_column_height(x)
+		total_height += height
+		if height > max_height:
+			max_height = height
+	
+	var avg_height = total_height / float(GameState.grid_width)
+	
+	# If board is getting dangerous (>60% full), play more defensively
+	if avg_height > GameState.grid_height * 0.6:
+		# Strongly penalize any placement that goes high
+		for pos in landing_positions:
+			var placement_height = GameState.grid_height - int(pos.y)
+			if placement_height > GameState.grid_height * 0.7:
+				score -= 150.0  # Strong penalty for risky high placements
+	
+	# Penalize if this creates an isolated high column
+	for pos in landing_positions:
+		var col = int(pos.x)
+		var new_height = GameState.grid_height - int(pos.y)
+		
+		# Check neighboring columns
+		var left_height = get_column_height(col - 1) if col > 0 else new_height
+		var right_height = get_column_height(col + 1) if col < GameState.grid_width - 1 else new_height
+		
+		# If this creates a spike (>4 rows taller than neighbors)
+		if new_height > left_height + 4 or new_height > right_height + 4:
+			score -= 100.0
+	
+	return score
+
+func evaluate_advanced_bomb_strategy(landing_positions: Array, pieces: Array) -> float:
+	"""Smarter bomb placement considering board state"""
+	var score = 0.0
+	
+	for i in range(landing_positions.size()):
+		var pos = landing_positions[i]
+		var piece = pieces[i]
+		
+		if not piece.is_bomb:
+			continue
+		
+		# Count colors on board to find most abundant
+		var color_counts = {}
+		for y in range(GameState.grid_height):
+			for x in range(GameState.grid_width):
+				var grid_piece = grid.grid_data[y][x]
+				if grid_piece and not grid_piece.is_bomb and not grid_piece.is_bubble:
+					var color_key = str(grid_piece.color)
+					if not color_counts.has(color_key):
+						color_counts[color_key] = 0
+					color_counts[color_key] += 1
+		
+		# Find most common color
+		var max_count = 0
+		var most_common_color = null
+		for color_key in color_counts.keys():
+			if color_counts[color_key] > max_count:
+				max_count = color_counts[color_key]
+		
+		# Prefer placing bomb adjacent to most common color
+		var adjacent_positions = [
+			Vector2(pos.x + 1, pos.y),
+			Vector2(pos.x - 1, pos.y),
+			Vector2(pos.x, pos.y - 1),
+			Vector2(pos.x, pos.y + 1)
+		]
+		
+		for adj_pos in adjacent_positions:
+			if adj_pos.x < 0 or adj_pos.x >= GameState.grid_width:
+				continue
+			if adj_pos.y < 0 or adj_pos.y >= GameState.grid_height:
+				continue
+			
+			var adj_piece = grid.grid_data[int(adj_pos.y)][int(adj_pos.x)]
+			if adj_piece and not adj_piece.is_bomb and not adj_piece.is_bubble:
+				var adj_color_key = str(adj_piece.color)
+				var adj_color_count = color_counts.get(adj_color_key, 0)
+				
+				# Big bonus if next to abundant color
+				if adj_color_count >= max_count * 0.8:
+					score += 100.0
+				
+				# Also consider if this color has nearby clusters
+				var cluster_size = count_nearby_same_color(adj_pos, adj_piece.color)
+				score += cluster_size * 20.0
 	
 	return score
 
