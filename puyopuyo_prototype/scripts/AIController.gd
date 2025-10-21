@@ -12,36 +12,31 @@ enum Difficulty {
 	LEVEL_3,  # Strategic chain AI (future)
 }
 
-# Main difficulty setting
-var ai_difficulty = Difficulty.LEVEL_0
-#var ai_difficulty = Difficulty.LEVEL_1
-#var ai_difficulty = Difficulty.LEVEL_2
-#var ai_difficulty = Difficulty.LEVEL_3
+# Main difficulty setting (only used if not configured externally)
+var ai_difficulty = Difficulty.LEVEL_0  # Default to Level 1
 
-# Feature flags - can be toggled individually for testing
-var use_color_adjacency = true
-var use_group_potential = true
-var use_height_variance = true
-var use_special_piece_strategy = true
-var use_center_preference = true
-
-# Future features (for Level 2+)
+# Feature flags - will be set by configure_difficulty()
+var use_color_adjacency = false
+var use_group_potential = false
+var use_height_variance = false
+var use_special_piece_strategy = false
+var use_center_preference = false
 var use_next_piece_lookahead = false
 var use_chain_detection = false
 var use_defensive_play = false
 
-# Scoring weights - can be tuned per difficulty level
-var weight_color_adjacency = 50.0
-var weight_group_of_three = 200.0
-var weight_group_of_two = 80.0
-var weight_height_penalty = 8.0
-var weight_height_variance = 25.0
-var weight_center_preference = 5.0
-var weight_random_variety = 15.0
+# Scoring weights - will be set by configure_difficulty()
+var weight_color_adjacency = 0.0
+var weight_group_of_three = 0.0
+var weight_group_of_two = 0.0
+var weight_height_penalty = 0.0
+var weight_height_variance = 0.0
+var weight_center_preference = 0.0
+var weight_random_variety = 0.0
 
-# AI behavior settings
-var move_delay = 0.8  # Time between AI decisions
-var move_animation_speed = 0.17  # Speed of AI movements
+# AI behavior settings - will be set by configure_difficulty()
+var move_delay = 0.5
+var move_animation_speed = 0.1
 
 # ============================================
 # RUNTIME VARIABLES
@@ -54,12 +49,16 @@ var decision_made = false
 # ============================================
 # INITIALIZATION
 # ============================================
+var _has_been_configured = false
 
 func _ready():
-	configure_difficulty(ai_difficulty)
+	# Only configure if not already configured externally
+	if not _has_been_configured:
+		configure_difficulty(ai_difficulty)
 
 func configure_difficulty(difficulty: Difficulty):
 	"""Configure AI behavior based on difficulty level"""
+	_has_been_configured = true  # Mark as configured
 	ai_difficulty = difficulty
 	
 	match difficulty:
@@ -71,6 +70,13 @@ func configure_difficulty(difficulty: Difficulty):
 			configure_level_2()
 		Difficulty.LEVEL_3:
 			configure_level_3()
+			
+	print("Color Adjacency: ", use_color_adjacency)
+	print("Group Potential: ", use_group_potential)
+	print("Chain Detection: ", use_chain_detection)
+	print("Defensive Play: ", use_defensive_play)
+	print("Move Delay: ", move_delay)
+	print("=================================")
 
 func configure_level_0():
 	"""Basic AI - only considers height"""
@@ -81,6 +87,7 @@ func configure_level_0():
 	use_center_preference = false
 	use_next_piece_lookahead = false
 	use_chain_detection = false
+	use_defensive_play = false  # ADD THIS LINE
 	
 	weight_height_penalty = 10.0
 	weight_random_variety = 10.0
@@ -97,6 +104,7 @@ func configure_level_1():
 	use_center_preference = true
 	use_next_piece_lookahead = false
 	use_chain_detection = false
+	use_defensive_play = false  # ADD THIS LINE
 	
 	weight_color_adjacency = 50.0
 	weight_group_of_three = 200.0
@@ -111,12 +119,14 @@ func configure_level_1():
 
 func configure_level_2():
 	"""Chain-aware AI with lookahead"""
-	# Start with Level 1 settings
-	configure_level_1()
-	
-	# Enable Level 2 features
+	use_color_adjacency = true
+	use_group_potential = true
+	use_height_variance = true
+	use_special_piece_strategy = true
+	use_center_preference = true
 	use_next_piece_lookahead = true
 	use_chain_detection = true
+	use_defensive_play = false  # ADD THIS LINE - Level 3 only!
 	
 	# Increase strategic weights - more aggressive play
 	weight_color_adjacency = 70.0
