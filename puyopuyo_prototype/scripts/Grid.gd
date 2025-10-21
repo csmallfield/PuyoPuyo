@@ -38,6 +38,8 @@ signal garbage_sent(nuisance_points)  # Signal to send garbage to opponent
 var incoming_garbage_points = 0  # Nuisance points waiting to be dropped
 var pending_garbage_drop = false  # Whether garbage should drop after current piece
 
+# Piece sequence tracking - ADD THIS
+var my_sequence_index = 0
 
 @onready var piece_pair_scene = preload("res://scenes/PiecePair.tscn")
 
@@ -114,6 +116,7 @@ func initialize_grid():
 func start_game():
 	initialize_grid()
 	clear_all_pieces()
+	my_sequence_index = 0 
 	spawn_new_piece_pair()
 
 func clear_all_pieces():
@@ -127,6 +130,8 @@ func spawn_new_piece_pair():
 	else:
 		current_piece_pair = piece_pair_scene.instantiate()
 		add_child(current_piece_pair)
+		current_piece_pair.set_piece_data_from_index(my_sequence_index)
+		my_sequence_index += 1
 	
 	# Reset landing state for new piece
 	reset_landing_state()
@@ -144,6 +149,8 @@ func spawn_new_piece_pair():
 	# Prepare next piece
 	next_piece_pair = piece_pair_scene.instantiate()
 	add_child(next_piece_pair)
+	next_piece_pair.set_piece_data_from_index(my_sequence_index)
+	my_sequence_index += 1
 	next_piece_pair.set_pixel_position(Vector2(500, 100))
 
 func start_camera_shake(duration: float):

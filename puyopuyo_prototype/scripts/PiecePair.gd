@@ -15,7 +15,7 @@ func create_pieces():
 	piece1 = piece_scene.instantiate()
 	piece2 = piece_scene.instantiate()
 	
-	# Get piece data from GameState's shared sequence
+	# Get piece data from GameState's shared sequence (legacy method)
 	var piece_data = GameState.get_next_piece_pair_data()
 	
 	# Set piece1 type
@@ -86,3 +86,35 @@ func get_piece_positions(base_pos):
 func get_pieces():
 	# Always return pieces in the same order regardless of rotation
 	return [piece1, piece2]
+	
+func set_piece_data_from_index(index: int):
+	"""Create pieces from a specific index in the shared sequence"""
+	var piece_data = GameState.get_piece_pair_data_at_index(index)
+	
+	# Create piece1 and piece2 if they don't exist
+	if not piece1:
+		piece1 = piece_scene.instantiate()
+		add_child(piece1)
+	if not piece2:
+		piece2 = piece_scene.instantiate()
+		add_child(piece2)
+	
+	# Set piece1 type
+	match piece_data.piece1.type:
+		"bomb":
+			piece1.set_as_bomb()
+		"bubble":
+			piece1.set_as_bubble()
+		"normal":
+			piece1.set_color(piece_data.piece1.color)
+	
+	# Set piece2 type
+	match piece_data.piece2.type:
+		"bomb":
+			piece2.set_as_bomb()
+		"bubble":
+			piece2.set_as_bubble()
+		"normal":
+			piece2.set_color(piece_data.piece2.color)
+	
+	update_piece_positions()

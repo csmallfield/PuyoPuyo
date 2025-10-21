@@ -293,6 +293,14 @@ func get_next_piece_pair_data():
 	var data = piece_sequence[sequence_index]
 	sequence_index += 1
 	return data
+	
+func get_piece_pair_data_at_index(index: int):
+	"""Get a specific piece pair from the sequence by index"""
+	# If we need more pieces, generate them
+	while index >= piece_sequence.size():
+		generate_piece_sequence()
+	
+	return piece_sequence[index]
 
 func reset_piece_sequence():
 	"""Reset the piece sequence (for new games)"""
