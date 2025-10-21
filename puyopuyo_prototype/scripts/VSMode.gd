@@ -12,6 +12,10 @@ extends Control
 @onready var result_restart_button = $ResultPanel/VBoxContainer/RestartButton
 @onready var result_menu_button = $ResultPanel/VBoxContainer/MenuButton
 
+@onready var player_level_label: Label = $GameContainer/PlayerSide/LevelLabel
+@onready var ai_level_label: Label = $GameContainer/AISide/LevelLabel
+
+
 # Pause panel elements
 @onready var pause_panel = $PausePanel
 @onready var pause_resume_button = $PausePanel/VBoxContainer/ResumeButton
@@ -28,6 +32,10 @@ var is_paused = false
 var player_score = 0
 var ai_score = 0
 var last_global_score = 0
+
+# Track levels separately for each player - ADD THESE
+var player_level = 1
+var ai_level = 1
 
 # Garbage meter flash effect
 var player_meter_flash_timer = 0.0
@@ -74,10 +82,12 @@ func start_new_game():
 	# Reset GameState
 	GameState.reset_game()
 	
-	# Reset scores
+	# Reset scores and levels - ADD LEVEL RESETS
 	player_score = 0
 	ai_score = 0
 	last_global_score = 0
+	player_level = 1  # ADD THIS
+	ai_level = 1      # ADD THIS
 	
 	# Create player grid
 	player_grid = Grid.instantiate()
@@ -86,8 +96,9 @@ func start_new_game():
 	player_grid.enable_input = false
 	player_grid.enable_camera_shake = false
 	player_grid.connect("game_over", _on_player_game_over)
-	player_grid.connect("garbage_sent", _on_player_sends_garbage)  # NEW
+	player_grid.connect("garbage_sent", _on_player_sends_garbage)
 	player_grid.set_meta("owner_type", "player")
+	player_grid.set_fall_speed(GameState.level_speeds[0])  # ADD THIS - Set initial speed
 	
 	# Create AI grid
 	ai_grid = Grid.instantiate()
@@ -96,8 +107,9 @@ func start_new_game():
 	ai_grid.enable_input = false
 	ai_grid.enable_camera_shake = false
 	ai_grid.connect("game_over", _on_ai_game_over)
-	ai_grid.connect("garbage_sent", _on_ai_sends_garbage)  # NEW
+	ai_grid.connect("garbage_sent", _on_ai_sends_garbage)
 	ai_grid.set_meta("owner_type", "ai")
+	ai_grid.set_fall_speed(GameState.level_speeds[0])  # ADD THIS - Set initial speed
 	
 	# Create AI controller
 	ai_controller = AIController.new()
@@ -122,6 +134,7 @@ func start_new_game():
 	
 	# Update UI
 	update_score_labels()
+	update_level_labels()  # ADD THIS
 
 func _on_player_sends_garbage(nuisance_points: int):
 	"""Player sent garbage to AI"""
@@ -149,12 +162,15 @@ func _on_global_score_changed(new_score):
 		# Check which grid is clearing (has clearing_matches = true)
 		if player_grid and player_grid.clearing_matches:
 			player_score += score_delta
+			check_player_level_up()  # ADD THIS
 		elif ai_grid and ai_grid.clearing_matches:
 			ai_score += score_delta
+			check_ai_level_up()  # ADD THISelta
 
 func _process(delta):
 	if game_active and not is_paused:
 		update_score_labels()
+		update_level_labels()
 		update_garbage_meters(delta)
 
 func update_score_labels():
@@ -200,6 +216,53 @@ func update_garbage_meters(delta):
 				ai_garbage_meter.modulate = Color(1.0, 0.7, 0.3)
 			else:
 				ai_garbage_meter.modulate = Color(0.5, 0.5, 0.5)
+
+func check_player_level_up():
+	"""Check if player should level up based on score"""
+	var new_level = calculate_level_from_score(player_score)
+	
+	if new_level != player_level:
+		player_level = new_level
+		print("Player leveled up to ", player_level)
+		
+		# Update fall speed
+		if player_grid:
+			var speed_index = min(player_level - 1, GameState.level_speeds.size() - 1)
+			player_grid.set_fall_speed(GameState.level_speeds[speed_index])
+		
+		update_level_labels()
+
+func check_ai_level_up():
+	"""Check if AI should level up based on score"""
+	var new_level = calculate_level_from_score(ai_score)
+	
+	if new_level != ai_level:
+		ai_level = new_level
+		print("AI leveled up to ", ai_level)
+		
+		# Update fall speed
+		if ai_grid:
+			var speed_index = min(ai_level - 1, GameState.level_speeds.size() - 1)
+			ai_grid.set_fall_speed(GameState.level_speeds[speed_index])
+		
+		update_level_labels()
+
+func calculate_level_from_score(score: int) -> int:
+	"""Calculate level based on score using GameState thresholds"""
+	var level = 1
+	
+	for i in range(GameState.level_thresholds.size() - 1, -1, -1):
+		if score >= GameState.level_thresholds[i]:
+			level = i + 1
+			break
+	
+	return level
+
+func update_level_labels():
+	"""Update level display labels"""
+	player_level_label.text = "Level " + str(player_level)
+	ai_level_label.text = "Level " + str(ai_level)
+
 
 func _input(event):
 	# Handle pause

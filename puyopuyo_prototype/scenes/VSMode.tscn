@@ -63,6 +63,12 @@ theme_override_font_sizes/font_size = 24
 text = "Score:0"
 horizontal_alignment = 1
 
+[node name="LevelLabel" type="Label" parent="GameContainer/PlayerSide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Level 1"
+horizontal_alignment = 1
+
 [node name="VSeparator" type="VSeparator" parent="GameContainer"]
 custom_minimum_size = Vector2(4, 0)
 layout_mode = 2
@@ -93,6 +99,12 @@ layout_mode = 2
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Score:0"
+horizontal_alignment = 1
+
+[node name="LevelLabel" type="Label" parent="GameContainer/AISide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Level 1"
 horizontal_alignment = 1
 
 [node name="ResultPanel" type="Panel" parent="."]

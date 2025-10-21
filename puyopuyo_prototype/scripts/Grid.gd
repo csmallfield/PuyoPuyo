@@ -15,6 +15,9 @@ var next_piece_pair = null
 var fall_timer = 0.0
 var clearing_matches = false
 
+# Custom fall speed for this grid - ADD THIS
+var my_fall_speed = 1.0 
+
 # Chain tracking for cascade bonuses
 var current_chain_count = 0
 var is_cascading = false
@@ -101,7 +104,8 @@ func _process(delta):
 		else:
 			# Normal falling behavior
 			fall_timer += delta
-			if fall_timer >= GameState.get_fall_speed():
+			# USE CUSTOM FALL SPEED INSTEAD OF GameState.get_fall_speed()
+			if fall_timer >= my_fall_speed:
 				fall_timer = 0.0
 				move_piece_down()
 
@@ -118,6 +122,10 @@ func start_game():
 	clear_all_pieces()
 	my_sequence_index = 0 
 	spawn_new_piece_pair()
+	
+func set_fall_speed(speed: float):
+	"""Set custom fall speed for this grid"""
+	my_fall_speed = speed
 
 func clear_all_pieces():
 	for child in get_children():
