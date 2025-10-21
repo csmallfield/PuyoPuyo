@@ -13,7 +13,8 @@ enum Difficulty {
 }
 
 # Main difficulty setting
-var ai_difficulty = Difficulty.LEVEL_1
+#var ai_difficulty = Difficulty.LEVEL_1
+var ai_difficulty = Difficulty.LEVEL_2
 
 # Feature flags - can be toggled individually for testing
 var use_color_adjacency = true
@@ -107,17 +108,25 @@ func configure_level_1():
 	move_animation_speed = 0.15
 
 func configure_level_2():
-	"""Chain-aware AI (future implementation)"""
-	configure_level_1()  # Start with Level 1 settings
+	"""Chain-aware AI with lookahead"""
+	# Start with Level 1 settings
+	configure_level_1()
 	
+	# Enable Level 2 features
 	use_next_piece_lookahead = true
 	use_chain_detection = true
 	
-	# Increase strategic weights
-	weight_group_of_three = 300.0
+	# Increase strategic weights - more aggressive play
 	weight_color_adjacency = 70.0
+	weight_group_of_three = 400.0
+	weight_group_of_two = 100.0
+	weight_height_penalty = 6.0
+	weight_height_variance = 20.0
+	weight_center_preference = 8.0
+	weight_random_variety = 2.0
 	
-	move_delay = 0.4
+	# Slightly faster
+	move_delay = 0.3
 	move_animation_speed = 0.08
 
 func configure_level_3():
@@ -226,14 +235,12 @@ func evaluate_placement(column: int, rotation: int) -> float:
 	if use_height_variance:
 		score += evaluate_height_variance(landing_positions)
 	
-	# LEVEL 2+ FEATURES (future)
+	# LEVEL 2+ FEATURES
 	if use_next_piece_lookahead:
-		# score += evaluate_next_piece(landing_positions, pieces)
-		pass
+		score += evaluate_next_piece_lookahead(landing_positions, pieces)
 	
 	if use_chain_detection:
-		# score += evaluate_chain_potential(landing_positions, pieces)
-		pass
+		score += evaluate_chain_potential(landing_positions, pieces)
 	
 	# Random variety factor
 	score += randf() * weight_random_variety
@@ -427,6 +434,214 @@ func evaluate_center_preference(landing_positions: Array) -> float:
 		var distance_from_center = abs(pos.x - center)
 		# Small bonus for being near center (gives flexibility)
 		score += (3 - distance_from_center) * weight_center_preference
+	
+	return score
+	
+func evaluate_chain_potential(landing_positions: Array, pieces: Array) -> float:
+	"""Evaluate if this placement could trigger a chain reaction"""
+	if not use_chain_detection:
+		return 0.0
+	
+	var score = 0.0
+	
+	# Simulate placing these pieces and check if they would cause matches
+	# that lead to further matches (chains)
+	
+	# For each piece we're placing
+	for i in range(landing_positions.size()):
+		var pos = landing_positions[i]
+		var piece = pieces[i]
+		
+		# Skip bombs and bubbles
+		if piece.is_bomb or piece.is_bubble:
+			continue
+		
+		var color = piece.color
+		
+		# Check if placing this piece completes a match
+		var would_complete_match = false
+		var match_size = count_connected_group(pos, color, landing_positions, pieces)
+		
+		if match_size >= 4:
+			would_complete_match = true
+			
+			# Now check if clearing this match would cause pieces above to fall
+			# and create another match (chain detection)
+			var chain_potential = detect_chain_after_clear(pos, color, landing_positions, pieces)
+			
+			if chain_potential > 0:
+				score += 500.0 * chain_potential  # HUGE bonus for chain setups
+				print("AI detected chain potential: ", chain_potential, " chains!")
+	
+	return score
+
+func detect_chain_after_clear(clear_pos: Vector2, clear_color: Color, landing_positions: Array, pieces: Array) -> int:
+	"""Detect if clearing a match at this position would cause a chain"""
+	var chain_count = 0
+	
+	# Get all positions that would be cleared
+	var positions_to_clear = get_positions_in_match(clear_pos, clear_color, landing_positions, pieces)
+	
+	# Check positions above the cleared area
+	for clear_position in positions_to_clear:
+		# Look at pieces above this cleared position
+		for check_y in range(int(clear_position.y) - 1, -1, -1):
+			var check_pos = Vector2(clear_position.x, check_y)
+			var piece_above = get_piece_at_position(check_pos, landing_positions, pieces)
+			
+			if piece_above and not piece_above.is_bomb and not piece_above.is_bubble:
+				# Simulate this piece falling down
+				var fall_to_y = find_fall_position_after_clear(check_pos, positions_to_clear)
+				var fallen_pos = Vector2(check_pos.x, fall_to_y)
+				
+				# Check if this fallen piece would form a new match
+				var new_match_size = count_connected_group_after_fall(fallen_pos, piece_above.color, positions_to_clear, landing_positions, pieces)
+				
+				if new_match_size >= 4:
+					chain_count += 1
+					# Could recursively check for longer chains, but that's expensive
+					# For now, just detect 2-chains
+					break
+	
+	return min(chain_count, 2)  # Cap detection at 2-chains for performance
+
+func get_positions_in_match(start_pos: Vector2, color: Color, landing_positions: Array, pieces: Array) -> Array:
+	"""Get all positions that are part of a match group"""
+	var positions = []
+	var visited = {}
+	var stack = [start_pos]
+	
+	while stack.size() > 0:
+		var pos = stack.pop_back()
+		
+		if visited.has(pos):
+			continue
+		
+		if pos.x < 0 or pos.x >= GameState.grid_width or pos.y < 0 or pos.y >= GameState.grid_height:
+			continue
+		
+		var piece_here = get_piece_at_position(pos, landing_positions, pieces)
+		if not piece_here or piece_here.is_bomb or piece_here.is_bubble:
+			continue
+		if piece_here.color != color:
+			continue
+		
+		visited[pos] = true
+		positions.append(pos)
+		
+		# Add adjacent positions
+		stack.append(Vector2(pos.x + 1, pos.y))
+		stack.append(Vector2(pos.x - 1, pos.y))
+		stack.append(Vector2(pos.x, pos.y + 1))
+		stack.append(Vector2(pos.x, pos.y - 1))
+	
+	return positions
+
+func find_fall_position_after_clear(pos: Vector2, cleared_positions: Array) -> int:
+	"""Find where a piece would fall after certain positions are cleared"""
+	var fall_y = int(pos.y)
+	
+	# Move down until we hit something that isn't being cleared
+	while fall_y + 1 < GameState.grid_height:
+		var check_pos = Vector2(pos.x, fall_y + 1)
+		
+		# Check if this position is being cleared
+		var is_cleared = false
+		for cleared in cleared_positions:
+			if cleared == check_pos:
+				is_cleared = true
+				break
+		
+		if is_cleared:
+			fall_y += 1
+			continue
+		
+		# Check if there's a piece here
+		if grid.grid_data[fall_y + 1][int(pos.x)] != null:
+			break
+		
+		fall_y += 1
+	
+	return fall_y
+
+func count_connected_group_after_fall(fallen_pos: Vector2, color: Color, cleared_positions: Array, landing_positions: Array, pieces: Array) -> int:
+	"""Count connected group size after pieces have fallen"""
+	var visited = {}
+	var stack = [fallen_pos]
+	var count = 0
+	
+	while stack.size() > 0:
+		var pos = stack.pop_back()
+		
+		if visited.has(pos):
+			continue
+		
+		if pos.x < 0 or pos.x >= GameState.grid_width or pos.y < 0 or pos.y >= GameState.grid_height:
+			continue
+		
+		# Skip if this position was cleared
+		var is_cleared = false
+		for cleared in cleared_positions:
+			if cleared == pos:
+				is_cleared = true
+				break
+		if is_cleared:
+			continue
+		
+		var piece_here = get_piece_at_position(pos, landing_positions, pieces)
+		if not piece_here or piece_here.is_bomb or piece_here.is_bubble:
+			continue
+		if piece_here.color != color:
+			continue
+		
+		visited[pos] = true
+		count += 1
+		
+		stack.append(Vector2(pos.x + 1, pos.y))
+		stack.append(Vector2(pos.x - 1, pos.y))
+		stack.append(Vector2(pos.x, pos.y + 1))
+		stack.append(Vector2(pos.x, pos.y - 1))
+	
+	return count
+
+func evaluate_next_piece_lookahead(landing_positions: Array, pieces: Array) -> float:
+	"""Evaluate how well this placement sets up for the next piece"""
+	if not use_next_piece_lookahead:
+		return 0.0
+	
+	var score = 0.0
+	
+	# Get the next piece from the grid
+	if not grid.next_piece_pair:
+		return 0.0
+	
+	var next_pieces = grid.next_piece_pair.get_pieces()
+	
+	# For each piece we're placing now
+	for i in range(landing_positions.size()):
+		var pos = landing_positions[i]
+		var piece = pieces[i]
+		
+		if piece.is_bomb or piece.is_bubble:
+			continue
+		
+		var current_color = piece.color
+		
+		# Check if next pieces match this color
+		for next_piece in next_pieces:
+			if next_piece.is_bomb or next_piece.is_bubble:
+				continue
+			
+			if next_piece.color == current_color:
+				# Good! Next piece can connect with this one
+				score += 30.0
+				
+				# Even better if we're building a group
+				var group_size = count_connected_group(pos, current_color, landing_positions, pieces)
+				if group_size == 2:
+					score += 50.0  # Next piece could complete a trio
+				elif group_size == 3:
+					score += 100.0  # Next piece could trigger a match!
 	
 	return score
 
