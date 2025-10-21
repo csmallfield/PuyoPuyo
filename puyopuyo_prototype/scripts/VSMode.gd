@@ -228,7 +228,9 @@ func check_player_level_up():
 		# Update fall speed
 		if player_grid:
 			var speed_index = min(player_level - 1, GameState.level_speeds.size() - 1)
-			player_grid.set_fall_speed(GameState.level_speeds[speed_index])
+			var new_speed = GameState.level_speeds[speed_index]
+			player_grid.set_fall_speed(new_speed)
+			print("Player speed set to: ", new_speed)  # ADD THIS LINE
 		
 		update_level_labels()
 
@@ -243,7 +245,9 @@ func check_ai_level_up():
 		# Update fall speed
 		if ai_grid:
 			var speed_index = min(ai_level - 1, GameState.level_speeds.size() - 1)
-			ai_grid.set_fall_speed(GameState.level_speeds[speed_index])
+			var new_speed = GameState.level_speeds[speed_index]
+			ai_grid.set_fall_speed(new_speed)
+			print("AI speed set to: ", new_speed)  # ADD THIS LINE
 		
 		update_level_labels()
 

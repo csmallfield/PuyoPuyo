@@ -6,12 +6,19 @@ var piece2
 var grid_position = Vector2.ZERO
 var piece_rotation = 0  # 0, 1, 2, 3 for different orientations
 
-@onready var piece_scene = preload("res://scenes/Piece.tscn")
+const piece_scene = preload("res://scenes/Piece.tscn")
 
 func _ready():
-	create_pieces()
+	# DON'T create pieces automatically anymore!
+	# Pieces will be created explicitly via set_piece_data_from_index()
+	pass
 
 func create_pieces():
+	# DEPRECATED - kept only for backwards compatibility with single player
+	# This should only be called by single player mode
+	if piece1 and piece2:
+		return  # Already created
+	
 	piece1 = piece_scene.instantiate()
 	piece2 = piece_scene.instantiate()
 	
@@ -40,6 +47,8 @@ func create_pieces():
 	add_child(piece2)
 	
 	update_piece_positions()
+	
+
 
 func update_piece_positions():
 	match piece_rotation:

@@ -45,7 +45,6 @@ func _ready():
 	
 	# Start the game
 	start_new_game()
-	start_new_game()
 
 func _input(event):
 	if event.is_action_pressed("restart") and GameState.current_state == GameState.State.GAME_OVER:
@@ -87,6 +86,10 @@ func start_new_game():
 		grid.next_piece_pair = null
 	
 	GameState.reset_game()
+	
+	# Set initial fall speed for level 1 - ADD THIS
+	grid.set_fall_speed(GameState.level_speeds[0])
+	
 	grid.start_game()
 	update_ui()
 
@@ -110,6 +113,12 @@ func _on_score_changed(new_score):
 func _on_level_changed(new_level):
 	update_ui()
 	show_level_up_notification(new_level)
+	
+	# Update grid fall speed when level changes - ADD THIS
+	if grid:
+		var speed_index = min(new_level - 1, GameState.level_speeds.size() - 1)
+		grid.set_fall_speed(GameState.level_speeds[speed_index])
+		print("Level ", new_level, " - Speed set to: ", GameState.level_speeds[speed_index])
 
 func show_level_up_notification(level):
 	# Skip notification for level 1 (game start)

@@ -104,9 +104,12 @@ func _process(delta):
 		else:
 			# Normal falling behavior
 			fall_timer += delta
-			# USE CUSTOM FALL SPEED INSTEAD OF GameState.get_fall_speed()
+			# USE CUSTOM FALL SPEED
 			if fall_timer >= my_fall_speed:
 				fall_timer = 0.0
+				# DEBUG: Print occasionally to verify speed
+				if randf() < 0.05:  # 5% chance to print
+					print("Grid falling - Speed: ", my_fall_speed)
 				move_piece_down()
 
 func initialize_grid():
@@ -136,6 +139,7 @@ func spawn_new_piece_pair():
 	if next_piece_pair:
 		current_piece_pair = next_piece_pair
 	else:
+		# First piece - create and initialize
 		current_piece_pair = piece_pair_scene.instantiate()
 		add_child(current_piece_pair)
 		current_piece_pair.set_piece_data_from_index(my_sequence_index)
@@ -154,11 +158,15 @@ func spawn_new_piece_pair():
 		emit_signal("game_over")
 		return
 	
-	# Prepare next piece
+	# Prepare next piece - IMPORTANT: Don't add to scene tree yet!
 	next_piece_pair = piece_pair_scene.instantiate()
-	add_child(next_piece_pair)
+	# DON'T add_child here! Create it but don't add to tree
+	# next_piece_pair won't have _ready() called until it's added to the tree
 	next_piece_pair.set_piece_data_from_index(my_sequence_index)
 	my_sequence_index += 1
+	
+	# Now add to tree and position
+	add_child(next_piece_pair)
 	next_piece_pair.set_pixel_position(Vector2(500, 100))
 
 func start_camera_shake(duration: float):
