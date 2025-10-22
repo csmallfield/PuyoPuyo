@@ -18,6 +18,8 @@ extends Control
 
 # Pause panel elements
 @onready var pause_panel = $PausePanel
+@onready var difficulty_label: Label = $PausePanel/VBoxContainer/DifficultyLabel
+@onready var change_difficulty_button: Button = $PausePanel/VBoxContainer/ChangeDifficultyButton
 @onready var pause_resume_button = $PausePanel/VBoxContainer/ResumeButton
 @onready var pause_restart_button = $PausePanel/VBoxContainer/RestartButton
 @onready var pause_menu_button = $PausePanel/VBoxContainer/PauseMenuButton
@@ -42,8 +44,8 @@ var player_meter_flash_timer = 0.0
 var ai_meter_flash_timer = 0.0
 var meter_flash_duration = 0.5
 
-# AI difficulty setting
-var ai_difficulty_level = AIController.Difficulty.LEVEL_3
+# AI difficulty setting - starts at Level 1
+var ai_difficulty_level = AIController.Difficulty.LEVEL_1
 
 const Grid = preload("res://scenes/Grid.tscn")
 const AIController = preload("res://scripts/AIController.gd")
@@ -57,6 +59,8 @@ func _ready():
 	result_menu_button.connect("pressed", _on_result_menu_pressed)
 	
 	# Connect pause panel buttons
+	difficulty_label.text = get_difficulty_text(ai_difficulty_level)  # ADD THIS
+	change_difficulty_button.connect("pressed", _on_change_difficulty_pressed) 
 	pause_resume_button.connect("pressed", _on_pause_resume_pressed)
 	pause_restart_button.connect("pressed", _on_pause_restart_pressed)
 	pause_menu_button.connect("pressed", _on_pause_menu_pressed)
@@ -283,6 +287,19 @@ func update_level_labels():
 	player_level_label.text = "Level " + str(player_level)
 	ai_level_label.text = "Level " + str(ai_level)
 
+func get_difficulty_text(difficulty: int) -> String:
+	"""Get display text for AI difficulty"""
+	match difficulty:
+		AIController.Difficulty.LEVEL_0:
+			return "AI Difficulty: Level 0 - Beginner"
+		AIController.Difficulty.LEVEL_1:
+			return "AI Difficulty: Level 1 - Intermediate"
+		AIController.Difficulty.LEVEL_2:
+			return "AI Difficulty: Level 2 - Advanced"
+		AIController.Difficulty.LEVEL_3:
+			return "AI Difficulty: Level 3 - Expert"
+		_:
+			return "AI Difficulty: Level 1"
 
 func _input(event):
 	# Handle pause
@@ -365,6 +382,19 @@ func _on_pause_menu_pressed():
 		if ai_controller:
 			ai_controller.set_process(true)
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+func _on_change_difficulty_pressed():
+	"""Cycle through AI difficulty levels"""
+	# Cycle to next difficulty (0 → 1 → 2 → 3 → 0)
+	ai_difficulty_level = (ai_difficulty_level + 1) % 4
+	
+	# Update label
+	difficulty_label.text = get_difficulty_text(ai_difficulty_level)
+	
+	# Reconfigure AI with new difficulty
+	if ai_controller:
+		ai_controller.configure_difficulty(ai_difficulty_level)
+		print("AI difficulty changed to Level ", ai_difficulty_level)
 
 func _on_player_game_over():
 	if not game_active:
