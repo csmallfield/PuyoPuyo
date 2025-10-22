@@ -41,15 +41,15 @@ var current_game_mode = GameMode.SINGLE_PLAYER
 # Speed level system - easily tunable arrays
 var level_thresholds = [
 	0,      # Level 1
-	800,    # Level 2 - harder to reach
-	2000,   # Level 3
-	3500,   # Level 4
-	5500,   # Level 5
-	8000,   # Level 6
-	11000,  # Level 7
-	15000,  # Level 8
-	20000,  # Level 9
-	26000   # Level 10
+	5000,    # Level 2 - harder to reach
+	10000,   # Level 3
+	20000,   # Level 4
+	30000,   # Level 5
+	40000,   # Level 6
+	50000,  # Level 7
+	60000,  # Level 8
+	70000,  # Level 9
+	80000   # Level 10
 ]
 
 var level_speeds = [
@@ -96,9 +96,18 @@ var sequence_index = 0   # Current position in sequence
 var generate_ahead = 50  # How many pieces to generate ahead
 
 # Nuisance/Garbage system settings
-var nuisance_points_per_piece = 8  # Points awarded per piece cleared (lower points is less garbage, more is heavy garbage game)
-var nuisance_points_per_garbage_row = 75  # Points needed to send 1 row of garbage (6 bubbles) more points needed helps
+var nuisance_points_per_piece = 8
+var nuisance_points_per_garbage_row = 75
 
+# Level-up attack system (VS mode)
+var enable_level_up_attacks = true  # Toggle level-up garbage on/off
+var level_up_attack_multiplier = 30  # Base nuisance points per level
+
+# For example:
+# Level 2: 2 × 50 = 100 nuisance points (1 row + partial)
+# Level 3: 3 × 50 = 150 nuisance points (2 rows)
+# Level 5: 5 × 50 = 250 nuisance points (3 rows + partial)
+# Level 10: 10 × 50 = 500 nuisance points (6+ rows!)
 # Chain multipliers - exponential scaling for powerful chains
 var chain_multipliers = [
 	
@@ -204,6 +213,14 @@ func get_chain_multiplier(chain_count: int) -> int:
 		return chain_multipliers[chain_count]
 	else:
 		return chain_multipliers[chain_multipliers.size() - 1]  # Cap at max
+
+func get_level_up_attack_nuisance(level: int) -> int:
+	"""Calculate nuisance points to send when leveling up"""
+	if not enable_level_up_attacks:
+		return 0
+	
+	# Scale linearly with level
+	return level * level_up_attack_multiplier
 
 func get_next_level_threshold():
 	# Return points needed for next level

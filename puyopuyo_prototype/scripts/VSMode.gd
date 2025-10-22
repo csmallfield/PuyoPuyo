@@ -222,15 +222,23 @@ func check_player_level_up():
 	var new_level = calculate_level_from_score(player_score)
 	
 	if new_level != player_level:
+		var old_level = player_level
 		player_level = new_level
-		print("Player leveled up to ", player_level)
+		print("Player leveled up from ", old_level, " to ", player_level)
 		
 		# Update fall speed
 		if player_grid:
 			var speed_index = min(player_level - 1, GameState.level_speeds.size() - 1)
 			var new_speed = GameState.level_speeds[speed_index]
 			player_grid.set_fall_speed(new_speed)
-			print("Player speed set to: ", new_speed)  # ADD THIS LINE
+			print("Player speed set to: ", new_speed)
+		
+		# Send level-up attack to opponent - ADD THIS
+		var level_up_garbage = GameState.get_level_up_attack_nuisance(player_level)
+		if level_up_garbage > 0 and ai_grid:
+			print("Player level-up attack: sending ", level_up_garbage, " nuisance points to AI")
+			ai_grid.receive_garbage(level_up_garbage)
+			ai_meter_flash_timer = meter_flash_duration  # Flash the AI's garbage meter
 		
 		update_level_labels()
 
@@ -239,15 +247,23 @@ func check_ai_level_up():
 	var new_level = calculate_level_from_score(ai_score)
 	
 	if new_level != ai_level:
+		var old_level = ai_level
 		ai_level = new_level
-		print("AI leveled up to ", ai_level)
+		print("AI leveled up from ", old_level, " to ", ai_level)
 		
 		# Update fall speed
 		if ai_grid:
 			var speed_index = min(ai_level - 1, GameState.level_speeds.size() - 1)
 			var new_speed = GameState.level_speeds[speed_index]
 			ai_grid.set_fall_speed(new_speed)
-			print("AI speed set to: ", new_speed)  # ADD THIS LINE
+			print("AI speed set to: ", new_speed)
+		
+		# Send level-up attack to opponent - ADD THIS
+		var level_up_garbage = GameState.get_level_up_attack_nuisance(ai_level)
+		if level_up_garbage > 0 and player_grid:
+			print("AI level-up attack: sending ", level_up_garbage, " nuisance points to Player")
+			player_grid.receive_garbage(level_up_garbage)
+			player_meter_flash_timer = meter_flash_duration  # Flash the player's garbage meter
 		
 		update_level_labels()
 
