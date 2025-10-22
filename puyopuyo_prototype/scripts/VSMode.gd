@@ -43,7 +43,7 @@ var ai_meter_flash_timer = 0.0
 var meter_flash_duration = 0.5
 
 # AI difficulty setting
-var ai_difficulty_level = AIController.Difficulty.LEVEL_2
+var ai_difficulty_level = AIController.Difficulty.LEVEL_3
 
 const Grid = preload("res://scenes/Grid.tscn")
 const AIController = preload("res://scripts/AIController.gd")

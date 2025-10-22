@@ -92,8 +92,8 @@ func configure_level_0():
 	weight_height_penalty = 10.0
 	weight_random_variety = 10.0
 	
-	move_delay = 0.5
-	move_animation_speed = 0.15
+	move_delay = 2
+	move_animation_speed = 1
 
 func configure_level_1():
 	"""Color-aware AI with grouping strategy"""
@@ -114,8 +114,8 @@ func configure_level_1():
 	weight_center_preference = 5.0
 	weight_random_variety = 10.0
 	
-	move_delay = 0.7
-	move_animation_speed = 0.15
+	move_delay = 1.5
+	move_animation_speed = 0.75
 
 func configure_level_2():
 	"""Chain-aware AI with lookahead"""
@@ -138,8 +138,8 @@ func configure_level_2():
 	weight_random_variety = 2.0
 	
 	# Slightly faster
-	move_delay = 0.3
-	move_animation_speed = 0.08
+	move_delay = 0.75
+	move_animation_speed = 0.3
 
 func configure_level_3():
 	"""Advanced strategic AI with defensive play"""
@@ -151,9 +151,9 @@ func configure_level_3():
 	
 	# Maximum strategic weights
 	weight_color_adjacency = 80.0
-	weight_group_of_three = 500.0
+	weight_group_of_three = 400.0
 	weight_group_of_two = 120.0
-	weight_height_penalty = 5.0  # Less height-averse (more aggressive)
+	weight_height_penalty = 1.0  # Less height-averse (more aggressive)
 	weight_height_variance = 15.0  # Less worried about variance
 	weight_center_preference = 10.0
 	weight_random_variety = 0.5  # Minimal randomness
