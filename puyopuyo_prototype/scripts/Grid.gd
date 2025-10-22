@@ -226,6 +226,9 @@ func move_piece_horizontal(direction):
 		current_piece_pair.set_grid_position(new_pos)
 		current_piece_pair.set_pixel_position(grid_to_pixel(new_pos))
 		
+		# SOUND: Piece moved
+		AudioManager.play_piece_move()
+		
 		# Check if piece can now fall again after horizontal movement
 		var can_fall = can_place_piece_pair(current_piece_pair, new_pos + Vector2(0, 1))
 		if can_fall and is_in_grace_period:
@@ -250,6 +253,9 @@ func fast_drop_piece():
 	# Check if piece still exists
 	if not current_piece_pair:
 		return
+	
+	# SOUND: Hard drop
+	AudioManager.play_piece_hard_drop()
 	
 	# Fast drop immediately ends grace period and places piece
 	if is_in_grace_period:
@@ -282,6 +288,9 @@ func rotate_piece():
 		current_piece_pair.rotate_pieces()
 		current_piece_pair.rotate_pieces()
 		current_piece_pair.rotate_pieces()  # Rotate back 3 times = 1 back
+	else:
+		# SOUND: Successful rotation
+		AudioManager.play_piece_rotate()
 
 func can_place_piece_pair(piece_pair, pos):
 	var positions = piece_pair.get_piece_positions(pos)
@@ -297,6 +306,9 @@ func can_place_piece_pair(piece_pair, pos):
 func place_piece_pair():
 	var positions = current_piece_pair.get_piece_positions(current_piece_pair.grid_position)
 	var pieces = current_piece_pair.get_pieces()
+	
+	# SOUND: Piece lands
+	AudioManager.play_piece_land()
 	
 	# Reset landing state
 	reset_landing_state()
@@ -359,6 +371,9 @@ func activate_bombs_after_gravity():
 func activate_bombs_with_effects(bomb_positions: Array):
 	print("Activating ", bomb_positions.size(), " bombs with effects")
 	
+	# SOUND: Bomb warning
+	AudioManager.play_bomb_warning()
+	
 	# Collect all pieces that will be affected by all bombs
 	var all_affected_pieces = []
 	var all_affected_positions = []
@@ -380,6 +395,8 @@ func activate_bombs_with_effects(bomb_positions: Array):
 	await create_blink_effect(all_affected_pieces)
 	
 	# Phase 2: Explosion effect with camera shake
+	# SOUND: Bomb explodes
+	AudioManager.play_bomb_explode()
 	start_camera_shake(0.4)
 	await create_explosion_effect(all_affected_positions)
 	
@@ -527,6 +544,10 @@ func check_and_clear_matches():
 		current_chain_count += 1
 		is_cascading = true
 		
+		# SOUND: Play chain sound
+		if current_chain_count >= 2:
+			AudioManager.play_chain_sound(current_chain_count)
+		
 		# Calculate scores for each match group
 		var total_base_score = 0
 		var total_pieces_cleared = 0
@@ -582,16 +603,27 @@ func check_and_clear_matches():
 		
 		# Clear pieces with animations
 		await clear_group(all_pieces_to_clear)
-		await clear_group(all_bubbles_to_clear)
+		
+		# Clear bubbles separately if any
+		if all_bubbles_to_clear.size() > 0:
+			# SOUND: Bubble pop
+			AudioManager.play_bubble_pop()
+			await clear_group(all_bubbles_to_clear)
 		
 		# Award points (will be multiplied by level multiplier in GameState)
 		GameState.add_score(total_base_score)
 		
 		# Apply gravity after clearing
+		# SOUND: Pieces falling
+		AudioManager.play_pieces_fall()
 		apply_gravity()
 		
 		# Wait for gravity animations to complete then check for chain reactions
 		await get_tree().create_timer(0.4).timeout
+		
+		# SOUND: Pieces settle
+		AudioManager.play_pieces_settle()
+		
 		check_and_clear_matches()  # Recursive call for chains
 	else:
 		# No matches found, end cascading and spawn next piece
@@ -620,6 +652,8 @@ func calculate_and_send_garbage(pieces_cleared: int, chain_number: int):
 			pending_garbage_drop = false
 			
 			if leftover > 0:
+				# SOUND: Attack sent
+				AudioManager.play_attack_sent()
 				emit_signal("garbage_sent", leftover)
 		else:
 			# Reduced incoming garbage but didn't clear it all
@@ -628,6 +662,8 @@ func calculate_and_send_garbage(pieces_cleared: int, chain_number: int):
 	else:
 		# No incoming garbage, send directly to opponent
 		print("Sending ", nuisance_generated, " nuisance points to opponent")
+		# SOUND: Attack sent
+		AudioManager.play_attack_sent()
 		emit_signal("garbage_sent", nuisance_generated)
 
 func receive_garbage(nuisance_points: int):
@@ -635,6 +671,9 @@ func receive_garbage(nuisance_points: int):
 	incoming_garbage_points += nuisance_points
 	pending_garbage_drop = true
 	print("Received ", nuisance_points, " nuisance points. Total incoming: ", incoming_garbage_points)
+	
+	# SOUND: Garbage incoming warning
+	AudioManager.play_garbage_incoming()
 
 func drop_garbage():
 	"""Drop garbage (bubbles) onto the grid"""
@@ -654,6 +693,10 @@ func drop_garbage():
 		return
 	
 	print("Dropping ", garbage_count, " garbage bubbles")
+	
+	# SOUND: Garbage drop
+	var garbage_rows = garbage_count / GameState.grid_width
+	AudioManager.play_garbage_drop(garbage_rows)
 	
 	# Drop garbage bubbles from top in random columns
 	var columns_to_fill = []
@@ -750,6 +793,11 @@ func find_connected_group(start_pos, color, visited):
 	return group
 
 func clear_group(group):
+	# SOUND: Play match pop based on group size
+	var group_size = group.size()
+	if group_size > 0:
+		AudioManager.play_match_pop(group_size)
+	
 	# Start pop animations for all pieces in the group
 	var pop_duration = 0.25
 	var tweens = []

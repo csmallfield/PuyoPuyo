@@ -139,6 +139,9 @@ func start_new_game():
 	# Update UI
 	update_score_labels()
 	update_level_labels()  # ADD THIS
+	
+	# SOUND: Game start
+	AudioManager.play_game_start()
 
 func _on_player_sends_garbage(nuisance_points: int):
 	"""Player sent garbage to AI"""
@@ -169,7 +172,7 @@ func _on_global_score_changed(new_score):
 			check_player_level_up()  # ADD THIS
 		elif ai_grid and ai_grid.clearing_matches:
 			ai_score += score_delta
-			check_ai_level_up()  # ADD THISelta
+			check_ai_level_up()  # ADD THIS
 
 func _process(delta):
 	if game_active and not is_paused:
@@ -230,6 +233,9 @@ func check_player_level_up():
 		player_level = new_level
 		print("Player leveled up from ", old_level, " to ", player_level)
 		
+		# SOUND: Level up
+		AudioManager.play_level_up()
+		
 		# Update fall speed
 		if player_grid:
 			var speed_index = min(player_level - 1, GameState.level_speeds.size() - 1)
@@ -254,6 +260,8 @@ func check_ai_level_up():
 		var old_level = ai_level
 		ai_level = new_level
 		print("AI leveled up from ", old_level, " to ", ai_level)
+		
+		# Note: No level up sound for AI, only for player
 		
 		# Update fall speed
 		if ai_grid:
@@ -332,6 +340,9 @@ func toggle_pause():
 		is_paused = true
 		pause_panel.show()
 		
+		# SOUND: Pause
+		AudioManager.play_pause()
+		
 		# Stop grid processing
 		if player_grid:
 			player_grid.set_process(false)
@@ -348,6 +359,9 @@ func toggle_pause():
 		is_paused = false
 		pause_panel.hide()
 		
+		# SOUND: Unpause
+		AudioManager.play_unpause()
+		
 		# Resume grid processing
 		if player_grid:
 			player_grid.set_process(true)
@@ -357,9 +371,15 @@ func toggle_pause():
 			ai_controller.set_process(true)
 
 func _on_pause_resume_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
 	toggle_pause()
 
 func _on_pause_restart_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
 	# Unpause first if needed
 	if is_paused:
 		is_paused = false
@@ -372,6 +392,9 @@ func _on_pause_restart_pressed():
 	start_new_game()
 
 func _on_pause_menu_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
 	# Unpause first if needed
 	if is_paused:
 		is_paused = false
@@ -381,10 +404,17 @@ func _on_pause_menu_pressed():
 			ai_grid.set_process(true)
 		if ai_controller:
 			ai_controller.set_process(true)
+	
+	# SOUND: Transition
+	AudioManager.play_transition()
+	
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 func _on_change_difficulty_pressed():
 	"""Cycle through AI difficulty levels"""
+	# SOUND: Difficulty change
+	AudioManager.play_difficulty_change()
+	
 	# Cycle to next difficulty (0 → 1 → 2 → 3 → 0)
 	ai_difficulty_level = (ai_difficulty_level + 1) % 4
 	
@@ -413,6 +443,9 @@ func _on_player_game_over():
 	result_label.text = "AI WINS!"
 	result_panel.show()
 	
+	# SOUND: Defeat
+	AudioManager.play_defeat()
+	
 	# Grab focus on restart button
 	await get_tree().create_timer(0.1).timeout
 	result_restart_button.grab_focus()
@@ -434,12 +467,24 @@ func _on_ai_game_over():
 	result_label.text = "YOU WIN!"
 	result_panel.show()
 	
+	# SOUND: Victory
+	AudioManager.play_victory()
+	
 	# Grab focus on restart button
 	await get_tree().create_timer(0.1).timeout
 	result_restart_button.grab_focus()
 
 func _on_result_restart_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
 	start_new_game()
 
 func _on_result_menu_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
+	# SOUND: Transition
+	AudioManager.play_transition()
+	
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")

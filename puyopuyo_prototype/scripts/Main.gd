@@ -59,6 +59,9 @@ func toggle_pause():
 		pause_panel.show()
 		get_tree().paused = true
 		
+		# SOUND: Pause
+		AudioManager.play_pause()
+		
 		# Grab focus on resume button
 		if pause_resume_button:
 			await get_tree().create_timer(0.01).timeout
@@ -68,6 +71,9 @@ func toggle_pause():
 		GameState.set_state(GameState.State.PLAYING)
 		pause_panel.hide()
 		get_tree().paused = false
+		
+		# SOUND: Unpause
+		AudioManager.play_unpause()
 
 func start_new_game():
 	game_over_panel.hide()
@@ -92,6 +98,9 @@ func start_new_game():
 	
 	grid.start_game()
 	update_ui()
+	
+	# SOUND: Game start
+	AudioManager.play_game_start()
 
 func update_ui():
 	# Update all UI elements
@@ -109,10 +118,17 @@ func update_ui():
 
 func _on_score_changed(new_score):
 	update_ui()
+	
+	# SOUND: Optional score tick (disabled by default as it can be spammy)
+	# AudioManager.play_score_tick()
 
 func _on_level_changed(new_level):
 	update_ui()
 	show_level_up_notification(new_level)
+	
+	# SOUND: Level up
+	if new_level > 1:  # Don't play on level 1 (game start)
+		AudioManager.play_level_up()
 	
 	# Update grid fall speed when level changes - ADD THIS
 	if grid:
@@ -143,6 +159,9 @@ func _on_chain_bonus(chain_count):
 	# Show chain bonus notification using the same system as level up
 	level_up_text.text = str(chain_count) + "x Chain Bonus!"
 	
+	# SOUND: Chain bonus notification
+	AudioManager.play_chain_bonus(chain_count)
+	
 	# Create a tween for the chain bonus notification animation
 	var tween = create_tween()
 	
@@ -158,6 +177,9 @@ func _on_chain_bonus(chain_count):
 func _on_game_over():
 	game_over_panel.show()
 	
+	# SOUND: Game over
+	AudioManager.play_game_over()
+	
 	# Grab focus on the restart button after a brief delay
 	if game_over_restart_button:
 		await get_tree().create_timer(0.1).timeout
@@ -167,23 +189,45 @@ func _on_grid_game_over():
 	GameState.set_state(GameState.State.GAME_OVER)
 
 func _on_pause_resume_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
 	# Resume the game (same as pressing P)
 	toggle_pause()
 
 func _on_pause_restart_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
 	# Unpause first, then restart
 	if GameState.current_state == GameState.State.PAUSED:
 		get_tree().paused = false
 	start_new_game()
 
 func _on_pause_menu_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
 	# Unpause first, then go to menu
 	if GameState.current_state == GameState.State.PAUSED:
 		get_tree().paused = false
+	
+	# SOUND: Transition
+	AudioManager.play_transition()
+	
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 func _on_game_over_restart_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
 	start_new_game()
 
 func _on_game_over_menu_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
+	# SOUND: Transition
+	AudioManager.play_transition()
+	
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
