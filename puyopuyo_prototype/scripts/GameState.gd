@@ -41,15 +41,15 @@ var current_game_mode = GameMode.SINGLE_PLAYER
 # Speed level system - easily tunable arrays
 var level_thresholds = [
 	0,      # Level 1
-	5000,    # Level 2 - harder to reach
-	10000,   # Level 3
-	20000,   # Level 4
-	30000,   # Level 5
-	40000,   # Level 6
-	50000,  # Level 7
-	60000,  # Level 8
-	70000,  # Level 9
-	80000   # Level 10
+	3000,    # Level 2 - harder to reach
+	6000,   # Level 3
+	10000,   # Level 4
+	14000,   # Level 5
+	18000,   # Level 6
+	21000,  # Level 7
+	35000,  # Level 8
+	50000,  # Level 9
+	75000   # Level 10
 ]
 
 var level_speeds = [
