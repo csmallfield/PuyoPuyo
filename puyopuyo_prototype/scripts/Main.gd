@@ -120,7 +120,8 @@ func _on_score_changed(new_score):
 	update_ui()
 	
 	# SOUND: Optional score tick (disabled by default as it can be spammy)
-	# AudioManager.play_score_tick()
+	
+	AudioManager.play_score_tick()
 
 func _on_level_changed(new_level):
 	update_ui()

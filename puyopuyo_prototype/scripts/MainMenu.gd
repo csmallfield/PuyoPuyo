@@ -13,9 +13,9 @@ func _ready():
 	
 	# Optional: Connect hover signals for button hover sounds
 	# Uncomment these if you want hover sounds
-	# single_player_button.connect("mouse_entered", _on_button_hover)
-	# vs_ai_button.connect("mouse_entered", _on_button_hover)
-	# quit_button.connect("mouse_entered", _on_button_hover)
+	single_player_button.connect("mouse_entered", _on_button_hover)
+	vs_ai_button.connect("mouse_entered", _on_button_hover)
+	quit_button.connect("mouse_entered", _on_button_hover)
 	
 	# Set initial focus
 	single_player_button.grab_focus()
