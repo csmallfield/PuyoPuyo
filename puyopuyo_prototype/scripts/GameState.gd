@@ -20,7 +20,8 @@ var base_score = 0  # Score before multiplier
 
 # Game settings
 var grid_width = 6
-var grid_height = 12
+var grid_height = 14  # Total height including 2-row spawn zone
+var playfield_start_row = 2  # Main playfield starts at row 2 (rows 0-1 are spawn zone)
 var colors = [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW]
 var bubble_color = Color.GRAY
 var bomb_color = Color.BLACK
@@ -103,29 +104,9 @@ var nuisance_points_per_garbage_row = 75
 var enable_level_up_attacks = true  # Toggle level-up garbage on/off
 var level_up_attack_multiplier = 30  # Base nuisance points per level
 
-# For example:
-# Level 2: 2 × 50 = 100 nuisance points (1 row + partial)
-# Level 3: 3 × 50 = 150 nuisance points (2 rows)
-# Level 5: 5 × 50 = 250 nuisance points (3 rows + partial)
-# Level 10: 10 × 50 = 500 nuisance points (6+ rows!)
 # Chain multipliers - exponential scaling for powerful chains
 var chain_multipliers = [
-	
-	# Initial Arrangement (it's pretty intense)
-	#0,    # Chain 0 (shouldn't happen)
-	#1,    # Chain 1 - base multiplier
-	#8,    # Chain 2 - significant jump
-	#16,   # Chain 3 - double chain 2
-	#32,   # Chain 4 - double chain 3
-	#64,   # Chain 5 - massive
-	#96,   # Chain 6 - extreme
-	#128,  # Chain 7 - devastating
-	#160,  # Chain 8+
-	
-	#0, 1, 5, 10, 20, 35, 55, 80, 110 #Moderate Intensity
 	0, 1, 2, 4, 8, 16, 30, 42, 56 #Need a lot of chains
-	#0, 1, 2, 3, 4, 5, 6, 7, 8 #Linear Chains
-	
 ]
 
 func _ready():

@@ -23,8 +23,10 @@ func _ready():
 	GameState.connect("score_changed", _on_score_changed)
 	GameState.connect("level_changed", _on_level_changed)
 	GameState.connect("game_over", _on_game_over)
-	grid.connect("game_over", _on_grid_game_over)
-	grid.connect("chain_bonus", _on_chain_bonus)
+	
+	if grid:
+		grid.connect("game_over", _on_grid_game_over)
+		grid.connect("chain_bonus", _on_chain_bonus)
 	
 	# Connect pause screen buttons
 	if pause_resume_button:
@@ -78,20 +80,13 @@ func start_new_game():
 	# Configure for single player mode BEFORE resetting game
 	GameState.configure_for_game_mode(GameState.GameMode.SINGLE_PLAYER)
 	
-	# Force immediate cleanup of any lingering piece pairs
-	if grid.current_piece_pair:
-		grid.current_piece_pair.queue_free()
-		grid.current_piece_pair = null
-	if grid.next_piece_pair:
-		grid.next_piece_pair.queue_free()
-		grid.next_piece_pair = null
-	
 	GameState.reset_game()
 	
-	# Set initial fall speed for level 1
-	grid.set_fall_speed(GameState.level_speeds[0])
+	# Set initial fall speed for level 1 and start game
+	if grid:
+		grid.set_fall_speed(GameState.level_speeds[0])
+		grid.start_game()
 	
-	grid.start_game()
 	update_ui()
 	
 	# Start music
@@ -120,7 +115,7 @@ func _on_level_changed(new_level):
 	show_level_up_notification(new_level)
 	
 	# Update grid fall speed when level changes
-	if grid:
+	if grid and is_instance_valid(grid):
 		var speed_index = min(new_level - 1, GameState.level_speeds.size() - 1)
 		grid.set_fall_speed(GameState.level_speeds[speed_index])
 		print("Level ", new_level, " - Speed set to: ", GameState.level_speeds[speed_index])

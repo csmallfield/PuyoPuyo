@@ -55,7 +55,7 @@ max_value = 1.0
 show_percentage = false
 
 [node name="PlayerGridContainer" type="Control" parent="GameContainer/PlayerSide"]
-custom_minimum_size = Vector2(384, 768)
+custom_minimum_size = Vector2(384, 896)
 layout_mode = 2
 
 [node name="PlayerScoreLabel" type="Label" parent="GameContainer/PlayerSide"]
@@ -93,7 +93,7 @@ max_value = 1.0
 show_percentage = false
 
 [node name="AIGridContainer" type="Control" parent="GameContainer/AISide"]
-custom_minimum_size = Vector2(384, 768)
+custom_minimum_size = Vector2(384, 896)
 layout_mode = 2
 
 [node name="AIScoreLabel" type="Label" parent="GameContainer/AISide"]
@@ -162,6 +162,7 @@ focus_neighbor_bottom = NodePath("../RestartButton")
 text = "Main Menu"
 
 [node name="PausePanel" type="Panel" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5

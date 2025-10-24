@@ -51,31 +51,56 @@ var my_sequence_index = 0
 @onready var piece_pair_scene = preload("res://scenes/PiecePair.tscn")
 
 func _ready():
+	# Explicitly initialize piece pair variables
+	current_piece_pair = null
+	next_piece_pair = null
+	
 	initialize_grid()
-	original_position = Vector2(400, 100)
+	original_position = Vector2(500, -10)
 	position = original_position
 
 func _draw():
 	# Draw grid lines
+	var playfield_start = GameState.playfield_start_row
+	
+	# Draw SPAWN ZONE grid lines (dimmed, rows 0-1)
+	var spawn_color = Color.GRAY
+	spawn_color.a = 0.15  # Very dimmed
+	
+	# Vertical lines in spawn zone
+	for x in range(GameState.grid_width + 1):
+		var start_pos = Vector2(x * CELL_SIZE, 0)
+		var end_pos = Vector2(x * CELL_SIZE, playfield_start * CELL_SIZE)
+		draw_line(start_pos, end_pos, spawn_color, 1)
+	
+	# Horizontal lines in spawn zone
+	for y in range(playfield_start + 1):
+		var start_pos = Vector2(0, y * CELL_SIZE)
+		var end_pos = Vector2(GameState.grid_width * CELL_SIZE, y * CELL_SIZE)
+		draw_line(start_pos, end_pos, spawn_color, 1)
+	
+	# Draw PLAYFIELD grid lines (normal, rows 2+)
 	var grid_color = Color.GRAY
 	grid_color.a = 0.3
 	
-	# Vertical lines - draw at cell boundaries
+	# Vertical lines in playfield
 	for x in range(GameState.grid_width + 1):
-		var start_pos = Vector2(x * CELL_SIZE, 0)
+		var start_pos = Vector2(x * CELL_SIZE, playfield_start * CELL_SIZE)
 		var end_pos = Vector2(x * CELL_SIZE, GameState.grid_height * CELL_SIZE)
 		draw_line(start_pos, end_pos, grid_color, 1)
 	
-	# Horizontal lines - draw at cell boundaries
-	for y in range(GameState.grid_height + 1):
+	# Horizontal lines in playfield
+	for y in range(playfield_start, GameState.grid_height + 1):
 		var start_pos = Vector2(0, y * CELL_SIZE)
 		var end_pos = Vector2(GameState.grid_width * CELL_SIZE, y * CELL_SIZE)
 		draw_line(start_pos, end_pos, grid_color, 1)
 	
-	# Draw border box
+	# Draw border box ONLY around playfield (not spawn zone)
 	var border_color = Color.WHITE
 	var border_width = 3
-	var rect = Rect2(0, 0, GameState.grid_width * CELL_SIZE, GameState.grid_height * CELL_SIZE)
+	var playfield_y_start = playfield_start * CELL_SIZE
+	var playfield_height = (GameState.grid_height - playfield_start) * CELL_SIZE
+	var rect = Rect2(0, playfield_y_start, GameState.grid_width * CELL_SIZE, playfield_height)
 	draw_rect(rect, border_color, false, border_width)
 
 func _process(delta):
@@ -119,6 +144,9 @@ func smooth_fall_piece(delta):
 	var current_pixel_pos = current_piece_pair.position
 	var current_grid_pos = current_piece_pair.grid_position
 	
+	# Check if we're in the spawn zone
+	var in_spawn_zone = current_grid_pos.y < GameState.playfield_start_row
+	
 	# First, check if we can fall to the next grid position
 	var next_grid_pos = Vector2(current_grid_pos.x, current_grid_pos.y + 1)
 	var can_fall_to_next = can_place_piece_pair(current_piece_pair, next_grid_pos)
@@ -141,7 +169,15 @@ func smooth_fall_piece(delta):
 		if is_in_grace_period:
 			reset_landing_state()
 	else:
-		# Piece CANNOT fall to next grid position - lock at current cell center
+		# Piece CANNOT fall to next grid position
+		
+		# If in spawn zone and can't fall, it's GAME OVER
+		if in_spawn_zone:
+			print("Game Over: Piece stuck in spawn zone at row ", current_grid_pos.y)
+			emit_signal("game_over")
+			return
+		
+		# Otherwise, lock at current cell center (normal playfield behavior)
 		var current_cell_center_y = current_grid_pos.y * CELL_SIZE + CELL_SIZE/2
 		
 		# Smoothly move toward the center, but don't go past it
@@ -153,7 +189,7 @@ func smooth_fall_piece(delta):
 			# Already at or past center - lock exactly at center
 			current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, current_cell_center_y))
 		
-		# Start grace period
+		# Start grace period (only in playfield)
 		if not piece_has_landed:
 			start_grace_period()
 
@@ -166,6 +202,14 @@ func initialize_grid():
 		grid_data.append(row)
 
 func start_game():
+	# Clean up any existing piece pairs
+	if current_piece_pair and is_instance_valid(current_piece_pair):
+		current_piece_pair.queue_free()
+		current_piece_pair = null
+	if next_piece_pair and is_instance_valid(next_piece_pair):
+		next_piece_pair.queue_free()
+		next_piece_pair = null
+	
 	initialize_grid()
 	clear_all_pieces()
 	my_sequence_index = 0 
@@ -193,22 +237,22 @@ func spawn_new_piece_pair():
 	# Reset landing state for new piece
 	reset_landing_state()
 	
-	# Position at top center
+	# Position at top of spawn zone (row 0) in center column
 	var start_pos = Vector2(GameState.grid_width / 2, 0)
 	current_piece_pair.set_grid_position(start_pos)
 	current_piece_pair.set_pixel_position(grid_to_pixel(start_pos))
 	
-	# Check for game over
+	# Check for game over - if spawn position is blocked, game over
 	if not can_place_piece_pair(current_piece_pair, start_pos):
 		emit_signal("game_over")
 		return
 	
-	# Prepare next piece - IMPORTANT: Don't add to scene tree yet!
+	# Prepare next piece
 	next_piece_pair = piece_pair_scene.instantiate()
 	next_piece_pair.set_piece_data_from_index(my_sequence_index)
 	my_sequence_index += 1
 	
-	# Now add to tree and position
+	# Add to tree and position off to the side
 	add_child(next_piece_pair)
 	next_piece_pair.set_pixel_position(Vector2(500, 100))
 
@@ -700,10 +744,16 @@ func check_and_clear_matches():
 		
 		check_and_clear_matches()  # Recursive call for chains
 	else:
-		# No matches found, end cascading and spawn next piece
+		# No matches found, end cascading
 		clearing_matches = false
 		is_cascading = false
 		current_chain_count = 0
+		
+		# Check if any pieces are in spawn zone (game over condition)
+		if check_spawn_zone_overflow():
+			return  # Game over triggered
+		
+		# Spawn next piece
 		spawn_new_piece_pair()
 		
 		
@@ -929,3 +979,13 @@ func grid_to_pixel(grid_pos):
 func is_grid_active():
 	"""Returns true if the grid is actively processing pieces (for AI)"""
 	return GameState.current_state == GameState.State.PLAYING and not clearing_matches
+
+func check_spawn_zone_overflow():
+	"""Check if any pieces are in the spawn zone after gravity settles - triggers game over"""
+	for y in range(GameState.playfield_start_row):
+		for x in range(GameState.grid_width):
+			if grid_data[y][x] != null:
+				print("Game Over: Piece in spawn zone at row ", y, " col ", x)
+				emit_signal("game_over")
+				return true
+	return false
