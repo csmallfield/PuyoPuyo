@@ -15,7 +15,7 @@ var next_piece_pair = null
 var fall_timer = 0.0
 var clearing_matches = false
 
-# Custom fall speed for this grid - ADD THIS
+# Custom fall speed for this grid
 var my_fall_speed = 1.0 
 
 # Chain tracking for cascade bonuses
@@ -26,6 +26,10 @@ var is_cascading = false
 var landing_grace_timer = 0.0
 var is_in_grace_period = false
 var piece_has_landed = false
+
+# Smooth falling variables
+var smooth_fall_target_y = 0.0
+var is_smooth_falling = false
 
 # Camera shake variables
 var original_position = Vector2.ZERO
@@ -41,7 +45,7 @@ signal garbage_sent(nuisance_points)  # Signal to send garbage to opponent
 var incoming_garbage_points = 0  # Nuisance points waiting to be dropped
 var pending_garbage_drop = false  # Whether garbage should drop after current piece
 
-# Piece sequence tracking - ADD THIS
+# Piece sequence tracking
 var my_sequence_index = 0
 
 @onready var piece_pair_scene = preload("res://scenes/PiecePair.tscn")
@@ -102,15 +106,56 @@ func _process(delta):
 			if landing_grace_timer >= LANDING_GRACE_PERIOD:
 				force_place_piece()
 		else:
-			# Normal falling behavior
-			fall_timer += delta
-			# USE CUSTOM FALL SPEED
-			if fall_timer >= my_fall_speed:
-				fall_timer = 0.0
-				# DEBUG: Print occasionally to verify speed
-				if randf() < 0.05:  # 5% chance to print
-					print("Grid falling - Speed: ", my_fall_speed)
-				move_piece_down()
+			# Smooth falling behavior
+			smooth_fall_piece(delta)
+
+func smooth_fall_piece(delta):
+	"""Handle smooth pixel-by-pixel falling of the piece"""
+	# Calculate fall speed in pixels per second
+	var pixels_per_second = CELL_SIZE / my_fall_speed
+	var fall_distance = pixels_per_second * delta
+	
+	# Get current state
+	var current_pixel_pos = current_piece_pair.position
+	var current_grid_pos = current_piece_pair.grid_position
+	
+	# First, check if we can fall to the next grid position
+	var next_grid_pos = Vector2(current_grid_pos.x, current_grid_pos.y + 1)
+	var can_fall_to_next = can_place_piece_pair(current_piece_pair, next_grid_pos)
+	
+	if can_fall_to_next:
+		# Piece can continue falling - move smoothly
+		var target_pixel_y = current_pixel_pos.y + fall_distance
+		var next_cell_center_y = next_grid_pos.y * CELL_SIZE + CELL_SIZE/2
+		
+		# Check if we've crossed into the next grid cell's center
+		if target_pixel_y >= next_cell_center_y:
+			# Update the grid position since we've entered the next cell
+			current_piece_pair.set_grid_position(next_grid_pos)
+			current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, target_pixel_y))
+		else:
+			# Still falling towards next cell
+			current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, target_pixel_y))
+		
+		# Reset grace period if it was active
+		if is_in_grace_period:
+			reset_landing_state()
+	else:
+		# Piece CANNOT fall to next grid position - lock at current cell center
+		var current_cell_center_y = current_grid_pos.y * CELL_SIZE + CELL_SIZE/2
+		
+		# Smoothly move toward the center, but don't go past it
+		if current_pixel_pos.y < current_cell_center_y:
+			var distance_to_center = current_cell_center_y - current_pixel_pos.y
+			var move_amount = min(fall_distance, distance_to_center)
+			current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, current_pixel_pos.y + move_amount))
+		else:
+			# Already at or past center - lock exactly at center
+			current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, current_cell_center_y))
+		
+		# Start grace period
+		if not piece_has_landed:
+			start_grace_period()
 
 func initialize_grid():
 	grid_data = []
@@ -160,8 +205,6 @@ func spawn_new_piece_pair():
 	
 	# Prepare next piece - IMPORTANT: Don't add to scene tree yet!
 	next_piece_pair = piece_pair_scene.instantiate()
-	# DON'T add_child here! Create it but don't add to tree
-	# next_piece_pair won't have _ready() called until it's added to the tree
 	next_piece_pair.set_piece_data_from_index(my_sequence_index)
 	my_sequence_index += 1
 	
@@ -223,8 +266,13 @@ func move_piece_horizontal(direction):
 	
 	var new_pos = current_piece_pair.grid_position + Vector2(direction, 0)
 	if can_place_piece_pair(current_piece_pair, new_pos):
+		# Update grid position
 		current_piece_pair.set_grid_position(new_pos)
-		current_piece_pair.set_pixel_position(grid_to_pixel(new_pos))
+		
+		# Maintain the current Y pixel position but update X
+		var current_pixel_pos = current_piece_pair.position
+		var new_pixel_x = new_pos.x * CELL_SIZE + CELL_SIZE/2
+		current_piece_pair.set_pixel_position(Vector2(new_pixel_x, current_pixel_pos.y))
 		
 		# SOUND: Piece moved
 		AudioManager.play_piece_move()
@@ -236,16 +284,32 @@ func move_piece_horizontal(direction):
 			reset_landing_state()
 
 func move_piece_down():
-	var new_pos = current_piece_pair.grid_position + Vector2(0, 1)
-	if can_place_piece_pair(current_piece_pair, new_pos):
-		current_piece_pair.set_grid_position(new_pos)
-		current_piece_pair.set_pixel_position(grid_to_pixel(new_pos))
+	"""Soft drop - moves piece down faster but still smoothly"""
+	if not current_piece_pair:
+		return
+	
+	# Get current pixel position
+	var current_pixel_pos = current_piece_pair.position
+	
+	# Move down by a full cell instantly (for responsive soft drop feel)
+	var new_pixel_y = current_pixel_pos.y + CELL_SIZE
+	
+	# Calculate which grid cell we'd be in
+	var new_grid_y = int((new_pixel_y - CELL_SIZE/2) / CELL_SIZE)
+	var test_pos = Vector2(current_piece_pair.grid_position.x, new_grid_y)
+	
+	if can_place_piece_pair(current_piece_pair, test_pos):
+		current_piece_pair.set_grid_position(test_pos)
+		current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, new_pixel_y))
 		
 		# If we were in grace period but can now fall, reset it
 		if is_in_grace_period:
 			reset_landing_state()
 	else:
-		# Piece has hit something - start grace period if not already started
+		# Can't move down - lock to current cell and start grace period
+		var locked_y = current_piece_pair.grid_position.y * CELL_SIZE + CELL_SIZE/2
+		current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, locked_y))
+		
 		if not piece_has_landed:
 			start_grace_period()
 
@@ -262,16 +326,26 @@ func fast_drop_piece():
 		force_place_piece()
 		return
 	
-	# Keep moving down until we can't anymore
-	while current_piece_pair:  # Add null check here
-		var new_pos = current_piece_pair.grid_position + Vector2(0, 1)
-		if can_place_piece_pair(current_piece_pair, new_pos):
-			current_piece_pair.set_grid_position(new_pos)
-			current_piece_pair.set_pixel_position(grid_to_pixel(new_pos))
+	# Find the lowest position the piece can reach
+	var current_x = current_piece_pair.grid_position.x
+	var test_y = current_piece_pair.grid_position.y
+	
+	# Keep checking down until we hit something
+	while current_piece_pair:
+		var test_pos = Vector2(current_x, test_y + 1)
+		if can_place_piece_pair(current_piece_pair, test_pos):
+			test_y += 1
 		else:
-			# Can't move down anymore, place the piece immediately
-			place_piece_pair()
 			break
+	
+	# Move piece to the lowest valid position
+	if current_piece_pair:
+		var final_pos = Vector2(current_x, test_y)
+		current_piece_pair.set_grid_position(final_pos)
+		current_piece_pair.set_pixel_position(grid_to_pixel(final_pos))
+		
+		# Place the piece immediately
+		place_piece_pair()
 
 func force_place_piece():
 	# Force placement regardless of grace period
@@ -598,7 +672,7 @@ func check_and_clear_matches():
 		if current_chain_count >= 2:
 			emit_signal("chain_bonus", current_chain_count)
 		
-		# CALCULATE AND SEND GARBAGE - ADD THIS
+		# CALCULATE AND SEND GARBAGE
 		calculate_and_send_garbage(total_pieces_cleared, current_chain_count)
 		
 		# Clear pieces with animations
@@ -743,9 +817,6 @@ func drop_garbage():
 	apply_gravity()
 	await get_tree().create_timer(0.4).timeout
 	
-	# DON'T call check_and_clear_matches here - let place_piece_pair handle it
-	# The normal flow will check for matches after this function returns
-	
 func get_garbage_meter_fill() -> float:
 	"""Return percentage fill of garbage meter (0.0 to 1.0+)"""
 	if incoming_garbage_points <= 0:
@@ -854,3 +925,7 @@ func apply_gravity():
 
 func grid_to_pixel(grid_pos):
 	return Vector2(grid_pos.x * CELL_SIZE + CELL_SIZE/2, grid_pos.y * CELL_SIZE + CELL_SIZE/2)
+
+func is_grid_active():
+	"""Returns true if the grid is actively processing pieces (for AI)"""
+	return GameState.current_state == GameState.State.PLAYING and not clearing_matches

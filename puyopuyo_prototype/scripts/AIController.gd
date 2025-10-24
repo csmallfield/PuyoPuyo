@@ -167,7 +167,7 @@ func configure_level_3():
 # ============================================
 
 func _process(delta):
-	if not grid or not grid.current_piece_pair or not grid.is_processing():
+	if not grid or not grid.current_piece_pair or not grid.is_grid_active():
 		decision_made = false
 		return
 	
