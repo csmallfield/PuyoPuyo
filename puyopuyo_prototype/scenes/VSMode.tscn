@@ -162,7 +162,6 @@ focus_neighbor_bottom = NodePath("../RestartButton")
 text = "Main Menu"
 
 [node name="PausePanel" type="Panel" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -195,6 +194,19 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 
+[node name="BombTypeLabel" type="Label" parent="PausePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Bomb Type : Color Bomb"
+horizontal_alignment = 1
+
+[node name="ChangeBombTypeButton" type="Button" parent="PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../PauseMenuButton")
+focus_neighbor_bottom = NodePath("../ChangeDifficultyButton")
+text = "Change Bomb Type"
+
 [node name="DifficultyLabel" type="Label" parent="PausePanel/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
@@ -204,7 +216,7 @@ horizontal_alignment = 1
 [node name="ChangeDifficultyButton" type="Button" parent="PausePanel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-focus_neighbor_top = NodePath("../PauseMenuButton")
+focus_neighbor_top = NodePath("../ChangeBombTypeButton")
 focus_neighbor_bottom = NodePath("../ResumeButton")
 text = "Change Difficulty"
 
@@ -226,7 +238,7 @@ text = "Restart Game"
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 focus_neighbor_top = NodePath("../RestartButton")
-focus_neighbor_bottom = NodePath("../ChangeDifficultyButton")
+focus_neighbor_bottom = NodePath("../ChangeBombTypeButton")
 text = "Main Menu"
 
 [node name="MusicPlayer" type="AudioStreamPlayer2D" parent="."]

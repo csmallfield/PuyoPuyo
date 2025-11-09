@@ -1,6 +1,7 @@
 extends Control
 # VSMode.gd - VS AI mode controller with garbage system
 
+
 @onready var player_grid_container = $GameContainer/PlayerSide/PlayerGridContainer
 @onready var ai_grid_container = $GameContainer/AISide/AIGridContainer
 @onready var player_score_label = $GameContainer/PlayerSide/PlayerScoreLabel
@@ -25,6 +26,10 @@ extends Control
 @onready var pause_menu_button = $PausePanel/VBoxContainer/PauseMenuButton
 @onready var music_player = $MusicPlayer
 
+@onready var bomb_type_label: Label = $PausePanel/VBoxContainer/BombTypeLabel
+@onready var change_bomb_type_button: Button = $PausePanel/VBoxContainer/ChangeBombTypeButton
+
+
 var player_grid = null
 var ai_grid = null
 var ai_controller = null
@@ -48,6 +53,7 @@ var meter_flash_duration = 0.5
 # AI difficulty setting - starts at Level 1
 var ai_difficulty_level = AIController.Difficulty.LEVEL_1
 
+const BombController = preload("res://scripts/BombController.gd")
 const Grid = preload("res://scenes/Grid.tscn")
 const AIController = preload("res://scripts/AIController.gd")
 
@@ -58,6 +64,10 @@ func _ready():
 	# Connect result panel buttons
 	result_restart_button.connect("pressed", _on_result_restart_pressed)
 	result_menu_button.connect("pressed", _on_result_menu_pressed)
+	
+	if change_bomb_type_button:
+		change_bomb_type_button.connect("pressed", _on_change_bomb_type_pressed)
+
 	
 	# Connect pause panel buttons
 	difficulty_label.text = get_difficulty_text(ai_difficulty_level)
@@ -71,6 +81,15 @@ func _ready():
 	
 	# Start the game
 	start_new_game()
+
+func _on_change_bomb_type_pressed():
+	var next_type = (GameState.current_bomb_type + 1) % 6
+	GameState.set_bomb_type(next_type)
+	bomb_type_label.text = get_bomb_type_text(GameState.current_bomb_type)
+	AudioManager.play_button_click()
+
+func get_bomb_type_text(bomb_type: int) -> String:
+	return "Bomb Type: " + BombController.get_bomb_type_name(bomb_type)
 
 func start_new_game():
 	# Clear any existing grids

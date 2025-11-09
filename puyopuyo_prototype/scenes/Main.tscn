@@ -152,7 +152,7 @@ anchor_bottom = 0.5
 offset_left = -150.0
 offset_top = -150.0
 offset_right = 150.0
-offset_bottom = 150.0
+offset_bottom = 250.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -175,10 +175,23 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 
-[node name="ResumeButton" type="Button" parent="UI/PausePanel/VBoxContainer"]
+[node name="BombTypeLabel" type="Label" parent="UI/PausePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Bomb Type : Color Bomb"
+horizontal_alignment = 1
+
+[node name="ChangeBombTypeButton" type="Button" parent="UI/PausePanel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 focus_neighbor_top = NodePath("../PauseMenuButton")
+focus_neighbor_bottom = NodePath("../ResumeButton")
+text = "Change Bomb Type"
+
+[node name="ResumeButton" type="Button" parent="UI/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../ChangeBombTypeButton")
 focus_neighbor_bottom = NodePath("../RestartButton")
 text = "Resume Game"
 
@@ -193,7 +206,7 @@ text = "Restart Game"
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 focus_neighbor_top = NodePath("../RestartButton")
-focus_neighbor_bottom = NodePath("../ResumeButton")
+focus_neighbor_bottom = NodePath("../ChangeBombTypeButton")
 text = "Main Menu"
 
 [node name="Instructions" type="Label" parent="UI"]

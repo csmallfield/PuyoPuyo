@@ -1,6 +1,8 @@
 extends Control
 # Main.gd - Main game controller
 
+const BombController = preload("res://scripts/BombController.gd")
+
 @onready var grid = $Grid
 @onready var score_label = $UI/ScoreLabel
 @onready var level_label = $UI/LevelLabel
@@ -17,6 +19,9 @@ extends Control
 @onready var pause_restart_button = $UI/PausePanel/VBoxContainer/RestartButton
 @onready var pause_menu_button = $UI/PausePanel/VBoxContainer/PauseMenuButton
 @onready var music_player = $MusicPlayer
+@onready var bomb_type_label: Label = $UI/PausePanel/VBoxContainer/BombTypeLabel
+@onready var change_bomb_type_button: Button = $UI/PausePanel/VBoxContainer/ChangeBombTypeButton
+
 
 func _ready():
 	# Connect signals
@@ -27,6 +32,10 @@ func _ready():
 	if grid:
 		grid.connect("game_over", _on_grid_game_over)
 		grid.connect("chain_bonus", _on_chain_bonus)
+	
+	# Connect bomb type button (USE MANUALLY CREATED ONE)
+	if change_bomb_type_button:
+		change_bomb_type_button.connect("pressed", _on_change_bomb_type_pressed)
 	
 	# Connect pause screen buttons
 	if pause_resume_button:
@@ -48,6 +57,14 @@ func _ready():
 	
 	# Start the game
 	start_new_game()
+	
+func _on_change_bomb_type_pressed():
+	var next_type = (GameState.current_bomb_type + 1) % 6
+	GameState.set_bomb_type(next_type)
+	bomb_type_label.text = get_bomb_type_text(GameState.current_bomb_type)
+
+func get_bomb_type_text(bomb_type: int) -> String:
+	return "Bomb Type: " + BombController.get_bomb_type_name(bomb_type)
 
 func _input(event):
 	if event.is_action_pressed("restart") and GameState.current_state == GameState.State.GAME_OVER:

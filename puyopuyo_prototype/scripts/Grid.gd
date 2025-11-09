@@ -1,8 +1,10 @@
 extends Node2D
-# Grid.gd - Manages the game grid and piece placement
+# Grid.gd - Manages the game grid and piece placement with bomb system
+
+const BombController = preload("res://scripts/BombController.gd")
 
 signal game_over
-signal chain_bonus(chain_count)  # New signal for chain bonus notification
+signal chain_bonus(chain_count)
 
 const CELL_SIZE = 64
 const LANDING_GRACE_PERIOD = 0.25
@@ -15,35 +17,34 @@ var next_piece_pair = null
 var fall_timer = 0.0
 var clearing_matches = false
 
-# Custom fall speed for this grid
 var my_fall_speed = 1.0 
 
-# Chain tracking for cascade bonuses
+# Chain tracking
 var current_chain_count = 0
 var is_cascading = false
 
-# Landing grace period variables
+# Landing grace period
 var landing_grace_timer = 0.0
 var is_in_grace_period = false
 var piece_has_landed = false
 
-# Smooth falling variables
+# Smooth falling
 var smooth_fall_target_y = 0.0
 var is_smooth_falling = false
 
-# Camera shake variables
+# Camera shake
 var original_position = Vector2.ZERO
 var shake_timer = 0.0
 var shake_duration = 0.0
 var is_shaking = false
-var enable_camera_shake = true  # Disable for VS mode
+var enable_camera_shake = true
 
-var enable_input = true  # Allow external control of input handling
+var enable_input = true
 
 # Garbage/Nuisance system
-signal garbage_sent(nuisance_points)  # Signal to send garbage to opponent
-var incoming_garbage_points = 0  # Nuisance points waiting to be dropped
-var pending_garbage_drop = false  # Whether garbage should drop after current piece
+signal garbage_sent(nuisance_points)
+var incoming_garbage_points = 0
+var pending_garbage_drop = false
 
 # Piece sequence tracking
 var my_sequence_index = 0
@@ -51,7 +52,6 @@ var my_sequence_index = 0
 @onready var piece_pair_scene = preload("res://scenes/PiecePair.tscn")
 
 func _ready():
-	# Explicitly initialize piece pair variables
 	current_piece_pair = null
 	next_piece_pair = null
 	
@@ -60,42 +60,37 @@ func _ready():
 	position = original_position
 
 func _draw():
-	# Draw grid lines
 	var playfield_start = GameState.playfield_start_row
 	
-	# Draw SPAWN ZONE grid lines (dimmed, rows 0-1)
+	# Draw SPAWN ZONE grid lines (dimmed)
 	var spawn_color = Color.GRAY
-	spawn_color.a = 0.15  # Very dimmed
+	spawn_color.a = 0.15
 	
-	# Vertical lines in spawn zone
 	for x in range(GameState.grid_width + 1):
 		var start_pos = Vector2(x * CELL_SIZE, 0)
 		var end_pos = Vector2(x * CELL_SIZE, playfield_start * CELL_SIZE)
 		draw_line(start_pos, end_pos, spawn_color, 1)
 	
-	# Horizontal lines in spawn zone
 	for y in range(playfield_start + 1):
 		var start_pos = Vector2(0, y * CELL_SIZE)
 		var end_pos = Vector2(GameState.grid_width * CELL_SIZE, y * CELL_SIZE)
 		draw_line(start_pos, end_pos, spawn_color, 1)
 	
-	# Draw PLAYFIELD grid lines (normal, rows 2+)
+	# Draw PLAYFIELD grid lines
 	var grid_color = Color.GRAY
 	grid_color.a = 0.3
 	
-	# Vertical lines in playfield
 	for x in range(GameState.grid_width + 1):
 		var start_pos = Vector2(x * CELL_SIZE, playfield_start * CELL_SIZE)
 		var end_pos = Vector2(x * CELL_SIZE, GameState.grid_height * CELL_SIZE)
 		draw_line(start_pos, end_pos, grid_color, 1)
 	
-	# Horizontal lines in playfield
 	for y in range(playfield_start, GameState.grid_height + 1):
 		var start_pos = Vector2(0, y * CELL_SIZE)
 		var end_pos = Vector2(GameState.grid_width * CELL_SIZE, y * CELL_SIZE)
 		draw_line(start_pos, end_pos, grid_color, 1)
 	
-	# Draw border box ONLY around playfield (not spawn zone)
+	# Draw border box
 	var border_color = Color.WHITE
 	var border_width = 3
 	var playfield_y_start = playfield_start * CELL_SIZE
@@ -111,11 +106,9 @@ func _process(delta):
 	if is_shaking:
 		shake_timer += delta
 		if shake_timer >= shake_duration:
-			# Shake finished
 			is_shaking = false
 			position = original_position
 		else:
-			# Apply shake offset
 			var shake_strength = (1.0 - (shake_timer / shake_duration)) * BOMB_SHAKE_INTENSITY
 			var shake_offset = Vector2(
 				randf_range(-shake_strength, shake_strength),
@@ -124,72 +117,52 @@ func _process(delta):
 			position = original_position + shake_offset
 		
 	if current_piece_pair and not clearing_matches:
-		# Handle landing grace period
 		if is_in_grace_period:
 			landing_grace_timer += delta
-			# If grace period expires, lock the piece
 			if landing_grace_timer >= LANDING_GRACE_PERIOD:
 				force_place_piece()
 		else:
-			# Smooth falling behavior
 			smooth_fall_piece(delta)
 
 func smooth_fall_piece(delta):
-	"""Handle smooth pixel-by-pixel falling of the piece"""
-	# Calculate fall speed in pixels per second
 	var pixels_per_second = CELL_SIZE / my_fall_speed
 	var fall_distance = pixels_per_second * delta
 	
-	# Get current state
 	var current_pixel_pos = current_piece_pair.position
 	var current_grid_pos = current_piece_pair.grid_position
 	
-	# Check if we're in the spawn zone
 	var in_spawn_zone = current_grid_pos.y < GameState.playfield_start_row
 	
-	# First, check if we can fall to the next grid position
 	var next_grid_pos = Vector2(current_grid_pos.x, current_grid_pos.y + 1)
 	var can_fall_to_next = can_place_piece_pair(current_piece_pair, next_grid_pos)
 	
 	if can_fall_to_next:
-		# Piece can continue falling - move smoothly
 		var target_pixel_y = current_pixel_pos.y + fall_distance
 		var next_cell_center_y = next_grid_pos.y * CELL_SIZE + CELL_SIZE/2
 		
-		# Check if we've crossed into the next grid cell's center
 		if target_pixel_y >= next_cell_center_y:
-			# Update the grid position since we've entered the next cell
 			current_piece_pair.set_grid_position(next_grid_pos)
 			current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, target_pixel_y))
 		else:
-			# Still falling towards next cell
 			current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, target_pixel_y))
 		
-		# Reset grace period if it was active
 		if is_in_grace_period:
 			reset_landing_state()
 	else:
-		# Piece CANNOT fall to next grid position
-		
-		# If in spawn zone and can't fall, it's GAME OVER
 		if in_spawn_zone:
 			print("Game Over: Piece stuck in spawn zone at row ", current_grid_pos.y)
 			emit_signal("game_over")
 			return
 		
-		# Otherwise, lock at current cell center (normal playfield behavior)
 		var current_cell_center_y = current_grid_pos.y * CELL_SIZE + CELL_SIZE/2
 		
-		# Smoothly move toward the center, but don't go past it
 		if current_pixel_pos.y < current_cell_center_y:
 			var distance_to_center = current_cell_center_y - current_pixel_pos.y
 			var move_amount = min(fall_distance, distance_to_center)
 			current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, current_pixel_pos.y + move_amount))
 		else:
-			# Already at or past center - lock exactly at center
 			current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, current_cell_center_y))
 		
-		# Start grace period (only in playfield)
 		if not piece_has_landed:
 			start_grace_period()
 
@@ -202,7 +175,6 @@ func initialize_grid():
 		grid_data.append(row)
 
 func start_game():
-	# Clean up any existing piece pairs
 	if current_piece_pair and is_instance_valid(current_piece_pair):
 		current_piece_pair.queue_free()
 		current_piece_pair = null
@@ -216,7 +188,6 @@ func start_game():
 	spawn_new_piece_pair()
 	
 func set_fall_speed(speed: float):
-	"""Set custom fall speed for this grid"""
 	my_fall_speed = speed
 
 func clear_all_pieces():
@@ -228,31 +199,25 @@ func spawn_new_piece_pair():
 	if next_piece_pair:
 		current_piece_pair = next_piece_pair
 	else:
-		# First piece - create and initialize
 		current_piece_pair = piece_pair_scene.instantiate()
 		add_child(current_piece_pair)
 		current_piece_pair.set_piece_data_from_index(my_sequence_index)
 		my_sequence_index += 1
 	
-	# Reset landing state for new piece
 	reset_landing_state()
 	
-	# Position at top of spawn zone (row 0) in center column
 	var start_pos = Vector2(GameState.grid_width / 2, 0)
 	current_piece_pair.set_grid_position(start_pos)
 	current_piece_pair.set_pixel_position(grid_to_pixel(start_pos))
 	
-	# Check for game over - if spawn position is blocked, game over
 	if not can_place_piece_pair(current_piece_pair, start_pos):
 		emit_signal("game_over")
 		return
 	
-	# Prepare next piece
 	next_piece_pair = piece_pair_scene.instantiate()
 	next_piece_pair.set_piece_data_from_index(my_sequence_index)
 	my_sequence_index += 1
 	
-	# Add to tree and position off to the side
 	add_child(next_piece_pair)
 	next_piece_pair.set_pixel_position(Vector2(500, 100))
 
@@ -270,13 +235,12 @@ func reset_landing_state():
 	landing_grace_timer = 0.0
 
 func start_grace_period():
-	if not is_in_grace_period:  # Only start grace period once
+	if not is_in_grace_period:
 		is_in_grace_period = true
 		landing_grace_timer = 0.0
 		piece_has_landed = true
 
 func _input(event):
-	# Allow external disabling of input (for VS mode)
 	if not enable_input:
 		return
 		
@@ -285,17 +249,14 @@ func _input(event):
 		
 	if event.is_action_pressed("move_left"):
 		move_piece_horizontal(-1)
-		# Reset grace timer on movement
 		if is_in_grace_period:
 			landing_grace_timer = 0.0
 	elif event.is_action_pressed("move_right"):
 		move_piece_horizontal(1)
-		# Reset grace timer on movement
 		if is_in_grace_period:
 			landing_grace_timer = 0.0
 	elif event.is_action_pressed("rotate_piece"):
 		rotate_piece()
-		# Reset grace timer on rotation
 		if is_in_grace_period:
 			landing_grace_timer = 0.0
 	elif event.is_action_pressed("move_down"):
@@ -304,41 +265,30 @@ func _input(event):
 		fast_drop_piece()
 
 func move_piece_horizontal(direction):
-	# Add null check
 	if not current_piece_pair:
 		return
 	
 	var new_pos = current_piece_pair.grid_position + Vector2(direction, 0)
 	if can_place_piece_pair(current_piece_pair, new_pos):
-		# Update grid position
 		current_piece_pair.set_grid_position(new_pos)
 		
-		# Maintain the current Y pixel position but update X
 		var current_pixel_pos = current_piece_pair.position
 		var new_pixel_x = new_pos.x * CELL_SIZE + CELL_SIZE/2
 		current_piece_pair.set_pixel_position(Vector2(new_pixel_x, current_pixel_pos.y))
 		
-		# SOUND: Piece moved
 		AudioManager.play_piece_move()
 		
-		# Check if piece can now fall again after horizontal movement
 		var can_fall = can_place_piece_pair(current_piece_pair, new_pos + Vector2(0, 1))
 		if can_fall and is_in_grace_period:
-			# Reset landing state since piece can fall again
 			reset_landing_state()
 
 func move_piece_down():
-	"""Soft drop - moves piece down faster but still smoothly"""
 	if not current_piece_pair:
 		return
 	
-	# Get current pixel position
 	var current_pixel_pos = current_piece_pair.position
-	
-	# Move down by a full cell instantly (for responsive soft drop feel)
 	var new_pixel_y = current_pixel_pos.y + CELL_SIZE
 	
-	# Calculate which grid cell we'd be in
 	var new_grid_y = int((new_pixel_y - CELL_SIZE/2) / CELL_SIZE)
 	var test_pos = Vector2(current_piece_pair.grid_position.x, new_grid_y)
 	
@@ -346,11 +296,9 @@ func move_piece_down():
 		current_piece_pair.set_grid_position(test_pos)
 		current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, new_pixel_y))
 		
-		# If we were in grace period but can now fall, reset it
 		if is_in_grace_period:
 			reset_landing_state()
 	else:
-		# Can't move down - lock to current cell and start grace period
 		var locked_y = current_piece_pair.grid_position.y * CELL_SIZE + CELL_SIZE/2
 		current_piece_pair.set_pixel_position(Vector2(current_pixel_pos.x, locked_y))
 		
@@ -358,23 +306,18 @@ func move_piece_down():
 			start_grace_period()
 
 func fast_drop_piece():
-	# Check if piece still exists
 	if not current_piece_pair:
 		return
 	
-	# SOUND: Hard drop
 	AudioManager.play_piece_hard_drop()
 	
-	# Fast drop immediately ends grace period and places piece
 	if is_in_grace_period:
 		force_place_piece()
 		return
 	
-	# Find the lowest position the piece can reach
 	var current_x = current_piece_pair.grid_position.x
 	var test_y = current_piece_pair.grid_position.y
 	
-	# Keep checking down until we hit something
 	while current_piece_pair:
 		var test_pos = Vector2(current_x, test_y + 1)
 		if can_place_piece_pair(current_piece_pair, test_pos):
@@ -382,32 +325,25 @@ func fast_drop_piece():
 		else:
 			break
 	
-	# Move piece to the lowest valid position
 	if current_piece_pair:
 		var final_pos = Vector2(current_x, test_y)
 		current_piece_pair.set_grid_position(final_pos)
 		current_piece_pair.set_pixel_position(grid_to_pixel(final_pos))
-		
-		# Place the piece immediately
 		place_piece_pair()
 
 func force_place_piece():
-	# Force placement regardless of grace period
 	place_piece_pair()
 
 func rotate_piece():
-	# Add null check
 	if not current_piece_pair:
 		return
 	
 	current_piece_pair.rotate_pieces()
-	# Check if rotation is valid, if not, rotate back
 	if not can_place_piece_pair(current_piece_pair, current_piece_pair.grid_position):
 		current_piece_pair.rotate_pieces()
 		current_piece_pair.rotate_pieces()
-		current_piece_pair.rotate_pieces()  # Rotate back 3 times = 1 back
+		current_piece_pair.rotate_pieces()
 	else:
-		# SOUND: Successful rotation
 		AudioManager.play_piece_rotate()
 
 func can_place_piece_pair(piece_pair, pos):
@@ -425,161 +361,171 @@ func place_piece_pair():
 	var positions = current_piece_pair.get_piece_positions(current_piece_pair.grid_position)
 	var pieces = current_piece_pair.get_pieces()
 	
-	# SOUND: Piece lands
 	AudioManager.play_piece_land()
 	
-	# Reset landing state
 	reset_landing_state()
 	
-	# Initialize chain tracking for new turn
 	current_chain_count = 0
 	is_cascading = false
 	
-	# Place pieces in grid and remove from piece pair
+	# Get piece pair rotation for line bombs
+	var piece_pair_rotation = current_piece_pair.piece_rotation
+	var bomb_orientation = BombController.get_bomb_orientation_from_rotation(piece_pair_rotation)
+	
+	# Place pieces in grid
 	for i in range(positions.size()):
 		var pos = positions[i]
 		var piece = pieces[i]
 		if pos.y >= 0:
-			# Remove piece from current parent and add to grid
 			piece.get_parent().remove_child(piece)
 			add_child(piece)
 			
-			# Store in grid data and set position immediately (no animation for placement)
+			# Set line bomb orientation if applicable
+			if piece.is_bomb() and piece.get_bomb_type() == BombController.BombType.LINE:
+				piece.update_bomb_orientation(bomb_orientation)
+			
 			grid_data[pos.y][pos.x] = piece
 			piece.set_position_immediately(grid_to_pixel(pos))
 	
 	current_piece_pair.queue_free()
 	current_piece_pair = null
 	
-	# DROP GARBAGE if pending (before gravity/matches)
+	# DROP GARBAGE if pending
 	if pending_garbage_drop:
 		await drop_garbage()
 	
-	# Apply gravity with smooth animations FIRST
-	apply_gravity()
+	# DECREMENT TIME BOMBS (every turn)
+	var exploding_time_bombs = BombController.decrement_time_bombs(grid_data)
+	if exploding_time_bombs.size() > 0:
+		await activate_time_bombs(exploding_time_bombs)
 	
-	# Wait for gravity animations to complete
+	# Apply gravity
+	apply_gravity()
 	await get_tree().create_timer(0.4).timeout
 	
-	# THEN activate any bombs that have settled
+	# Activate any bombs that settled
 	await activate_bombs_after_gravity()
 	
-	# Finally check for matches (this will handle cascading)
+	# Check for matches
 	check_and_clear_matches()
 
+func activate_time_bombs(bomb_positions: Array):
+	"""Activate time bombs that have reached zero"""
+	print("Activating ", bomb_positions.size(), " time bombs")
+	
+	AudioManager.play_bomb_warning()
+	
+	var all_affected_pieces = []
+	var all_affected_positions = []
+	
+	for bomb_pos in bomb_positions:
+		var bomb_piece = grid_data[int(bomb_pos.y)][int(bomb_pos.x)]
+		if bomb_piece and bomb_piece.is_bomb():
+			var bomb_type = bomb_piece.get_bomb_type()
+			var bomb_orientation = bomb_piece.bomb_orientation
+			
+			var affected = BombController.get_affected_positions(
+				bomb_type,
+				bomb_pos,
+				grid_data,
+				bomb_orientation
+			)
+			
+			# Add bomb itself
+			affected.append(bomb_pos)
+			
+			for piece_pos in affected:
+				if not piece_pos in all_affected_positions:
+					all_affected_positions.append(piece_pos)
+					all_affected_pieces.append(grid_data[int(piece_pos.y)][int(piece_pos.x)])
+	
+	await create_blink_effect(all_affected_pieces)
+	
+	AudioManager.play_bomb_explode()
+	start_camera_shake(0.4)
+	await create_explosion_effect(all_affected_positions)
+	
+	var pieces_cleared = all_affected_positions.size()
+	if pieces_cleared > 0:
+		var bomb_points = pieces_cleared * 10
+		GameState.add_score(bomb_points)
+		print("Time bombs cleared ", pieces_cleared, " pieces for ", bomb_points, " points")
+
 func activate_bombs_after_gravity():
-	# Find all bombs on the board
+	"""Find and activate all bombs that have landed"""
 	var bombs_to_activate = []
 	
 	for y in range(GameState.grid_height):
 		for x in range(GameState.grid_width):
 			var piece = grid_data[y][x]
-			if piece != null and piece.is_bomb:
-				bombs_to_activate.append(Vector2(x, y))
+			if piece != null and piece.is_bomb():
+				# Don't activate time bombs (they activate on countdown)
+				if piece.get_bomb_type() != BombController.BombType.TIME:
+					bombs_to_activate.append(Vector2(x, y))
 	
-	# If any bombs found, activate them all with dramatic effect
 	if bombs_to_activate.size() > 0:
 		await activate_bombs_with_effects(bombs_to_activate)
 		
-		# Apply gravity again to fill the gaps
 		apply_gravity()
-		# Wait for gravity animations to complete
 		await get_tree().create_timer(0.4).timeout
 
 func activate_bombs_with_effects(bomb_positions: Array):
+	"""Activate bombs with visual effects"""
 	print("Activating ", bomb_positions.size(), " bombs with effects")
 	
-	# SOUND: Bomb warning
 	AudioManager.play_bomb_warning()
 	
-	# Collect all pieces that will be affected by all bombs
 	var all_affected_pieces = []
 	var all_affected_positions = []
 	
-	# Process each bomb to find what it affects
 	for bomb_pos in bomb_positions:
-		var affected_pieces = get_bomb_affected_pieces(bomb_pos)
-		
-		# Add bomb itself to affected pieces
-		affected_pieces.append(bomb_pos)
-		
-		# Merge with total affected pieces (avoid duplicates)
-		for piece_pos in affected_pieces:
-			if not piece_pos in all_affected_positions:
-				all_affected_positions.append(piece_pos)
-				all_affected_pieces.append(grid_data[piece_pos.y][piece_pos.x])
+		var bomb_piece = grid_data[int(bomb_pos.y)][int(bomb_pos.x)]
+		if bomb_piece and bomb_piece.is_bomb():
+			var bomb_type = bomb_piece.get_bomb_type()
+			var bomb_orientation = bomb_piece.bomb_orientation
+			
+			var affected = BombController.get_affected_positions(
+				bomb_type,
+				bomb_pos,
+				grid_data,
+				bomb_orientation
+			)
+			
+			# Add bomb itself to affected
+			affected.append(bomb_pos)
+			
+			# Merge with total affected pieces
+			for piece_pos in affected:
+				if not piece_pos in all_affected_positions:
+					all_affected_positions.append(piece_pos)
+					all_affected_pieces.append(grid_data[int(piece_pos.y)][int(piece_pos.x)])
 	
-	# Phase 1: Blink effect on all affected pieces
+	# Blink effect
 	await create_blink_effect(all_affected_pieces)
 	
-	# Phase 2: Explosion effect with camera shake
-	# SOUND: Bomb explodes
+	# Explosion effect
 	AudioManager.play_bomb_explode()
 	start_camera_shake(0.4)
 	await create_explosion_effect(all_affected_positions)
 	
-	# Calculate and award points
+	# Award points
 	var pieces_cleared = all_affected_positions.size()
 	if pieces_cleared > 0:
 		var bomb_points = pieces_cleared * 10
 		GameState.add_score(bomb_points)
 		print("Bombs cleared ", pieces_cleared, " pieces for ", bomb_points, " points")
 
-func get_bomb_affected_pieces(bomb_pos: Vector2) -> Array:
-	print("Analyzing bomb at position: ", bomb_pos)
-	
-	# Find target color using priority: down, up, left, right
-	var target_color = null
-	var target_is_bubble = false
-	var check_positions = [
-		bomb_pos + Vector2(0, 1),   # Down
-		bomb_pos + Vector2(0, -1),  # Up
-		bomb_pos + Vector2(-1, 0),  # Left
-		bomb_pos + Vector2(1, 0)    # Right
-	]
-	
-	for check_pos in check_positions:
-		# Check bounds
-		if check_pos.x >= 0 and check_pos.x < GameState.grid_width and check_pos.y >= 0 and check_pos.y < GameState.grid_height:
-			var adjacent_piece = grid_data[check_pos.y][check_pos.x]
-			if adjacent_piece != null and not adjacent_piece.is_bomb:
-				target_color = adjacent_piece.color
-				target_is_bubble = adjacent_piece.is_bubble
-				break
-	
-	# If no target found, bomb affects nothing
-	if target_color == null:
-		print("Bomb found no target")
-		return []
-	
-	print("Bomb targeting color: ", target_color, " (is_bubble: ", target_is_bubble, ")")
-	
-	# Find all pieces of the target color/type
-	var affected_positions = []
-	for y in range(GameState.grid_height):
-		for x in range(GameState.grid_width):
-			var piece = grid_data[y][x]
-			if piece != null and not piece.is_bomb:
-				# Include if it matches the target (either color match or both are bubbles)
-				if (target_is_bubble and piece.is_bubble) or (not target_is_bubble and not piece.is_bubble and piece.color == target_color):
-					affected_positions.append(Vector2(x, y))
-	
-	return affected_positions
-
 func create_blink_effect(affected_pieces: Array):
 	var blink_duration = 0.3
 	var blink_count = 3
 	var blink_interval = blink_duration / (blink_count * 2)
 	
-	# Store original colors
 	var original_colors = []
 	for piece in affected_pieces:
 		if piece != null:
 			original_colors.append(piece.color)
 	
-	# Blink sequence
 	for blink in range(blink_count):
-		# Flash to white
 		for i in range(affected_pieces.size()):
 			var piece = affected_pieces[i]
 			if piece != null:
@@ -587,7 +533,6 @@ func create_blink_effect(affected_pieces: Array):
 		
 		await get_tree().create_timer(blink_interval).timeout
 		
-		# Flash back to original
 		for i in range(affected_pieces.size()):
 			var piece = affected_pieces[i]
 			if piece != null:
@@ -599,29 +544,23 @@ func create_explosion_effect(affected_positions: Array):
 	var explosion_duration = 0.3
 	var tweens = []
 	
-	# Create explosion animation for all affected pieces
 	for pos in affected_positions:
-		var piece = grid_data[pos.y][pos.x]
+		var piece = grid_data[int(pos.y)][int(pos.x)]
 		if piece != null:
 			var tween = create_tween()
 			tweens.append(tween)
 			
-			# Scale up larger than normal matches, then down to 0
 			tween.tween_property(piece, "scale", Vector2(2.0, 2.0), explosion_duration * 0.4)
 			tween.tween_property(piece, "scale", Vector2(0, 0), explosion_duration * 0.6)
-			
-			# Add more dramatic rotation
 			tween.parallel().tween_property(piece, "rotation", PI * 1.0, explosion_duration)
 	
-	# Wait for all animations to complete
 	if tweens.size() > 0:
 		await tweens[0].finished
 	
-	# Remove all affected pieces
 	for pos in affected_positions:
-		if grid_data[pos.y][pos.x] != null:
-			grid_data[pos.y][pos.x].queue_free()
-			grid_data[pos.y][pos.x] = null
+		if grid_data[int(pos.y)][int(pos.x)] != null:
+			grid_data[int(pos.y)][int(pos.x)].queue_free()
+			grid_data[int(pos.y)][int(pos.x)] = null
 
 func is_animating():
 	for y in range(GameState.grid_height):
@@ -638,43 +577,40 @@ func check_and_clear_matches():
 	clearing_matches = true
 	var matches_found = false
 	var visited = {}
-	var match_groups = []  # Store each match group separately for individual scoring
+	var match_groups = []
 	
 	# Find all colored matches (4+ connected same-color pieces)
+	# Skip time bombs - they can't be cleared by matches
 	for y in range(GameState.grid_height):
 		for x in range(GameState.grid_width):
 			var pos = Vector2(x, y)
 			
-			# Skip if empty, already visited, is a bubble piece, or is a bomb
-			if grid_data[y][x] == null or visited.has(pos) or grid_data[y][x].is_bubble or grid_data[y][x].is_bomb:
+			if grid_data[y][x] == null or visited.has(pos) or grid_data[y][x].is_bubble:
+				continue
+			
+			# Skip ALL bombs from normal matching
+			if grid_data[y][x].is_bomb():
 				continue
 				
-			# Find connected group of same color
 			var group = find_connected_group(pos, grid_data[y][x].color, visited)
 			
-			# If group has 4 or more pieces, mark for clearing
 			if group.size() >= 4:
 				matches_found = true
 				match_groups.append(group)
 	
 	if matches_found:
-		# Increment chain count for cascade bonus
 		current_chain_count += 1
 		is_cascading = true
 		
-		# SOUND: Play chain sound
 		if current_chain_count >= 2:
 			AudioManager.play_chain_sound(current_chain_count)
 		
-		# Calculate scores for each match group
 		var total_base_score = 0
 		var total_pieces_cleared = 0
 		var all_pieces_to_clear = []
 		var all_bubbles_to_clear = []
 		
-		# Process each match group individually
 		for group in match_groups:
-			# Calculate match size bonus: 100 + (pieces_over_4 * 10)
 			var match_size = group.size()
 			var match_score = 100 + ((match_size - 4) * 10)
 			total_base_score += match_score
@@ -682,134 +618,102 @@ func check_and_clear_matches():
 			
 			print("Match of ", match_size, " pieces scores ", match_score, " points")
 			
-			# Add to clearing list
 			all_pieces_to_clear.append_array(group)
 			
-			# Find bubbles adjacent to this match group
+			# Find bubbles adjacent to matches
 			for clear_pos in group:
 				var adjacent_positions = [
-					clear_pos + Vector2(1, 0),   # Right
-					clear_pos + Vector2(-1, 0),  # Left
-					clear_pos + Vector2(0, 1),   # Down
-					clear_pos + Vector2(0, -1)   # Up
+					clear_pos + Vector2(1, 0),
+					clear_pos + Vector2(-1, 0),
+					clear_pos + Vector2(0, 1),
+					clear_pos + Vector2(0, -1)
 				]
 				
 				for adj_pos in adjacent_positions:
-					# Check bounds
 					if adj_pos.x >= 0 and adj_pos.x < GameState.grid_width and adj_pos.y >= 0 and adj_pos.y < GameState.grid_height:
-						var adj_piece = grid_data[adj_pos.y][adj_pos.x]
+						var adj_piece = grid_data[int(adj_pos.y)][int(adj_pos.x)]
 						if adj_piece != null and adj_piece.is_bubble and not adj_pos in all_bubbles_to_clear:
 							all_bubbles_to_clear.append(adj_pos)
 		
-		# Add bubble bonus to total
 		var bubble_bonus = all_bubbles_to_clear.size() * 50
 		total_base_score += bubble_bonus
 		total_pieces_cleared += all_bubbles_to_clear.size()
 		
-		# Add chain cascade bonus: 100 * chain_number
 		var chain_bonus = current_chain_count * 100
 		total_base_score += chain_bonus
 		
 		print("Chain ", current_chain_count, " - Base score: ", total_base_score, " (includes ", chain_bonus, " chain bonus)")
 		
-		# Show chain bonus notification if 2+ chains
 		if current_chain_count >= 2:
 			emit_signal("chain_bonus", current_chain_count)
 		
-		# CALCULATE AND SEND GARBAGE
 		calculate_and_send_garbage(total_pieces_cleared, current_chain_count)
 		
-		# Clear pieces with animations
 		await clear_group(all_pieces_to_clear)
 		
-		# Clear bubbles separately if any
 		if all_bubbles_to_clear.size() > 0:
-			# SOUND: Bubble pop
 			AudioManager.play_bubble_pop()
 			await clear_group(all_bubbles_to_clear)
 		
-		# Award points (will be multiplied by level multiplier in GameState)
 		GameState.add_score(total_base_score)
 		
-		# Apply gravity after clearing
-		# SOUND: Pieces falling
 		AudioManager.play_pieces_fall()
 		apply_gravity()
 		
-		# Wait for gravity animations to complete then check for chain reactions
 		await get_tree().create_timer(0.4).timeout
 		
-		# SOUND: Pieces settle
 		AudioManager.play_pieces_settle()
 		
-		check_and_clear_matches()  # Recursive call for chains
+		check_and_clear_matches()
 	else:
-		# No matches found, end cascading
 		clearing_matches = false
 		is_cascading = false
 		current_chain_count = 0
 		
-		# Check if any pieces are in spawn zone (game over condition)
 		if check_spawn_zone_overflow():
-			return  # Game over triggered
+			return
 		
-		# Spawn next piece
 		spawn_new_piece_pair()
-		
-		
+
 func calculate_and_send_garbage(pieces_cleared: int, chain_number: int):
-	"""Calculate nuisance points and handle garbage offsetting/sending"""
-	# Calculate nuisance points for this clear
 	var base_points = pieces_cleared * GameState.nuisance_points_per_piece
 	var chain_multiplier = GameState.get_chain_multiplier(chain_number)
 	var nuisance_generated = base_points * chain_multiplier
 	
 	print("Generated ", nuisance_generated, " nuisance points (", pieces_cleared, " pieces × ", chain_multiplier, "x chain)")
 	
-	# Offset: reduce incoming garbage first
 	if incoming_garbage_points > 0:
 		if nuisance_generated >= incoming_garbage_points:
-			# Cleared all incoming garbage and have leftover to send
 			var leftover = nuisance_generated - incoming_garbage_points
 			print("Offset: Cleared ", incoming_garbage_points, " incoming garbage, sending ", leftover, " to opponent")
 			incoming_garbage_points = 0
 			pending_garbage_drop = false
 			
 			if leftover > 0:
-				# SOUND: Attack sent
 				AudioManager.play_attack_sent()
 				emit_signal("garbage_sent", leftover)
 		else:
-			# Reduced incoming garbage but didn't clear it all
 			incoming_garbage_points -= nuisance_generated
 			print("Offset: Reduced incoming garbage to ", incoming_garbage_points)
 	else:
-		# No incoming garbage, send directly to opponent
 		print("Sending ", nuisance_generated, " nuisance points to opponent")
-		# SOUND: Attack sent
 		AudioManager.play_attack_sent()
 		emit_signal("garbage_sent", nuisance_generated)
 
 func receive_garbage(nuisance_points: int):
-	"""Receive garbage nuisance points from opponent"""
 	incoming_garbage_points += nuisance_points
 	pending_garbage_drop = true
 	print("Received ", nuisance_points, " nuisance points. Total incoming: ", incoming_garbage_points)
-	
-	# SOUND: Garbage incoming warning
 	AudioManager.play_garbage_incoming()
 
 func drop_garbage():
-	"""Drop garbage (bubbles) onto the grid"""
 	if incoming_garbage_points <= 0:
 		pending_garbage_drop = false
 		return
 	
-	# Convert nuisance points to garbage count
 	var garbage_count = int(incoming_garbage_points / GameState.nuisance_points_per_garbage_row) * GameState.grid_width
 	var leftover_points = incoming_garbage_points % GameState.nuisance_points_per_garbage_row
 	
-	# Keep leftover points for next time
 	incoming_garbage_points = leftover_points
 	
 	if garbage_count <= 0:
@@ -818,38 +722,28 @@ func drop_garbage():
 	
 	print("Dropping ", garbage_count, " garbage bubbles")
 	
-	# SOUND: Garbage drop
 	var garbage_rows = garbage_count / GameState.grid_width
 	AudioManager.play_garbage_drop(garbage_rows)
 	
-	# Drop garbage bubbles from top in random columns
-	var columns_to_fill = []
-	
-	# If full rows, fill all columns equally
 	var full_rows = garbage_count / GameState.grid_width
 	var remaining_bubbles = garbage_count % GameState.grid_width
 	
-	# Generate random column order for remaining bubbles
 	var available_columns = []
 	for x in range(GameState.grid_width):
 		available_columns.append(x)
 	available_columns.shuffle()
 	
-	# Drop garbage
 	for x in range(GameState.grid_width):
 		var bubbles_in_column = full_rows
 		
-		# Add extra bubble if this column is selected for remainder
 		if x < remaining_bubbles:
 			bubbles_in_column += 1
 		
-		# Drop bubbles from top
 		for i in range(bubbles_in_column):
 			var bubble = Piece.instantiate()
 			add_child(bubble)
 			bubble.set_as_bubble()
 			
-			# Find the topmost empty position in this column
 			var drop_y = -1
 			for y in range(GameState.grid_height):
 				if grid_data[y][x] == null:
@@ -857,29 +751,22 @@ func drop_garbage():
 					break
 			
 			if drop_y >= 0:
-				# Place bubble
 				grid_data[drop_y][x] = bubble
 				bubble.set_position_immediately(grid_to_pixel(Vector2(x, drop_y)))
 	
 	pending_garbage_drop = false
 	
-	# Apply gravity after dropping garbage
 	apply_gravity()
 	await get_tree().create_timer(0.4).timeout
 	
 func get_garbage_meter_fill() -> float:
-	"""Return percentage fill of garbage meter (0.0 to 1.0+)"""
 	if incoming_garbage_points <= 0:
 		return 0.0
 	
-	# Calculate how many rows worth of garbage
 	var rows_worth = float(incoming_garbage_points) / float(GameState.nuisance_points_per_garbage_row)
-	
-	# Return as percentage (cap at some reasonable max for display, like 10 rows = 100%)
 	return min(rows_worth / 10.0, 1.0)
 
 func get_garbage_row_count() -> int:
-	"""Return number of garbage rows waiting to drop"""
 	return int(incoming_garbage_points / GameState.nuisance_points_per_garbage_row)
 
 func find_connected_group(start_pos, color, visited):
@@ -889,83 +776,68 @@ func find_connected_group(start_pos, color, visited):
 	while stack.size() > 0:
 		var pos = stack.pop_back()
 		
-		# Skip if already visited
 		if visited.has(pos):
 			continue
 			
-		# Skip if out of bounds
 		if pos.x < 0 or pos.x >= GameState.grid_width or pos.y < 0 or pos.y >= GameState.grid_height:
 			continue
 			
-		# Skip if empty, wrong color, is a bubble piece, or is a bomb
-		if grid_data[pos.y][pos.x] == null or grid_data[pos.y][pos.x].color != color or grid_data[pos.y][pos.x].is_bubble or grid_data[pos.y][pos.x].is_bomb:
+		# Skip bombs and bubbles
+		if grid_data[int(pos.y)][int(pos.x)] == null or grid_data[int(pos.y)][int(pos.x)].color != color:
+			continue
+		if grid_data[int(pos.y)][int(pos.x)].is_bubble or grid_data[int(pos.y)][int(pos.x)].is_bomb():
 			continue
 		
-		# Mark as visited and add to group
 		visited[pos] = true
 		group.append(pos)
 		
-		# Add adjacent positions (only orthogonal, not diagonal)
-		stack.append(pos + Vector2(1, 0))   # Right
-		stack.append(pos + Vector2(-1, 0))  # Left  
-		stack.append(pos + Vector2(0, 1))   # Down
-		stack.append(pos + Vector2(0, -1))  # Up
+		stack.append(pos + Vector2(1, 0))
+		stack.append(pos + Vector2(-1, 0))
+		stack.append(pos + Vector2(0, 1))
+		stack.append(pos + Vector2(0, -1))
 	
 	return group
 
 func clear_group(group):
-	# SOUND: Play match pop based on group size
 	var group_size = group.size()
 	if group_size > 0:
 		AudioManager.play_match_pop(group_size)
 	
-	# Start pop animations for all pieces in the group
 	var pop_duration = 0.25
 	var tweens = []
 	
 	for pos in group:
-		var piece = grid_data[pos.y][pos.x]
+		var piece = grid_data[int(pos.y)][int(pos.x)]
 		if piece:
-			# Create a tween for this piece
 			var tween = create_tween()
 			tweens.append(tween)
 			
-			# Scale up quickly, then down to 0
 			tween.tween_property(piece, "scale", Vector2(1.5, 1.5), pop_duration * 0.3)
 			tween.tween_property(piece, "scale", Vector2(0, 0), pop_duration * 0.7)
-			
-			# Add a slight rotation for extra juice
 			tween.parallel().tween_property(piece, "rotation", PI * 0.5, pop_duration)
 	
-	# Wait for all animations to complete
 	if tweens.size() > 0:
 		await tweens[0].finished
 	
-	# Now actually remove the pieces
 	for pos in group:
-		if grid_data[pos.y][pos.x]:
-			grid_data[pos.y][pos.x].queue_free()
-			grid_data[pos.y][pos.x] = null
+		if grid_data[int(pos.y)][int(pos.x)]:
+			grid_data[int(pos.y)][int(pos.x)].queue_free()
+			grid_data[int(pos.y)][int(pos.x)] = null
 
 func apply_gravity():
 	var something_fell = true
 	
-	# Keep applying gravity until nothing moves
 	while something_fell:
 		something_fell = false
 		
-		# Go through each column from bottom to top
 		for x in range(GameState.grid_width):
-			for y in range(GameState.grid_height - 2, -1, -1):  # Start from second-to-last row
+			for y in range(GameState.grid_height - 2, -1, -1):
 				if grid_data[y][x] != null:
-					# Check if this piece can fall
 					var target_y = y
 					
-					# Find the lowest position this piece can fall to
 					while target_y + 1 < GameState.grid_height and grid_data[target_y + 1][x] == null:
 						target_y += 1
 					
-					# If the piece can fall, move it
 					if target_y != y:
 						var piece = grid_data[y][x]
 						grid_data[y][x] = null
@@ -977,11 +849,9 @@ func grid_to_pixel(grid_pos):
 	return Vector2(grid_pos.x * CELL_SIZE + CELL_SIZE/2, grid_pos.y * CELL_SIZE + CELL_SIZE/2)
 
 func is_grid_active():
-	"""Returns true if the grid is actively processing pieces (for AI)"""
 	return GameState.current_state == GameState.State.PLAYING and not clearing_matches
 
 func check_spawn_zone_overflow():
-	"""Check if any pieces are in the spawn zone after gravity settles - triggers game over"""
 	for y in range(GameState.playfield_start_row):
 		for x in range(GameState.grid_width):
 			if grid_data[y][x] != null:
