@@ -1,6 +1,9 @@
 extends Control
 # VSMode.gd - VS AI mode controller with garbage system
 
+const BombController = preload("res://scripts/BombController.gd")
+const Grid = preload("res://scenes/Grid.tscn")
+const AIController = preload("res://scripts/AIController.gd")
 
 @onready var player_grid_container = $GameContainer/PlayerSide/PlayerGridContainer
 @onready var ai_grid_container = $GameContainer/AISide/AIGridContainer
@@ -16,19 +19,16 @@ extends Control
 @onready var player_level_label: Label = $GameContainer/PlayerSide/LevelLabel
 @onready var ai_level_label: Label = $GameContainer/AISide/LevelLabel
 
-
 # Pause panel elements
 @onready var pause_panel = $PausePanel
 @onready var difficulty_label: Label = $PausePanel/VBoxContainer/DifficultyLabel
+@onready var bomb_type_label: Label = $PausePanel/VBoxContainer/BombTypeLabel
+@onready var change_bomb_type_button: Button = $PausePanel/VBoxContainer/ChangeBombTypeButton
 @onready var change_difficulty_button: Button = $PausePanel/VBoxContainer/ChangeDifficultyButton
 @onready var pause_resume_button = $PausePanel/VBoxContainer/ResumeButton
 @onready var pause_restart_button = $PausePanel/VBoxContainer/RestartButton
 @onready var pause_menu_button = $PausePanel/VBoxContainer/PauseMenuButton
 @onready var music_player = $MusicPlayer
-
-@onready var bomb_type_label: Label = $PausePanel/VBoxContainer/BombTypeLabel
-@onready var change_bomb_type_button: Button = $PausePanel/VBoxContainer/ChangeBombTypeButton
-
 
 var player_grid = null
 var ai_grid = null
@@ -53,12 +53,8 @@ var meter_flash_duration = 0.5
 # AI difficulty setting - starts at Level 1
 var ai_difficulty_level = AIController.Difficulty.LEVEL_1
 
-const BombController = preload("res://scripts/BombController.gd")
-const Grid = preload("res://scenes/Grid.tscn")
-const AIController = preload("res://scripts/AIController.gd")
-
 func _ready():
-	# Set process mode to WHEN_PAUSED for the pause panel to work during pause
+	# Set process mode to WHEN_PAUSED for panels to work during pause
 	pause_panel.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	result_panel.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	
@@ -68,7 +64,7 @@ func _ready():
 	
 	# Connect pause panel buttons
 	difficulty_label.text = get_difficulty_text(ai_difficulty_level)
-	change_difficulty_button.connect("pressed", _on_change_difficulty_pressed) 
+	change_difficulty_button.connect("pressed", _on_change_difficulty_pressed)
 	pause_resume_button.connect("pressed", _on_pause_resume_pressed)
 	pause_restart_button.connect("pressed", _on_pause_restart_pressed)
 	pause_menu_button.connect("pressed", _on_pause_menu_pressed)
@@ -82,15 +78,6 @@ func _ready():
 	
 	# Start the game
 	start_new_game()
-
-func _on_change_bomb_type_pressed():
-	var next_type = (GameState.current_bomb_type + 1) % 6
-	GameState.set_bomb_type(next_type)
-	bomb_type_label.text = get_bomb_type_text(GameState.current_bomb_type)
-	AudioManager.play_button_click()
-
-func get_bomb_type_text(bomb_type: int) -> String:
-	return "Bomb Type: " + BombController.get_bomb_type_name(bomb_type)
 
 func start_new_game():
 	# Clear any existing grids
@@ -161,8 +148,12 @@ func start_new_game():
 	update_score_labels()
 	update_level_labels()
 	
-	# Start music
+	# Play game start sound
+	AudioManager.play_game_start()
+	
+	# Start music with adjusted volume
 	if music_player:
+		music_player.volume_db = -12
 		music_player.play()
 
 func _on_player_sends_garbage(nuisance_points: int):
@@ -326,6 +317,9 @@ func get_difficulty_text(difficulty: int) -> String:
 		_:
 			return "AI Difficulty: Level 1"
 
+func get_bomb_type_text(bomb_type: int) -> String:
+	return "Bomb Type: " + BombController.get_bomb_type_name(bomb_type)
+
 func _input(event):
 	# Handle pause
 	if event.is_action_pressed("pause") and game_active:
@@ -358,6 +352,9 @@ func toggle_pause():
 		pause_panel.show()
 		get_tree().paused = true
 		
+		# Play pause sound
+		AudioManager.play_pause()
+		
 		# Grab focus on resume button
 		await get_tree().create_timer(0.01).timeout
 		pause_resume_button.grab_focus()
@@ -366,11 +363,16 @@ func toggle_pause():
 		is_paused = false
 		pause_panel.hide()
 		get_tree().paused = false
+		
+		# Play unpause sound
+		AudioManager.play_unpause()
 
 func _on_pause_resume_pressed():
+	AudioManager.play_button_click()
 	toggle_pause()
 
 func _on_pause_restart_pressed():
+	AudioManager.play_button_click()
 	# Unpause first if needed
 	if is_paused:
 		is_paused = false
@@ -378,6 +380,7 @@ func _on_pause_restart_pressed():
 	start_new_game()
 
 func _on_pause_menu_pressed():
+	AudioManager.play_button_click()
 	# Stop music when returning to menu
 	if music_player:
 		music_player.stop()
@@ -386,7 +389,7 @@ func _on_pause_menu_pressed():
 	if is_paused:
 		is_paused = false
 		get_tree().paused = false
-	get_tree().change_scene_to_file("res://scenes/MainMenu.tsppcn")
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 func _on_change_difficulty_pressed():
 	"""Cycle through AI difficulty levels"""
@@ -400,6 +403,15 @@ func _on_change_difficulty_pressed():
 	if ai_controller:
 		ai_controller.configure_difficulty(ai_difficulty_level)
 		print("AI difficulty changed to Level ", ai_difficulty_level)
+	
+	# Play sound
+	AudioManager.play_difficulty_change()
+
+func _on_change_bomb_type_pressed():
+	var next_type = (GameState.current_bomb_type + 1) % 6
+	GameState.set_bomb_type(next_type)
+	bomb_type_label.text = get_bomb_type_text(GameState.current_bomb_type)
+	AudioManager.play_difficulty_change()
 
 func _on_player_game_over():
 	if not game_active:
@@ -407,13 +419,11 @@ func _on_player_game_over():
 	
 	game_active = false
 	
-	# Stop both grids
-	if player_grid:
-		player_grid.set_process(false)
-	if ai_grid:
-		ai_grid.set_process(false)
-	if ai_controller:
-		ai_controller.set_process(false)
+	# Pause the game completely
+	get_tree().paused = true
+	
+	# Play defeat sound (player lost)
+	AudioManager.play_defeat()
 	
 	# Stop music on game over
 	if music_player:
@@ -422,8 +432,8 @@ func _on_player_game_over():
 	result_label.text = "AI WINS!"
 	result_panel.show()
 	
-	# Grab focus on restart button
-	await get_tree().create_timer(0.1).timeout
+	# Grab focus on restart button (use timer that works when paused)
+	await get_tree().create_timer(0.1, true).timeout
 	result_restart_button.grab_focus()
 
 func _on_ai_game_over():
@@ -432,13 +442,11 @@ func _on_ai_game_over():
 	
 	game_active = false
 	
-	# Stop both grids
-	if player_grid:
-		player_grid.set_process(false)
-	if ai_grid:
-		ai_grid.set_process(false)
-	if ai_controller:
-		ai_controller.set_process(false)
+	# Pause the game completely
+	get_tree().paused = true
+	
+	# Play victory sound (player won)
+	AudioManager.play_victory()
 	
 	# Stop music on game over
 	if music_player:
@@ -447,16 +455,22 @@ func _on_ai_game_over():
 	result_label.text = "YOU WIN!"
 	result_panel.show()
 	
-	# Grab focus on restart button
-	await get_tree().create_timer(0.1).timeout
+	# Grab focus on restart button (use timer that works when paused)
+	await get_tree().create_timer(0.1, true).timeout
 	result_restart_button.grab_focus()
 
 func _on_result_restart_pressed():
+	AudioManager.play_button_click()
+	# Unpause before restarting
+	get_tree().paused = false
 	start_new_game()
 
 func _on_result_menu_pressed():
+	AudioManager.play_button_click()
 	# Stop music when returning to menu
 	if music_player:
 		music_player.stop()
 	
+	# Unpause before changing scene
+	get_tree().paused = false
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")

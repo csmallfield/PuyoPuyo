@@ -22,7 +22,6 @@ const BombController = preload("res://scripts/BombController.gd")
 @onready var bomb_type_label: Label = $UI/PausePanel/VBoxContainer/BombTypeLabel
 @onready var change_bomb_type_button: Button = $UI/PausePanel/VBoxContainer/ChangeBombTypeButton
 
-
 func _ready():
 	# Connect signals
 	GameState.connect("score_changed", _on_score_changed)
@@ -33,7 +32,7 @@ func _ready():
 		grid.connect("game_over", _on_grid_game_over)
 		grid.connect("chain_bonus", _on_chain_bonus)
 	
-	# Connect bomb type button (USE MANUALLY CREATED ONE)
+	# Connect bomb type button
 	if change_bomb_type_button:
 		change_bomb_type_button.connect("pressed", _on_change_bomb_type_pressed)
 	
@@ -57,11 +56,12 @@ func _ready():
 	
 	# Start the game
 	start_new_game()
-	
+
 func _on_change_bomb_type_pressed():
 	var next_type = (GameState.current_bomb_type + 1) % 6
 	GameState.set_bomb_type(next_type)
 	bomb_type_label.text = get_bomb_type_text(GameState.current_bomb_type)
+	AudioManager.play_difficulty_change()
 
 func get_bomb_type_text(bomb_type: int) -> String:
 	return "Bomb Type: " + BombController.get_bomb_type_name(bomb_type)
@@ -79,6 +79,9 @@ func toggle_pause():
 		pause_panel.show()
 		get_tree().paused = true
 		
+		# Play pause sound
+		AudioManager.play_pause()
+		
 		# Grab focus on resume button
 		if pause_resume_button:
 			await get_tree().create_timer(0.01).timeout
@@ -88,6 +91,9 @@ func toggle_pause():
 		GameState.set_state(GameState.State.PLAYING)
 		pause_panel.hide()
 		get_tree().paused = false
+		
+		# Play unpause sound
+		AudioManager.play_unpause()
 
 func start_new_game():
 	game_over_panel.hide()
@@ -106,8 +112,12 @@ func start_new_game():
 	
 	update_ui()
 	
-	# Start music
+	# Play game start sound
+	AudioManager.play_game_start()
+	
+	# Start music with adjusted volume
 	if music_player:
+		music_player.volume_db = -12
 		music_player.play()
 
 func update_ui():
@@ -173,6 +183,9 @@ func _on_chain_bonus(chain_count):
 	tween.tween_property(level_up_notification, "modulate:a", 0.0, 0.3)
 
 func _on_game_over():
+	# Play game over sound
+	AudioManager.play_game_over()
+	
 	game_over_panel.show()
 	
 	# Stop music on game over
@@ -189,15 +202,18 @@ func _on_grid_game_over():
 
 func _on_pause_resume_pressed():
 	# Resume the game (same as pressing P)
+	AudioManager.play_button_click()
 	toggle_pause()
 
 func _on_pause_restart_pressed():
+	AudioManager.play_button_click()
 	# Unpause first, then restart
 	if GameState.current_state == GameState.State.PAUSED:
 		get_tree().paused = false
 	start_new_game()
 
 func _on_pause_menu_pressed():
+	AudioManager.play_button_click()
 	# Stop music when returning to menu
 	if music_player:
 		music_player.stop()
@@ -208,9 +224,11 @@ func _on_pause_menu_pressed():
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 func _on_game_over_restart_pressed():
+	AudioManager.play_button_click()
 	start_new_game()
 
 func _on_game_over_menu_pressed():
+	AudioManager.play_button_click()
 	# Stop music when returning to menu
 	if music_player:
 		music_player.stop()
