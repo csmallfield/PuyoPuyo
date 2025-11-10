@@ -383,9 +383,104 @@ func estimate_chain_length_from_trigger(pos: Vector2, color: Color) -> int:
 	return chain_estimate
 
 func trigger_best_chain():
-	"""Find and trigger the best available chain"""
-	pass
-
+	"""Find and trigger the best available chain by placing piece to create a match"""
+	if not grid or not grid.current_piece_pair:
+		return
+	
+	print("AI TRIGGERING CHAIN - Finding best clearing move...")
+	
+	# Find best placement that creates an immediate clear
+	var best_score = -999999
+	var best_column = 0
+	var best_rotation = 0
+	var best_clear_count = 0
+	
+	var original_rotation = grid.current_piece_pair.piece_rotation
+	
+	# Test every rotation and column to find move that clears most pieces
+	for rot in range(4):
+		grid.current_piece_pair.piece_rotation = rot
+		grid.current_piece_pair.update_piece_positions()
+		
+		for col in range(GameState.grid_width):
+			# Get ordered pieces for this rotation
+			var pieces = grid.current_piece_pair.get_pieces()
+			var ordered_pieces = []
+			
+			match rot:
+				0, 1:
+					ordered_pieces = [pieces[0], pieces[1]]
+				2, 3:
+					ordered_pieces = [pieces[1], pieces[0]]
+			
+			# Check if we can place here
+			var test_position = Vector2(col, 0)
+			if not grid.can_place_piece_pair(grid.current_piece_pair, test_position):
+				continue
+			
+			# Get landing positions
+			var piece_positions = grid.current_piece_pair.get_piece_positions(test_position)
+			var landing_positions = []
+			for i in range(piece_positions.size()):
+				var pos = piece_positions[i]
+				var landing_y = find_landing_y(pos.x, pos.y)
+				landing_positions.append(Vector2(pos.x, landing_y))
+			
+			# Count how many pieces this would clear
+			var clear_count = simulate_placement_and_count_clears(landing_positions, ordered_pieces)
+			
+			# Prioritize moves that actually clear pieces
+			if clear_count > 0:
+				var score = clear_count * 10000  # Heavily prioritize clearing
+				
+				# Bonus for clearing more pieces
+				score += clear_count * 100
+				
+				# Small bonus for keeping board low after clearing
+				var projected_height = get_projected_max_height(landing_positions)
+				score -= projected_height * 10
+				
+				if score > best_score:
+					best_score = score
+					best_column = col
+					best_rotation = rot
+					best_clear_count = clear_count
+	
+	# Restore original rotation
+	grid.current_piece_pair.piece_rotation = original_rotation
+	grid.current_piece_pair.update_piece_positions()
+	
+	# If we found a move that clears pieces, execute it
+	if best_clear_count > 0:
+		print("AI CHAIN TRIGGER: Executing clear of ", best_clear_count, " pieces at col=", best_column, " rot=", best_rotation)
+		execute_move(best_column, best_rotation)
+	else:
+		# Fallback: No clearing move found - find and execute best safe move immediately
+		print("AI CHAIN TRIGGER: No clearing move found, executing best safe move immediately")
+		
+		# Find best safe move (same logic as make_move but without triggering recursion)
+		best_score = -999999
+		best_column = 0
+		best_rotation = 0
+		
+		for rot in range(4):
+			grid.current_piece_pair.piece_rotation = rot
+			grid.current_piece_pair.update_piece_positions()
+			
+			for col in range(GameState.grid_width):
+				var score = evaluate_placement_with_rotation(col, rot)
+				if score > best_score:
+					best_score = score
+					best_column = col
+					best_rotation = rot
+		
+		# Restore original rotation
+		grid.current_piece_pair.piece_rotation = original_rotation
+		grid.current_piece_pair.update_piece_positions()
+		
+		# Execute the best safe move we found
+		print("AI CHAIN TRIGGER: Best safe move is col=", best_column, " rot=", best_rotation, " score=", best_score)
+		execute_move(best_column, best_rotation)
 # ============================================
 # PLACEMENT EVALUATION
 # ============================================
