@@ -58,16 +58,13 @@ const Grid = preload("res://scenes/Grid.tscn")
 const AIController = preload("res://scripts/AIController.gd")
 
 func _ready():
-	# Set process mode to always so pause doesn't affect this
-	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Set process mode to WHEN_PAUSED for the pause panel to work during pause
+	pause_panel.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	result_panel.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	
 	# Connect result panel buttons
 	result_restart_button.connect("pressed", _on_result_restart_pressed)
 	result_menu_button.connect("pressed", _on_result_menu_pressed)
-	
-	if change_bomb_type_button:
-		change_bomb_type_button.connect("pressed", _on_change_bomb_type_pressed)
-
 	
 	# Connect pause panel buttons
 	difficulty_label.text = get_difficulty_text(ai_difficulty_level)
@@ -75,6 +72,10 @@ func _ready():
 	pause_resume_button.connect("pressed", _on_pause_resume_pressed)
 	pause_restart_button.connect("pressed", _on_pause_restart_pressed)
 	pause_menu_button.connect("pressed", _on_pause_menu_pressed)
+	
+	# Connect bomb type button
+	if change_bomb_type_button:
+		change_bomb_type_button.connect("pressed", _on_change_bomb_type_pressed)
 	
 	# Connect to GameState score changes
 	GameState.connect("score_changed", _on_global_score_changed)
@@ -352,17 +353,10 @@ func toggle_pause():
 		return
 	
 	if not is_paused:
-		# Pause the game
+		# Pause the game using Godot's pause system
 		is_paused = true
 		pause_panel.show()
-		
-		# Stop grid processing
-		if player_grid:
-			player_grid.set_process(false)
-		if ai_grid:
-			ai_grid.set_process(false)
-		if ai_controller:
-			ai_controller.set_process(false)
+		get_tree().paused = true
 		
 		# Grab focus on resume button
 		await get_tree().create_timer(0.01).timeout
@@ -371,14 +365,7 @@ func toggle_pause():
 		# Unpause the game
 		is_paused = false
 		pause_panel.hide()
-		
-		# Resume grid processing
-		if player_grid:
-			player_grid.set_process(true)
-		if ai_grid:
-			ai_grid.set_process(true)
-		if ai_controller:
-			ai_controller.set_process(true)
+		get_tree().paused = false
 
 func _on_pause_resume_pressed():
 	toggle_pause()
@@ -387,12 +374,7 @@ func _on_pause_restart_pressed():
 	# Unpause first if needed
 	if is_paused:
 		is_paused = false
-		if player_grid:
-			player_grid.set_process(true)
-		if ai_grid:
-			ai_grid.set_process(true)
-		if ai_controller:
-			ai_controller.set_process(true)
+		get_tree().paused = false
 	start_new_game()
 
 func _on_pause_menu_pressed():
@@ -403,13 +385,8 @@ func _on_pause_menu_pressed():
 	# Unpause first if needed
 	if is_paused:
 		is_paused = false
-		if player_grid:
-			player_grid.set_process(true)
-		if ai_grid:
-			ai_grid.set_process(true)
-		if ai_controller:
-			ai_controller.set_process(true)
-	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tsppcn")
 
 func _on_change_difficulty_pressed():
 	"""Cycle through AI difficulty levels"""

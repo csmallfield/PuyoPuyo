@@ -983,33 +983,37 @@ func execute_move(target_column: int, target_rotation: int):
 	var rotations_needed = (target_rotation - current_rotation) % 4
 	
 	for i in range(rotations_needed):
-		if not grid or not grid.current_piece_pair:  # Add check in loop
+		if not grid or not grid.current_piece_pair:
 			return
 		grid.rotate_piece()
-		await get_tree().create_timer(move_animation_speed).timeout
+		# CHANGED: Added false parameter to respect pause
+		await get_tree().create_timer(move_animation_speed, false).timeout
 	
 	# Move to target column
-	if not grid or not grid.current_piece_pair:  # Add check before getting position
+	if not grid or not grid.current_piece_pair:
 		return
 	var current_column = int(grid.current_piece_pair.grid_position.x)
 	var columns_to_move = target_column - current_column
 	
 	if columns_to_move > 0:
 		for i in range(columns_to_move):
-			if not grid or not grid.current_piece_pair:  # Add check in loop
+			if not grid or not grid.current_piece_pair:
 				return
 			grid.move_piece_horizontal(1)
-			await get_tree().create_timer(move_animation_speed).timeout
+			# CHANGED: Added false parameter to respect pause
+			await get_tree().create_timer(move_animation_speed, false).timeout
 	elif columns_to_move < 0:
 		for i in range(abs(columns_to_move)):
-			if not grid or not grid.current_piece_pair:  # Add check in loop
+			if not grid or not grid.current_piece_pair:
 				return
 			grid.move_piece_horizontal(-1)
-			await get_tree().create_timer(move_animation_speed).timeout
+			# CHANGED: Added false parameter to respect pause
+			await get_tree().create_timer(move_animation_speed, false).timeout
 	
 	# Fast drop
-	await get_tree().create_timer(0.2).timeout
-	if not grid or not grid.current_piece_pair:  # Add check before fast drop
+	# CHANGED: Added false parameter to respect pause
+	await get_tree().create_timer(0.2, false).timeout
+	if not grid or not grid.current_piece_pair:
 		return
 	grid.fast_drop_piece()
 	
