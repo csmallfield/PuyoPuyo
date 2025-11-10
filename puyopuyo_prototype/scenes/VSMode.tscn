@@ -1,13 +1,175 @@
-[gd_scene load_steps=5 format=3 uid="uid://bxd6dtfvo73f7"]
+[gd_scene load_steps=12 format=3 uid="uid://bxd6dtfvo73f7"]
 
 [ext_resource type="Script" uid="uid://b6jyw8ysm54rn" path="res://scripts/VSMode.gd" id="1_xtck3"]
 [ext_resource type="AudioStream" uid="uid://dm56rymqt7v5c" path="res://sounds/music/hexedex_quantumquasars.wav" id="2_61vjl"]
+[ext_resource type="Shader" uid="uid://bsu08ihllxkav" path="res://shaders/starfieldShader.gdshader" id="3_5cjec"]
+[ext_resource type="Shader" uid="uid://mptlw0qx27w6" path="res://shaders/nebulaShader.gdshader" id="4_ao2sj"]
+[ext_resource type="Shader" uid="uid://cofhbcycs1t11" path="res://shaders/planetShader.gdshader" id="5_drw8g"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xtck3"]
 bg_color = Color(0.1812, 0.1812, 0.1812, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_61vjl"]
 bg_color = Color(1, 0, 0, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_07keg"]
+shader = ExtResource("3_5cjec")
+shader_parameter/star_density = 0.0911
+shader_parameter/star_brightness = 0.626
+shader_parameter/star_size = 3.209
+shader_parameter/twinkle_speed = 0.743
+shader_parameter/world_offset = Vector2(0, 0)
+shader_parameter/tile_size = 200.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_b6r7e"]
+shader = ExtResource("4_ao2sj")
+shader_parameter/resolution_scale = 0.687
+shader_parameter/base_scale = 3.146
+shader_parameter/base_density = 0.824
+shader_parameter/base_softness = 0.705
+shader_parameter/base_octaves = 6.0
+shader_parameter/base_lacunarity = 2.895
+shader_parameter/base_gain = 0.488
+shader_parameter/structure_scale = 10.0
+shader_parameter/structure_strength = 0.75
+shader_parameter/structure_contrast = 1.25
+shader_parameter/structure_octaves = 3.0
+shader_parameter/structure_lacunarity = 2.0
+shader_parameter/structure_gain = 0.5
+shader_parameter/wispy_scale = 8.0
+shader_parameter/wispy_strength = 0.5
+shader_parameter/wispy_octaves = 6.0
+shader_parameter/wispy_lacunarity = 2.0
+shader_parameter/wispy_gain = 0.5
+shader_parameter/edge_falloff = 1.5
+shader_parameter/edge_irregularity = 4.0
+shader_parameter/hard_edge_mix = 0.0
+shader_parameter/nebula_base_color = Color(0.102, 0.3842, 0.6, 1)
+shader_parameter/structure_color = Color(0.8, 0.3, 0.5, 1)
+shader_parameter/wispy_color = Color(0.3, 0.5, 0.9, 1)
+shader_parameter/edge_color = Color(0.2, 0.5, 0.8, 1)
+shader_parameter/color_blend_smoothness = 1.0
+shader_parameter/overall_brightness = 1.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pniv8"]
+shader = ExtResource("4_ao2sj")
+shader_parameter/resolution_scale = 0.687
+shader_parameter/base_scale = 3.146
+shader_parameter/base_density = 0.804
+shader_parameter/base_softness = 0.705
+shader_parameter/base_octaves = 5.805
+shader_parameter/base_lacunarity = 2.895
+shader_parameter/base_gain = 0.488
+shader_parameter/structure_scale = 10.0
+shader_parameter/structure_strength = 0.75
+shader_parameter/structure_contrast = 1.25
+shader_parameter/structure_octaves = 4.317
+shader_parameter/structure_lacunarity = 2.0
+shader_parameter/structure_gain = 0.5
+shader_parameter/wispy_scale = 8.0
+shader_parameter/wispy_strength = 0.441
+shader_parameter/wispy_octaves = 6.0
+shader_parameter/wispy_lacunarity = 2.0
+shader_parameter/wispy_gain = 0.687
+shader_parameter/edge_falloff = 1.5
+shader_parameter/edge_irregularity = 4.488
+shader_parameter/hard_edge_mix = 0.0
+shader_parameter/nebula_base_color = Color(0.148849, 0.270679, 0.361345, 1)
+shader_parameter/structure_color = Color(0.8, 0.3, 0.5, 1)
+shader_parameter/wispy_color = Color(0.3, 0.5, 0.9, 1)
+shader_parameter/edge_color = Color(0.2, 0.5, 0.8, 1)
+shader_parameter/color_blend_smoothness = 1.0
+shader_parameter/overall_brightness = 1.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_wdv0c"]
+shader = ExtResource("5_drw8g")
+shader_parameter/planet_radius = 0.433
+shader_parameter/edge_softness = 0.0
+shader_parameter/uv_offset_x = 0.0
+shader_parameter/uv_offset_y = 0.0
+shader_parameter/continent_seed = 42.0
+shader_parameter/terrain_seed = 123.0
+shader_parameter/river_seed = 456.0
+shader_parameter/detail_seed = 789.0
+shader_parameter/cloud_seed = 999.0
+shader_parameter/output_mode = 0
+shader_parameter/normal_map_intensity = 0.1
+shader_parameter/sphere_strength = -1.25
+shader_parameter/light_direction = Vector2(-1.815, 0.545)
+shader_parameter/light_intensity = 0.902
+shader_parameter/light_color = Color(0.907544, 0.834909, 0.813211, 1)
+shader_parameter/shadow_tint = Color(0.5, 0.6, 0.8, 1)
+shader_parameter/shadow_tint_strength = 0.2
+shader_parameter/ambient_light = 0.198
+shader_parameter/ambient_color = Color(0.4, 0.6, 1, 1)
+shader_parameter/rim_light_intensity = 1.219
+shader_parameter/rim_light_color = Color(0.811335, 0.536344, 0.751337, 1)
+shader_parameter/rim_light_falloff = 1.415
+shader_parameter/rim_light_crescent_power = 2.223
+shader_parameter/rim_light_crescent_offset = -0.07
+shader_parameter/rim_light_glow_intensity = 1.537
+shader_parameter/rim_light_glow_radius = 0.163
+shader_parameter/rim_light_glow_enabled = true
+shader_parameter/continent_scale = 5.434
+shader_parameter/continent_threshold = 0.508
+shader_parameter/continent_sharpness = 0.25
+shader_parameter/continent_octaves = 7.063
+shader_parameter/continent_persistence = 0.6
+shader_parameter/ocean_depth = 0.532
+shader_parameter/warp_strength = 0.15
+shader_parameter/warp_scale = 5.0
+shader_parameter/terrain_scale = 5.0
+shader_parameter/terrain_strength = 1.935
+shader_parameter/terrain_octaves = 6.522
+shader_parameter/terrain_persistence = 0.5
+shader_parameter/terrain_softness = 0.1
+shader_parameter/detail_scale = 6.068
+shader_parameter/detail_strength = 0.3
+shader_parameter/detail_octaves = 7.385
+shader_parameter/mountain_threshold = 0.7
+shader_parameter/highland_threshold = 0.441
+shader_parameter/cloud_coverage = 0.488
+shader_parameter/cloud_scale = 4.0
+shader_parameter/cloud_stretch_x = 1.0
+shader_parameter/cloud_stretch_y = 1.0
+shader_parameter/cloud_octaves = 11.249
+shader_parameter/cloud_persistence = 0.583
+shader_parameter/cloud_density = 1.005
+shader_parameter/cloud_sharpness = 0.131
+shader_parameter/cloud_color = Color(1, 1, 1, 1)
+shader_parameter/cloud_shadow_color = Color(0.7, 0.7, 0.8, 1)
+shader_parameter/cloud_opacity = 0.7
+shader_parameter/cloud_shadow_strength = 0.3
+shader_parameter/cloud_offset_x = 0.0
+shader_parameter/cloud_offset_y = 0.0
+shader_parameter/river_scale = 0.5
+shader_parameter/river_strength = 0.05
+shader_parameter/river_width = 0.05
+shader_parameter/river_octaves = 2.0
+shader_parameter/river_persistence = 0.5
+shader_parameter/river_glow_enabled = false
+shader_parameter/river_glow_intensity = 1.0
+shader_parameter/river_glow_radius = 0.02
+shader_parameter/river_glow_color = Color(0.4, 0.8, 1, 1)
+shader_parameter/ice_cap_size = 0.071
+shader_parameter/ice_cap_softness = 0.441
+shader_parameter/desert_latitude = 0.492
+shader_parameter/desert_width = 0.864
+shader_parameter/desert_intensity = 0.871
+shader_parameter/deep_ocean_color = Color(0.1, 0.2, 0.4, 1)
+shader_parameter/shallow_water_color = Color(0.364381, 0.345884, 0.625936, 1)
+shader_parameter/river_color = Color(0.532413, 0.446059, 0.583889, 1)
+shader_parameter/mountain_color = Color(0.559315, 0.338438, 0.470291, 1)
+shader_parameter/highland_color = Color(0.3, 0.5, 0.2, 1)
+shader_parameter/lowland_color = Color(0.2, 0.6, 0.3, 1)
+shader_parameter/desert_color = Color(0.73, 0.3942, 0.601277, 1)
+shader_parameter/ice_color = Color(0.9, 0.95, 1, 1)
+shader_parameter/coastal_blend = 0.051
+shader_parameter/beach_color = Color(0.7, 0.6, 0.4, 1)
+shader_parameter/core_color = Color(1, 0.8, 0.3, 1)
+shader_parameter/core_size = 1.476
+shader_parameter/color_variation = 0.095
+shader_parameter/variation_tint = Color(0.2, 0.5, 0.8, 1)
 
 [node name="VSMode" type="Control"]
 layout_mode = 3
@@ -19,6 +181,7 @@ grow_vertical = 2
 script = ExtResource("1_xtck3")
 
 [node name="Background" type="ColorRect" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -244,3 +407,48 @@ text = "Main Menu"
 [node name="MusicPlayer" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("2_61vjl")
 volume_db = -12.0
+
+[node name="DynamicBG" type="Node" parent="."]
+
+[node name="Background" type="ColorRect" parent="DynamicBG"]
+z_index = -5
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0607332, 0.0580242, 0.126102, 1)
+
+[node name="starfield" type="ColorRect" parent="DynamicBG"]
+z_index = -4
+material = SubResource("ShaderMaterial_07keg")
+offset_left = -32.0
+offset_top = -345.0
+offset_right = 1989.0
+offset_bottom = 1676.0
+
+[node name="nebula01" type="ColorRect" parent="DynamicBG"]
+z_index = -4
+material = SubResource("ShaderMaterial_b6r7e")
+offset_left = -517.0
+offset_top = -417.0
+offset_right = 1711.0
+offset_bottom = 1811.0
+
+[node name="nebula02" type="ColorRect" parent="DynamicBG"]
+z_index = -4
+material = SubResource("ShaderMaterial_pniv8")
+offset_left = 2799.0
+offset_top = 1272.0
+offset_right = 5027.0
+offset_bottom = 3500.0
+rotation = 3.0666
+
+[node name="planet" type="ColorRect" parent="DynamicBG"]
+z_index = -4
+material = SubResource("ShaderMaterial_wdv0c")
+offset_left = 1461.0
+offset_top = 758.0
+offset_right = 2477.0
+offset_bottom = 1774.0
+rotation = 1.56438
