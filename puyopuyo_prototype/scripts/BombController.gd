@@ -153,7 +153,7 @@ static func is_valid_position(pos: Vector2, grid_data: Array) -> bool:
 static func is_bomb_piece(piece) -> bool:
 	return piece.has_method("get_bomb_type") and piece.get_bomb_type() != BombType.NONE
 
-# Decrement all time bombs on the grid
+# Decrement all time bombs on the grid (UPDATED to skip first turn)
 static func decrement_time_bombs(grid_data: Array) -> Array:
 	var exploding_bombs = []
 	
@@ -162,6 +162,11 @@ static func decrement_time_bombs(grid_data: Array) -> Array:
 			var piece = grid_data[y][x]
 			if piece != null and is_bomb_piece(piece):
 				if piece.get_bomb_type() == BombType.TIME:
+					# Skip decrement if this is the first turn after placement
+					if piece.first_turn_in_grid:
+						piece.first_turn_in_grid = false
+						continue
+					
 					piece.bomb_timer -= 1
 					if piece.bomb_timer <= 0:
 						exploding_bombs.append(Vector2(x, y))

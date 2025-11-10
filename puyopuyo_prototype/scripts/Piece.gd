@@ -10,6 +10,7 @@ var is_bubble = false
 var bomb_type = BombController.BombType.NONE
 var bomb_timer = 5  # For time bombs
 var bomb_orientation = BombController.Orientation.VERTICAL  # For line bombs
+var first_turn_in_grid = true  # NEW: Track if this is the first turn after placement
 
 var sprite = null
 var timer_label = null  # For time bomb countdown display
@@ -150,6 +151,7 @@ func create_procedural_texture():
 func set_color(new_color):
 	color = new_color
 	bomb_type = BombController.BombType.NONE
+	first_turn_in_grid = true
 	if sprite:
 		create_piece_texture()
 
@@ -157,6 +159,7 @@ func set_as_bubble():
 	is_bubble = true
 	bomb_type = BombController.BombType.NONE
 	color = GameState.bubble_color
+	first_turn_in_grid = true
 	if sprite:
 		create_piece_texture()
 
@@ -169,6 +172,7 @@ func set_as_bomb(type: int, orientation: int = BombController.Orientation.VERTIC
 	# Set timer for time bombs
 	if bomb_type == BombController.BombType.TIME:
 		bomb_timer = 5
+		first_turn_in_grid = true  # NEW: Mark as first turn
 	
 	if sprite:
 		create_piece_texture()

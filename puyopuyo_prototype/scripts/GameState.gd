@@ -14,6 +14,12 @@ enum State {
 	GAME_OVER
 }
 
+enum BombScenario {
+	SINGLE,      # One specific bomb type
+	ALL_BOMBS,   # Any bomb type can appear
+	LINE_CROSS   # Only line or cross bombs
+}
+
 var current_state = State.MENU
 var score = 0
 var level = 1
@@ -33,6 +39,7 @@ var bomb_spawn_chance = 0.02
 var allow_bubble_pieces = true
 
 # Bomb type selection
+var bomb_scenario = BombScenario.SINGLE
 var current_bomb_type = BombController.BombType.NORMAL
 
 # Bomb cooldown system (only affects bombs, not bubbles)
@@ -147,10 +154,51 @@ func configure_vs_mode():
 	bomb_cooldown_pieces = 10  # Faster bomb spawning in VS mode
 	bomb_guarantee_pieces = 30
 
+func set_bomb_scenario(scenario: int):
+	"""Set the bomb scenario for the game session"""
+	bomb_scenario = scenario
+	print("Bomb scenario set to: ", get_bomb_scenario_name(scenario))
+
 func set_bomb_type(bomb_type: int):
-	"""Set the current bomb type for the game session"""
+	"""Set the current bomb type for the game session (only used in SINGLE scenario)"""
 	current_bomb_type = bomb_type
 	print("Bomb type set to: ", BombController.get_bomb_type_name(bomb_type))
+
+func get_bomb_scenario_name(scenario: int) -> String:
+	match scenario:
+		BombScenario.SINGLE:
+			return "Single Type"
+		BombScenario.ALL_BOMBS:
+			return "All Bombs"
+		BombScenario.LINE_CROSS:
+			return "Line & Cross"
+		_:
+			return "Unknown"
+
+func get_random_bomb_type_for_scenario() -> int:
+	"""Get a random bomb type based on current scenario"""
+	match bomb_scenario:
+		BombScenario.SINGLE:
+			return current_bomb_type
+		BombScenario.ALL_BOMBS:
+			# Random from all bomb types (excluding NONE)
+			var types = [
+				BombController.BombType.NORMAL,
+				BombController.BombType.LINE,
+				BombController.BombType.TIME,
+				BombController.BombType.CROSS,
+				BombController.BombType.AREA
+			]
+			return types[randi() % types.size()]
+		BombScenario.LINE_CROSS:
+			# Random between LINE and CROSS only
+			var types = [
+				BombController.BombType.LINE,
+				BombController.BombType.CROSS
+			]
+			return types[randi() % types.size()]
+	
+	return current_bomb_type
 
 func set_state(new_state):
 	current_state = new_state
@@ -221,7 +269,7 @@ func generate_piece_pair_data():
 	pieces_since_last_bomb += 1
 	
 	# Determine if we should try to spawn a bomb (COOLDOWN SYSTEM)
-	var can_spawn_bomb = current_bomb_type != BombController.BombType.NONE
+	var can_spawn_bomb = bomb_scenario != BombScenario.SINGLE or current_bomb_type != BombController.BombType.NONE
 	var bomb_spawn_allowed = false
 	
 	if can_spawn_bomb:
@@ -241,10 +289,10 @@ func generate_piece_pair_data():
 	
 	if piece1_is_bomb:
 		pair_data.piece1.type = "bomb"
-		pair_data.piece1.bomb_type = current_bomb_type
+		pair_data.piece1.bomb_type = get_random_bomb_type_for_scenario()
 		pair_data.piece1.color = bomb_color
 		pieces_since_last_bomb = 0  # Reset counter
-		print("Bomb cooldown: Bomb spawned, counter reset")
+		print("Bomb cooldown: Bomb spawned (", BombController.get_bomb_type_name(pair_data.piece1.bomb_type), "), counter reset")
 	else:
 		var piece1_is_bubble = allow_bubble_pieces and (randf() < bubble_spawn_chance)
 		if piece1_is_bubble:
@@ -262,10 +310,10 @@ func generate_piece_pair_data():
 	
 	if piece2_is_bomb:
 		pair_data.piece2.type = "bomb"
-		pair_data.piece2.bomb_type = current_bomb_type
+		pair_data.piece2.bomb_type = get_random_bomb_type_for_scenario()
 		pair_data.piece2.color = bomb_color
 		pieces_since_last_bomb = 0  # Reset counter
-		print("Bomb cooldown: Bomb spawned (piece2), counter reset")
+		print("Bomb cooldown: Bomb spawned (piece2, ", BombController.get_bomb_type_name(pair_data.piece2.bomb_type), "), counter reset")
 	else:
 		var piece2_is_bubble = allow_bubble_pieces and (randf() < bubble_spawn_chance)
 		if piece2_is_bubble:
