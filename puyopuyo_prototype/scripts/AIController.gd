@@ -1,19 +1,27 @@
 extends Node
 # AIController.gd - Configurable AI opponent with difficulty levels
+# IMPROVED VERSION with better survival instincts and balanced difficulty
 
 # ============================================
 # AI CONFIGURATION
 # ============================================
 
 enum Difficulty {
-	LEVEL_0,  # Basic height-only AI (original)
-	LEVEL_1,  # Color-aware AI with grouping
-	LEVEL_2,  # Chain setup AI (future)
-	LEVEL_3,  # Strategic chain AI (future)
+	LEVEL_0,  # Playable basic AI
+	LEVEL_1,  # Competent AI with color awareness
+	LEVEL_2,  # Challenging AI with chain setup
+	LEVEL_3,  # Very challenging strategic AI
+}
+
+enum DangerState {
+	SAFE,      # 0-50% full - normal play
+	CAUTION,   # 50-70% full - be more careful
+	DANGER,    # 70-85% full - focus on survival
+	CRITICAL   # 85%+ full - emergency clearing only
 }
 
 # Main difficulty setting (only used if not configured externally)
-var ai_difficulty = Difficulty.LEVEL_0  # Default to Level 1
+var ai_difficulty = Difficulty.LEVEL_1  # Default to Level 1
 
 # Feature flags - will be set by configure_difficulty()
 var use_color_adjacency = false
@@ -33,6 +41,16 @@ var weight_height_penalty = 0.0
 var weight_height_variance = 0.0
 var weight_center_preference = 0.0
 var weight_random_variety = 0.0
+
+# Survival weights (universal, but scaled by difficulty)
+var weight_spawn_zone_penalty = 2000.0  # Massive penalty for spawn zone
+var weight_critical_height = 500.0     # Exponential height danger penalty
+var weight_immediate_clear_bonus = 300.0  # Bonus for immediate matches
+
+# Danger thresholds by difficulty
+var danger_threshold_caution = 0.5    # When to start being careful
+var danger_threshold_danger = 0.7     # When to get defensive
+var danger_threshold_critical = 0.85  # When to panic
 
 # AI behavior settings - will be set by configure_difficulty()
 var move_delay = 0.5
@@ -71,32 +89,43 @@ func configure_difficulty(difficulty: Difficulty):
 		Difficulty.LEVEL_3:
 			configure_level_3()
 			
+	print("=================================")
+	print("AI Difficulty: Level ", ai_difficulty)
 	print("Color Adjacency: ", use_color_adjacency)
 	print("Group Potential: ", use_group_potential)
 	print("Chain Detection: ", use_chain_detection)
 	print("Defensive Play: ", use_defensive_play)
+	print("Height Penalty Base: ", weight_height_penalty)
 	print("Move Delay: ", move_delay)
 	print("=================================")
 
 func configure_level_0():
-	"""Basic AI - only considers height"""
-	use_color_adjacency = false
+	"""Playable Basic AI - simple but not stupid"""
+	use_color_adjacency = true  # ADD: Light color awareness
 	use_group_potential = false
-	use_height_variance = false
+	use_height_variance = true
 	use_special_piece_strategy = false
-	use_center_preference = false
+	use_center_preference = true
 	use_next_piece_lookahead = false
 	use_chain_detection = false
-	use_defensive_play = false  # ADD THIS LINE
+	use_defensive_play = false
 	
-	weight_height_penalty = 10.0
-	weight_random_variety = 10.0
+	weight_color_adjacency = 20.0  # Light color bonus
+	weight_height_penalty = 15.0   # Strong height avoidance
+	weight_height_variance = 20.0
+	weight_center_preference = 8.0
+	weight_random_variety = 5.0    # Reduced randomness
 	
-	move_delay = 2
-	move_animation_speed = 1
+	# Earlier danger detection for beginner
+	danger_threshold_caution = 0.45
+	danger_threshold_danger = 0.65
+	danger_threshold_critical = 0.80
+	
+	move_delay = 1.2  # Faster than before (was 2.0)
+	move_animation_speed = 0.8
 
 func configure_level_1():
-	"""Color-aware AI with grouping strategy"""
+	"""Competent AI - color-aware with good survival instincts"""
 	use_color_adjacency = true
 	use_group_potential = true
 	use_height_variance = true
@@ -104,21 +133,26 @@ func configure_level_1():
 	use_center_preference = true
 	use_next_piece_lookahead = false
 	use_chain_detection = false
-	use_defensive_play = false  # ADD THIS LINE
+	use_defensive_play = false
 	
 	weight_color_adjacency = 50.0
 	weight_group_of_three = 200.0
 	weight_group_of_two = 80.0
-	weight_height_penalty = 8.0
+	weight_height_penalty = 15.0   # FIXED: Was 8.0, now higher
 	weight_height_variance = 25.0
 	weight_center_preference = 5.0
-	weight_random_variety = 10.0
+	weight_random_variety = 8.0
 	
-	move_delay = 1.5
-	move_animation_speed = 0.75
+	# Standard danger thresholds
+	danger_threshold_caution = 0.50
+	danger_threshold_danger = 0.70
+	danger_threshold_critical = 0.85
+	
+	move_delay = 1.0
+	move_animation_speed = 0.6
 
 func configure_level_2():
-	"""Chain-aware AI with lookahead"""
+	"""Challenging AI - chain-aware with balanced offense/defense"""
 	use_color_adjacency = true
 	use_group_potential = true
 	use_height_variance = true
@@ -126,39 +160,50 @@ func configure_level_2():
 	use_center_preference = true
 	use_next_piece_lookahead = true
 	use_chain_detection = true
-	use_defensive_play = false  # ADD THIS LINE - Level 3 only!
+	use_defensive_play = false
 	
-	# Increase strategic weights - more aggressive play
+	# Increase strategic weights but KEEP height penalty reasonable
 	weight_color_adjacency = 70.0
 	weight_group_of_three = 400.0
 	weight_group_of_two = 100.0
-	weight_height_penalty = 6.0
+	weight_height_penalty = 12.0   # FIXED: Was 6.0, increased
 	weight_height_variance = 20.0
 	weight_center_preference = 8.0
 	weight_random_variety = 2.0
 	
-	# Slightly faster
+	# Earlier danger detection
+	danger_threshold_caution = 0.45
+	danger_threshold_danger = 0.65
+	danger_threshold_critical = 0.82
+	
 	move_delay = 0.75
 	move_animation_speed = 0.3
 
 func configure_level_3():
-	"""Advanced strategic AI with defensive play"""
-	# Start with Level 2 settings
-	configure_level_2()
-	
-	# Enable Level 3 features
+	"""Very Challenging AI - strategic but knows when to survive"""
+	use_color_adjacency = true
+	use_group_potential = true
+	use_height_variance = true
+	use_special_piece_strategy = true
+	use_center_preference = true
+	use_next_piece_lookahead = true
+	use_chain_detection = true
 	use_defensive_play = true
 	
-	# Maximum strategic weights
+	# Maximum strategic weights BUT reasonable height penalty
 	weight_color_adjacency = 80.0
-	weight_group_of_three = 400.0
+	weight_group_of_three = 500.0
 	weight_group_of_two = 120.0
-	weight_height_penalty = 1.0  # Less height-averse (more aggressive)
-	weight_height_variance = 15.0  # Less worried about variance
+	weight_height_penalty = 8.0    # FIXED: Was 1.0! Now reasonable
+	weight_height_variance = 15.0
 	weight_center_preference = 10.0
-	weight_random_variety = 0.5  # Minimal randomness
+	weight_random_variety = 0.5
 	
-	# Even faster and more responsive
+	# Very early danger detection
+	danger_threshold_caution = 0.40
+	danger_threshold_danger = 0.60
+	danger_threshold_critical = 0.78
+	
 	move_delay = 0.2
 	move_animation_speed = 0.05
 
@@ -234,53 +279,205 @@ func evaluate_placement(column: int, rotation: int) -> float:
 		var landing_y = find_landing_y(pos.x, pos.y)
 		landing_positions.append(Vector2(pos.x, landing_y))
 	
-	# Calculate score based on enabled features
+	# Get current danger state
+	var danger_state = get_danger_state()
+	
+	# Calculate base score
 	var score = 0.0
 	
-	# LEVEL 1+ FEATURES
+	# === UNIVERSAL SURVIVAL FEATURES (always active) ===
+	
+	# 1. Spawn zone protection (rows 0-2)
+	score += evaluate_spawn_zone_penalty(landing_positions)
+	
+	# 2. Critical height danger (exponential scaling)
+	score += evaluate_critical_height_danger(landing_positions)
+	
+	# 3. Immediate clearing opportunity (bonus in danger states)
+	score += evaluate_immediate_clearing_opportunity(landing_positions, pieces, danger_state)
+	
+	# 4. Base height penalty (always applies)
+	score += evaluate_height_penalty(landing_positions)
+	
+	# === APPLY DANGER STATE MULTIPLIERS ===
+	var danger_multiplier = get_danger_multiplier(danger_state)
+	
+	# If in CRITICAL state, massively boost survival and reduce strategy
+	if danger_state == DangerState.CRITICAL:
+		# Survival features already applied above with huge weights
+		# Reduce strategic features to 10% of normal
+		var strategy_reduction = 0.1
+		weight_color_adjacency *= strategy_reduction
+		weight_group_of_three *= strategy_reduction
+		weight_group_of_two *= strategy_reduction
+	
+	# === STRATEGIC FEATURES (scaled by danger) ===
+	
+	# LEVEL 0+ FEATURES
 	if use_color_adjacency:
-		score += evaluate_color_adjacency(landing_positions, pieces)
+		score += evaluate_color_adjacency(landing_positions, pieces) * (1.0 / danger_multiplier)
 	
 	if use_group_potential:
-		score += evaluate_group_potential(landing_positions, pieces)
+		score += evaluate_group_potential(landing_positions, pieces) * (1.0 / danger_multiplier)
 	
 	if use_special_piece_strategy:
-		score += evaluate_special_pieces(landing_positions, pieces)
-		# Level 3: Advanced bomb strategy
+		score += evaluate_special_pieces(landing_positions, pieces) * (1.0 / danger_multiplier)
 		if use_defensive_play:
-			score += evaluate_advanced_bomb_strategy(landing_positions, pieces)
+			score += evaluate_advanced_bomb_strategy(landing_positions, pieces) * (1.0 / danger_multiplier)
 	
 	if use_center_preference:
 		score += evaluate_center_preference(landing_positions)
 	
-	# LEVEL 0+ FEATURES (always used)
-	score += evaluate_height_penalty(landing_positions)
-	
 	if use_height_variance:
-		score += evaluate_height_variance(landing_positions)
+		score += evaluate_height_variance(landing_positions) * danger_multiplier
 	
 	# LEVEL 2+ FEATURES
 	if use_next_piece_lookahead:
-		score += evaluate_next_piece_lookahead(landing_positions, pieces)
+		score += evaluate_next_piece_lookahead(landing_positions, pieces) * (1.0 / danger_multiplier)
 	
 	if use_chain_detection:
-		score += evaluate_chain_potential(landing_positions, pieces)
-		# Level 3: Advanced chain patterns
-		if use_defensive_play:
+		# Only pursue chains if not in danger
+		if danger_state == DangerState.SAFE or danger_state == DangerState.CAUTION:
+			score += evaluate_chain_potential(landing_positions, pieces)
+		
+		if use_defensive_play and (danger_state == DangerState.SAFE):
 			score += evaluate_stair_pattern(landing_positions, pieces)
 	
 	# LEVEL 3+ FEATURES
 	if use_defensive_play:
-		score += evaluate_color_distribution(landing_positions, pieces)
-		score += evaluate_defensive_positioning(landing_positions, pieces)
+		score += evaluate_color_distribution(landing_positions, pieces) * (1.0 / danger_multiplier)
+		score += evaluate_defensive_positioning(landing_positions, pieces) * danger_multiplier
 	
-	# Random variety factor
-	score += randf() * weight_random_variety
+	# Random variety factor (reduced in danger)
+	score += randf() * weight_random_variety * (1.0 / danger_multiplier)
+	
+	# Restore original weights if we modified them
+	if danger_state == DangerState.CRITICAL:
+		configure_difficulty(ai_difficulty)  # Reset weights
 	
 	return score
 
 # ============================================
-# EVALUATION FUNCTIONS
+# NEW SURVIVAL EVALUATION FUNCTIONS
+# ============================================
+
+func get_danger_state() -> DangerState:
+	"""Determine current board danger level based on fullness"""
+	var total_height = 0.0
+	var max_height = 0
+	
+	for x in range(GameState.grid_width):
+		var col_height = get_column_height(x)
+		total_height += col_height
+		if col_height > max_height:
+			max_height = col_height
+	
+	var avg_height = total_height / float(GameState.grid_width)
+	var board_fullness = avg_height / float(GameState.grid_height)
+	
+	# Check if any column is in spawn zone (critical danger)
+	if max_height >= GameState.grid_height - GameState.playfield_start_row:
+		return DangerState.CRITICAL
+	
+	# Use difficulty-specific thresholds
+	if board_fullness >= danger_threshold_critical:
+		return DangerState.CRITICAL
+	elif board_fullness >= danger_threshold_danger:
+		return DangerState.DANGER
+	elif board_fullness >= danger_threshold_caution:
+		return DangerState.CAUTION
+	else:
+		return DangerState.SAFE
+
+func get_danger_multiplier(danger_state: DangerState) -> float:
+	"""Get multiplier for danger-scaled features"""
+	match danger_state:
+		DangerState.SAFE:
+			return 1.0
+		DangerState.CAUTION:
+			return 2.0
+		DangerState.DANGER:
+			return 5.0
+		DangerState.CRITICAL:
+			return 10.0
+	return 1.0
+
+func evaluate_spawn_zone_penalty(landing_positions: Array) -> float:
+	"""Massive penalty for placing pieces in spawn zone (rows 0-2)"""
+	var penalty = 0.0
+	
+	for pos in landing_positions:
+		var row = int(pos.y)
+		
+		if row < GameState.playfield_start_row:
+			# In spawn zone - massive penalty
+			penalty -= weight_spawn_zone_penalty
+		elif row < GameState.playfield_start_row + 3:
+			# Just below spawn zone - significant penalty scaled by proximity
+			var proximity = GameState.playfield_start_row + 3 - row
+			penalty -= weight_spawn_zone_penalty * 0.3 * proximity
+	
+	return penalty
+
+func evaluate_critical_height_danger(landing_positions: Array) -> float:
+	"""Exponential penalty for pieces approaching game over"""
+	var penalty = 0.0
+	
+	for pos in landing_positions:
+		var height_from_top = int(pos.y)
+		var distance_from_spawn = height_from_top - GameState.playfield_start_row
+		
+		# Only penalize if getting close to spawn zone
+		if distance_from_spawn < 6:
+			# Exponential scaling: closer to spawn = much worse
+			var danger_ratio = 1.0 - (float(distance_from_spawn) / 6.0)
+			var exponential_penalty = pow(danger_ratio, 3) * weight_critical_height
+			penalty -= exponential_penalty
+	
+	return penalty
+
+func evaluate_immediate_clearing_opportunity(landing_positions: Array, pieces: Array, danger_state: DangerState) -> float:
+	"""Bonus for placements that would immediately trigger a match"""
+	var bonus = 0.0
+	
+	# In danger states, prioritize immediate clearing
+	var danger_bonus_multiplier = 1.0
+	match danger_state:
+		DangerState.CAUTION:
+			danger_bonus_multiplier = 1.5
+		DangerState.DANGER:
+			danger_bonus_multiplier = 3.0
+		DangerState.CRITICAL:
+			danger_bonus_multiplier = 5.0
+		_:
+			danger_bonus_multiplier = 1.0
+	
+	# Check if placing these pieces would complete a match
+	for i in range(landing_positions.size()):
+		var pos = landing_positions[i]
+		var piece = pieces[i]
+		
+		# Skip bombs and bubbles
+		if piece.is_bomb or piece.is_bubble:
+			continue
+		
+		var color = piece.color
+		
+		# Count connected same-color pieces including this placement
+		var group_size = count_connected_group(pos, color, landing_positions, pieces)
+		
+		# Immediate match (4+) gets big bonus, scaled by danger
+		if group_size >= 4:
+			bonus += weight_immediate_clear_bonus * danger_bonus_multiplier
+			
+			# Extra bonus if this would clear multiple groups
+			if group_size >= 6:
+				bonus += weight_immediate_clear_bonus * 0.5 * danger_bonus_multiplier
+
+	return bonus
+
+# ============================================
+# EXISTING EVALUATION FUNCTIONS (kept for compatibility)
 # ============================================
 
 func evaluate_color_adjacency(landing_positions: Array, pieces: Array) -> float:
@@ -476,9 +673,6 @@ func evaluate_chain_potential(landing_positions: Array, pieces: Array) -> float:
 	
 	var score = 0.0
 	
-	# Simulate placing these pieces and check if they would cause matches
-	# that lead to further matches (chains)
-	
 	# For each piece we're placing
 	for i in range(landing_positions.size()):
 		var pos = landing_positions[i]
@@ -491,19 +685,15 @@ func evaluate_chain_potential(landing_positions: Array, pieces: Array) -> float:
 		var color = piece.color
 		
 		# Check if placing this piece completes a match
-		var would_complete_match = false
 		var match_size = count_connected_group(pos, color, landing_positions, pieces)
 		
 		if match_size >= 4:
-			would_complete_match = true
-			
 			# Now check if clearing this match would cause pieces above to fall
 			# and create another match (chain detection)
 			var chain_potential = detect_chain_after_clear(pos, color, landing_positions, pieces)
 			
 			if chain_potential > 0:
 				score += 500.0 * chain_potential  # HUGE bonus for chain setups
-				print("AI detected chain potential: ", chain_potential, " chains!")
 	
 	return score
 
@@ -531,8 +721,6 @@ func detect_chain_after_clear(clear_pos: Vector2, clear_color: Color, landing_po
 				
 				if new_match_size >= 4:
 					chain_count += 1
-					# Could recursively check for longer chains, but that's expensive
-					# For now, just detect 2-chains
 					break
 	
 	return min(chain_count, 2)  # Cap detection at 2-chains for performance
@@ -679,7 +867,7 @@ func evaluate_next_piece_lookahead(landing_positions: Array, pieces: Array) -> f
 
 func evaluate_color_distribution(landing_positions: Array, pieces: Array) -> float:
 	"""Analyze color distribution on board and prioritize abundant colors"""
-	if not use_defensive_play:  # Using defensive_play flag for this feature
+	if not use_defensive_play:
 		return 0.0
 	
 	var score = 0.0
@@ -727,9 +915,6 @@ func evaluate_stair_pattern(landing_positions: Array, pieces: Array) -> float:
 	
 	var score = 0.0
 	
-	# Stair pattern: pieces arranged in ascending/descending heights
-	# that will chain together when bottom is cleared
-	
 	for i in range(landing_positions.size()):
 		var pos = landing_positions[i]
 		var piece = pieces[i]
@@ -738,26 +923,19 @@ func evaluate_stair_pattern(landing_positions: Array, pieces: Array) -> float:
 			continue
 		
 		var color = piece.color
-		
-		# Check for stair pattern: same color pieces at different heights
-		# in adjacent columns
 		var stair_potential = 0
 		
 		# Check left column
 		if pos.x > 0:
-			var left_col_height = get_column_height(int(pos.x) - 1)
-			var current_height = GameState.grid_height - int(pos.y)
-			
-			# Look for same-color pieces in left column at different height
 			for check_y in range(GameState.grid_height):
 				if grid.grid_data[check_y][int(pos.x) - 1] != null:
 					var left_piece = grid.grid_data[check_y][int(pos.x) - 1]
 					if not left_piece.is_bomb and not left_piece.is_bubble:
 						if left_piece.color == color:
 							var left_height = GameState.grid_height - check_y
+							var current_height = GameState.grid_height - int(pos.y)
 							var height_diff = abs(left_height - current_height)
 							
-							# Perfect stair if 1-2 rows difference
 							if height_diff >= 1 and height_diff <= 2:
 								stair_potential += 1
 		
@@ -777,7 +955,6 @@ func evaluate_stair_pattern(landing_positions: Array, pieces: Array) -> float:
 		
 		if stair_potential > 0:
 			score += stair_potential * 80.0
-			print("AI detected stair pattern potential!")
 	
 	return score
 
@@ -806,7 +983,7 @@ func evaluate_defensive_positioning(landing_positions: Array, pieces: Array) -> 
 		for pos in landing_positions:
 			var placement_height = GameState.grid_height - int(pos.y)
 			if placement_height > GameState.grid_height * 0.7:
-				score -= 150.0  # Strong penalty for risky high placements
+				score -= 150.0
 	
 	# Penalize if this creates an isolated high column
 	for pos in landing_positions:
@@ -847,7 +1024,6 @@ func evaluate_advanced_bomb_strategy(landing_positions: Array, pieces: Array) ->
 		
 		# Find most common color
 		var max_count = 0
-		var most_common_color = null
 		for color_key in color_counts.keys():
 			if color_counts[color_key] > max_count:
 				max_count = color_counts[color_key]
@@ -968,6 +1144,9 @@ func count_nearby_same_color(pos: Vector2, color: Color) -> int:
 
 func get_column_height(column: int) -> int:
 	"""Get the current height of a column"""
+	if column < 0 or column >= GameState.grid_width:
+		return 0
+	
 	for y in range(GameState.grid_height):
 		if grid.grid_data[y][column] != null:
 			return GameState.grid_height - y
@@ -986,7 +1165,6 @@ func execute_move(target_column: int, target_rotation: int):
 		if not grid or not grid.current_piece_pair:
 			return
 		grid.rotate_piece()
-		# CHANGED: Added false parameter to respect pause
 		await get_tree().create_timer(move_animation_speed, false).timeout
 	
 	# Move to target column
@@ -1000,18 +1178,15 @@ func execute_move(target_column: int, target_rotation: int):
 			if not grid or not grid.current_piece_pair:
 				return
 			grid.move_piece_horizontal(1)
-			# CHANGED: Added false parameter to respect pause
 			await get_tree().create_timer(move_animation_speed, false).timeout
 	elif columns_to_move < 0:
 		for i in range(abs(columns_to_move)):
 			if not grid or not grid.current_piece_pair:
 				return
 			grid.move_piece_horizontal(-1)
-			# CHANGED: Added false parameter to respect pause
 			await get_tree().create_timer(move_animation_speed, false).timeout
 	
 	# Fast drop
-	# CHANGED: Added false parameter to respect pause
 	await get_tree().create_timer(0.2, false).timeout
 	if not grid or not grid.current_piece_pair:
 		return
