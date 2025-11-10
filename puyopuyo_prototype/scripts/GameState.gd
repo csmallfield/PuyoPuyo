@@ -35,6 +35,11 @@ var allow_bubble_pieces = true
 # Bomb type selection
 var current_bomb_type = BombController.BombType.NORMAL
 
+# Bomb cooldown system (only affects bombs, not bubbles)
+var bomb_cooldown_pieces = 15  # Minimum pieces between bombs
+var bomb_guarantee_pieces = 50  # Force spawn if no bomb in this many pieces
+var pieces_since_last_bomb = 0  # Counter for cooldown tracking
+
 # Game mode presets
 enum GameMode {
 	SINGLE_PLAYER,
@@ -114,6 +119,7 @@ func reset_game():
 	level = 1
 	lines_cleared = 0
 	current_state = State.PLAYING
+	pieces_since_last_bomb = 0  # Reset bomb cooldown counter
 	emit_signal("score_changed", score)
 	emit_signal("level_changed", level)
 	start_piece_sequence()
@@ -131,11 +137,15 @@ func configure_single_player_mode():
 	allow_bubble_pieces = true
 	bubble_spawn_chance = 0.15
 	bomb_spawn_chance = 0.02
+	bomb_cooldown_pieces = 15
+	bomb_guarantee_pieces = 50
 
 func configure_vs_mode():
 	allow_bubble_pieces = false
 	bubble_spawn_chance = 0.0
 	bomb_spawn_chance = 0.05
+	bomb_cooldown_pieces = 10  # Faster bomb spawning in VS mode
+	bomb_guarantee_pieces = 30
 
 func set_bomb_type(bomb_type: int):
 	"""Set the current bomb type for the game session"""
@@ -193,6 +203,7 @@ func get_level_display_text():
 func start_piece_sequence():
 	piece_sequence = []
 	sequence_index = 0
+	pieces_since_last_bomb = 0  # Reset cooldown counter
 	generate_piece_sequence()
 
 func generate_piece_sequence():
@@ -206,15 +217,34 @@ func generate_piece_pair_data():
 		"piece2": {}
 	}
 	
+	# Increment counter for cooldown tracking
+	pieces_since_last_bomb += 1
+	
+	# Determine if we should try to spawn a bomb (COOLDOWN SYSTEM)
+	var can_spawn_bomb = current_bomb_type != BombController.BombType.NONE
+	var bomb_spawn_allowed = false
+	
+	if can_spawn_bomb:
+		if pieces_since_last_bomb < bomb_cooldown_pieces:
+			# Still in cooldown - no bombs allowed
+			bomb_spawn_allowed = false
+		elif pieces_since_last_bomb >= bomb_guarantee_pieces:
+			# Past guarantee threshold - force spawn a bomb
+			bomb_spawn_allowed = true
+			print("Bomb cooldown: Guaranteed spawn at ", pieces_since_last_bomb, " pieces")
+		else:
+			# In normal window - use random chance
+			bomb_spawn_allowed = randf() < bomb_spawn_chance
+	
 	# Generate piece1
-	var rand1 = randf()
-	# DON'T spawn bombs if current_bomb_type is NONE
-	var piece1_is_bomb = (current_bomb_type != BombController.BombType.NONE) and (rand1 < bomb_spawn_chance)
+	var piece1_is_bomb = bomb_spawn_allowed
 	
 	if piece1_is_bomb:
 		pair_data.piece1.type = "bomb"
 		pair_data.piece1.bomb_type = current_bomb_type
 		pair_data.piece1.color = bomb_color
+		pieces_since_last_bomb = 0  # Reset counter
+		print("Bomb cooldown: Bomb spawned, counter reset")
 	else:
 		var piece1_is_bubble = allow_bubble_pieces and (randf() < bubble_spawn_chance)
 		if piece1_is_bubble:
@@ -226,15 +256,16 @@ func generate_piece_pair_data():
 	
 	# Generate piece2 (ensure no bomb+bomb pairs)
 	var piece2_is_bomb = false
-	if not piece1_is_bomb:
-		var rand2 = randf()
-		# DON'T spawn bombs if current_bomb_type is NONE
-		piece2_is_bomb = (current_bomb_type != BombController.BombType.NONE) and (rand2 < bomb_spawn_chance)
+	if not piece1_is_bomb and bomb_spawn_allowed:
+		# If piece1 wasn't a bomb but we can spawn one, try piece2
+		piece2_is_bomb = true
 	
 	if piece2_is_bomb:
 		pair_data.piece2.type = "bomb"
 		pair_data.piece2.bomb_type = current_bomb_type
 		pair_data.piece2.color = bomb_color
+		pieces_since_last_bomb = 0  # Reset counter
+		print("Bomb cooldown: Bomb spawned (piece2), counter reset")
 	else:
 		var piece2_is_bubble = allow_bubble_pieces and (randf() < bubble_spawn_chance)
 		if piece2_is_bubble:
@@ -263,3 +294,4 @@ func get_piece_pair_data_at_index(index: int):
 func reset_piece_sequence():
 	piece_sequence = []
 	sequence_index = 0
+	pieces_since_last_bomb = 0  # Reset cooldown counter
