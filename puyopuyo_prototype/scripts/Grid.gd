@@ -23,6 +23,10 @@ var my_fall_speed = 1.0
 var current_chain_count = 0
 var is_cascading = false
 
+# Event tracking
+var has_sent_attack = false  # Track first attack
+var event_notification = null  # Reference to notification system
+
 # Landing grace period
 var landing_grace_timer = 0.0
 var is_in_grace_period = false
@@ -58,6 +62,12 @@ func _ready():
 	initialize_grid()
 	original_position = Vector2(500, -10)
 	position = original_position
+	
+	# Create event notification system
+	var EventNotification = preload("res://scripts/EventNotification.gd")
+	event_notification = EventNotification.new()
+	add_child(event_notification)
+	event_notification.position = Vector2(GameState.grid_width * CELL_SIZE / 2, GameState.grid_height * CELL_SIZE / 2)
 
 func _draw():
 	var playfield_start = GameState.playfield_start_row
@@ -184,7 +194,8 @@ func start_game():
 	
 	initialize_grid()
 	clear_all_pieces()
-	my_sequence_index = 0 
+	my_sequence_index = 0
+	has_sent_attack = false  # NEW: Reset first attack tracking
 	spawn_new_piece_pair()
 	
 func set_fall_speed(speed: float):
@@ -213,6 +224,9 @@ func spawn_new_piece_pair():
 	if not can_place_piece_pair(current_piece_pair, start_pos):
 		emit_signal("game_over")
 		return
+	
+	# NEW: Check for danger conditions
+	check_danger_warning()
 	
 	next_piece_pair = piece_pair_scene.instantiate()
 	next_piece_pair.set_piece_data_from_index(my_sequence_index)
@@ -602,6 +616,10 @@ func check_and_clear_matches():
 		current_chain_count += 1
 		is_cascading = true
 		
+		# NEW: Show chain notification
+		if event_notification:
+			event_notification.show_chain_notification(current_chain_count)
+		
 		if current_chain_count >= 2:
 			AudioManager.play_chain_sound(current_chain_count)
 		
@@ -670,6 +688,10 @@ func check_and_clear_matches():
 		is_cascading = false
 		current_chain_count = 0
 		
+		# NEW: Check for All Clear bonus
+		if is_board_empty():
+			award_all_clear_bonus()
+		
 		if check_spawn_zone_overflow():
 			return
 		
@@ -691,6 +713,12 @@ func calculate_and_send_garbage(pieces_cleared: int, chain_number: int):
 			
 			if leftover > 0:
 				AudioManager.play_attack_sent()
+				
+				# NEW: Check for first attack bonus
+				if not has_sent_attack:
+					has_sent_attack = true
+					award_first_attack_bonus()
+				
 				emit_signal("garbage_sent", leftover)
 		else:
 			incoming_garbage_points -= nuisance_generated
@@ -698,6 +726,12 @@ func calculate_and_send_garbage(pieces_cleared: int, chain_number: int):
 	else:
 		print("Sending ", nuisance_generated, " nuisance points to opponent")
 		AudioManager.play_attack_sent()
+		
+		# NEW: Check for first attack bonus
+		if not has_sent_attack:
+			has_sent_attack = true
+			award_first_attack_bonus()
+		
 		emit_signal("garbage_sent", nuisance_generated)
 
 func receive_garbage(nuisance_points: int):
@@ -705,6 +739,11 @@ func receive_garbage(nuisance_points: int):
 	pending_garbage_drop = true
 	print("Received ", nuisance_points, " nuisance points. Total incoming: ", incoming_garbage_points)
 	AudioManager.play_garbage_incoming()
+	
+	# NEW: Show garbage warning notification
+	var garbage_rows = int(incoming_garbage_points / GameState.nuisance_points_per_garbage_row)
+	if garbage_rows > 0 and event_notification:
+		event_notification.show_garbage_warning(garbage_rows)
 
 func drop_garbage():
 	if incoming_garbage_points <= 0:
@@ -859,3 +898,62 @@ func check_spawn_zone_overflow():
 				emit_signal("game_over")
 				return true
 	return false
+	
+func is_board_empty() -> bool:
+	"""Check if the board is completely empty"""
+	for y in range(GameState.playfield_start_row, GameState.grid_height):
+		for x in range(GameState.grid_width):
+			if grid_data[y][x] != null:
+				return false
+	return true
+
+func award_first_attack_bonus():
+	"""Award bonus for first attack"""
+	var bonus_points = 1000
+	GameState.add_score(bonus_points)
+	print("First Attack Bonus: ", bonus_points, " points!")
+	
+	if event_notification:
+		event_notification.show_first_attack_notification()
+
+func award_all_clear_bonus():
+	"""Award bonus for clearing the entire board"""
+	var bonus_points = 2000
+	GameState.add_score(bonus_points)
+	print("All Clear Bonus: ", bonus_points, " points!")
+	
+	if event_notification:
+		event_notification.show_all_clear_notification()
+		
+func check_danger_warning():
+	"""Check if board is in danger and show warning"""
+	var max_height = get_max_column_height()
+	var avg_height = get_average_column_height()
+	
+	# Show danger warning if board is getting critically full
+	if max_height >= 11 or avg_height >= 10:
+		if event_notification:
+			event_notification.show_danger_warning()
+			
+func get_max_column_height() -> int:
+	"""Get the maximum column height on the board"""
+	var max_h = 0
+	for x in range(GameState.grid_width):
+		var h = 0
+		for y in range(GameState.grid_height):
+			if grid_data[y][x] != null:
+				h = GameState.grid_height - y
+				break
+		if h > max_h:
+			max_h = h
+	return max_h
+
+func get_average_column_height() -> float:
+	"""Get the average column height"""
+	var total = 0.0
+	for x in range(GameState.grid_width):
+		for y in range(GameState.grid_height):
+			if grid_data[y][x] != null:
+				total += GameState.grid_height - y
+				break
+	return total / float(GameState.grid_width)

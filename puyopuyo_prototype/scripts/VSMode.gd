@@ -50,6 +50,10 @@ var player_meter_flash_timer = 0.0
 var ai_meter_flash_timer = 0.0
 var meter_flash_duration = 0.5
 
+# First attack tracking
+var player_has_sent_attack = false
+var ai_has_sent_attack = false
+
 # AI difficulty setting - starts at Level 1
 var ai_difficulty_level = AIController.Difficulty.LEVEL_1
 
@@ -100,6 +104,8 @@ func start_new_game():
 	last_global_score = 0
 	player_level = 1
 	ai_level = 1
+	player_has_sent_attack = false  # NEW
+	ai_has_sent_attack = false  # NEW
 	
 	# Create player grid
 	player_grid = Grid.instantiate()
