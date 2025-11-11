@@ -125,9 +125,9 @@ func _show_next_notification():
 		NotificationType.ALL_CLEAR:
 			notification_label.add_theme_color_override("font_color", Color.CYAN)
 		NotificationType.GARBAGE_WARNING:
-			notification_label.add_theme_color_override("font_color", Color.RED)
+			notification_label.add_theme_color_override("font_color", Color.MEDIUM_PURPLE)
 		NotificationType.DANGER:
-			notification_label.add_theme_color_override("font_color", Color.DARK_RED)
+			notification_label.add_theme_color_override("font_color", Color.WEB_PURPLE)
 	
 	# Animate - FASTER
 	current_tween = create_tween()

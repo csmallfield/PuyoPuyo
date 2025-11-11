@@ -25,6 +25,10 @@ AudioManager="*res://scripts/AudioManager.gd"
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 
+[gui]
+
+theme/custom="uid://c0yud6gxlrcsw"
+
 [input]
 
 move_left={

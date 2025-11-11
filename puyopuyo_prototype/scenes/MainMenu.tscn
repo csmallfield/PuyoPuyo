@@ -194,8 +194,9 @@ theme_override_constants/separation = 20
 
 [node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 48
-text = "HYPER POP GALACTIC"
+theme_override_font_sizes/font_size = 120
+text = "HYPER POP
+GALACTIC"
 horizontal_alignment = 1
 
 [node name="SinglePlayerButton" type="Button" parent="CenterContainer/VBoxContainer"]
@@ -203,6 +204,7 @@ custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 focus_neighbor_top = NodePath("../QuitButton")
 focus_neighbor_bottom = NodePath("../VSAIButton")
+theme_override_font_sizes/font_size = 36
 text = "Single Player"
 
 [node name="VSAIButton" type="Button" parent="CenterContainer/VBoxContainer"]
@@ -210,6 +212,7 @@ custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 focus_neighbor_top = NodePath("../SinglePlayerButton")
 focus_neighbor_bottom = NodePath("../QuitButton")
+theme_override_font_sizes/font_size = 36
 text = "VS Computer
 "
 
@@ -218,6 +221,7 @@ custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 focus_neighbor_top = NodePath("../VSAIButton")
 focus_neighbor_bottom = NodePath("../SinglePlayerButton")
+theme_override_font_sizes/font_size = 36
 text = "Quit"
 
 [node name="DynamicBG" type="Node" parent="."]
