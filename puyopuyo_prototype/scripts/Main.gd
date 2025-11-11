@@ -58,13 +58,33 @@ func _ready():
 	start_new_game()
 
 func _on_change_bomb_type_pressed():
-	var next_type = (GameState.current_bomb_type + 1) % 6
-	GameState.set_bomb_type(next_type)
-	bomb_type_label.text = get_bomb_type_text(GameState.current_bomb_type)
+	# Cycle through 0-7 (8 total options)
+	var current_mode = get_current_bomb_mode_index()
+	var next_mode = (current_mode + 1) % 8
+	
+	GameState.set_bomb_mode(next_mode)
+	bomb_type_label.text = get_bomb_type_text(next_mode)
 	AudioManager.play_difficulty_change()
 
-func get_bomb_type_text(bomb_type: int) -> String:
-	return "Bomb Type: " + BombController.get_bomb_type_name(bomb_type)
+func get_current_bomb_mode_index() -> int:
+	"""Get current mode index based on scenario and bomb type"""
+	if GameState.bomb_scenario == GameState.BombScenario.ALL_BOMBS:
+		return 6
+	elif GameState.bomb_scenario == GameState.BombScenario.LINE_CROSS:
+		return 7
+	else:
+		# Single bomb type scenario
+		match GameState.current_bomb_type:
+			BombController.BombType.NONE: return 0
+			BombController.BombType.NORMAL: return 1
+			BombController.BombType.LINE: return 2
+			BombController.BombType.TIME: return 3
+			BombController.BombType.CROSS: return 4
+			BombController.BombType.AREA: return 5
+	return 0
+
+func get_bomb_type_text(mode_index: int) -> String:
+	return "Bomb Type: " + GameState.get_bomb_mode_name(mode_index)
 
 func _input(event):
 	if event.is_action_pressed("restart") and GameState.current_state == GameState.State.GAME_OVER:

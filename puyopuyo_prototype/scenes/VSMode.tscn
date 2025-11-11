@@ -447,8 +447,8 @@ rotation = 3.0666
 [node name="planet" type="ColorRect" parent="DynamicBG"]
 z_index = -4
 material = SubResource("ShaderMaterial_wdv0c")
-offset_left = 1461.0
-offset_top = 758.0
-offset_right = 2477.0
-offset_bottom = 1774.0
+offset_left = 1685.0
+offset_top = 753.0
+offset_right = 3111.0
+offset_bottom = 2179.0
 rotation = 1.56438

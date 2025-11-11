@@ -34,7 +34,7 @@ var colors = [Color.RED, Color.BLUE, Color.GREEN, Color.YELLOW]
 var bubble_color = Color.GRAY
 var bomb_color = Color.BLACK
 var bubble_spawn_chance = 0.15
-var bomb_spawn_chance = 0.02
+var bomb_spawn_chance = 0.05
 
 var allow_bubble_pieces = true
 
@@ -143,16 +143,59 @@ func configure_for_game_mode(mode: GameMode):
 func configure_single_player_mode():
 	allow_bubble_pieces = true
 	bubble_spawn_chance = 0.15
-	bomb_spawn_chance = 0.02
+	bomb_spawn_chance = 0.08
 	bomb_cooldown_pieces = 15
-	bomb_guarantee_pieces = 50
+	bomb_guarantee_pieces = 25
 
 func configure_vs_mode():
 	allow_bubble_pieces = false
 	bubble_spawn_chance = 0.0
-	bomb_spawn_chance = 0.05
-	bomb_cooldown_pieces = 10  # Faster bomb spawning in VS mode
-	bomb_guarantee_pieces = 30
+	bomb_spawn_chance = 0.15
+	bomb_cooldown_pieces = 12  # Faster bomb spawning in VS mode
+	bomb_guarantee_pieces = 20
+
+func set_bomb_mode(mode_index: int):
+	"""Set bomb mode based on cycle index (0-7)"""
+	match mode_index:
+		0:  # No Bombs
+			bomb_scenario = BombScenario.SINGLE
+			current_bomb_type = BombController.BombType.NONE
+		1:  # Color Bomb
+			bomb_scenario = BombScenario.SINGLE
+			current_bomb_type = BombController.BombType.NORMAL
+		2:  # Line Bomb
+			bomb_scenario = BombScenario.SINGLE
+			current_bomb_type = BombController.BombType.LINE
+		3:  # Time Bomb
+			bomb_scenario = BombScenario.SINGLE
+			current_bomb_type = BombController.BombType.TIME
+		4:  # Cross Bomb
+			bomb_scenario = BombScenario.SINGLE
+			current_bomb_type = BombController.BombType.CROSS
+		5:  # Area Bomb
+			bomb_scenario = BombScenario.SINGLE
+			current_bomb_type = BombController.BombType.AREA
+		6:  # All Bombs
+			bomb_scenario = BombScenario.ALL_BOMBS
+			current_bomb_type = BombController.BombType.NORMAL  # Fallback
+		7:  # Line & Cross
+			bomb_scenario = BombScenario.LINE_CROSS
+			current_bomb_type = BombController.BombType.LINE  # Fallback
+	
+	print("Bomb mode set to: ", get_bomb_mode_name(mode_index))
+
+func get_bomb_mode_name(mode_index: int) -> String:
+	"""Get display name for bomb mode cycle"""
+	match mode_index:
+		0: return "No Bombs"
+		1: return "Color Bomb"
+		2: return "Line Bomb"
+		3: return "Time Bomb"
+		4: return "Cross Bomb"
+		5: return "Area Bomb"
+		6: return "All Bombs"
+		7: return "Line & Cross"
+		_: return "Unknown"
 
 func set_bomb_scenario(scenario: int):
 	"""Set the bomb scenario for the game session"""
