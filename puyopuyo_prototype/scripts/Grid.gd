@@ -711,10 +711,14 @@ func calculate_and_send_garbage(pieces_cleared: int, chain_number: int):
 			incoming_garbage_points = 0
 			pending_garbage_drop = false
 			
+			# NEW: Clear garbage warning since we countered it
+			if event_notification:
+				event_notification.clear_garbage_warning()
+			
 			if leftover > 0:
 				AudioManager.play_attack_sent()
 				
-				# NEW: Check for first attack bonus
+				# Check for first attack bonus
 				if not has_sent_attack:
 					has_sent_attack = true
 					award_first_attack_bonus()
@@ -723,11 +727,19 @@ func calculate_and_send_garbage(pieces_cleared: int, chain_number: int):
 		else:
 			incoming_garbage_points -= nuisance_generated
 			print("Offset: Reduced incoming garbage to ", incoming_garbage_points)
+			
+			# NEW: Update garbage warning with reduced amount
+			var garbage_rows = int(incoming_garbage_points / GameState.nuisance_points_per_garbage_row)
+			if garbage_rows > 0 and event_notification:
+				event_notification.show_garbage_warning(garbage_rows)
+			elif event_notification:
+				# Countered enough that no full rows incoming
+				event_notification.clear_garbage_warning()
 	else:
 		print("Sending ", nuisance_generated, " nuisance points to opponent")
 		AudioManager.play_attack_sent()
 		
-		# NEW: Check for first attack bonus
+		# Check for first attack bonus
 		if not has_sent_attack:
 			has_sent_attack = true
 			award_first_attack_bonus()
@@ -740,7 +752,7 @@ func receive_garbage(nuisance_points: int):
 	print("Received ", nuisance_points, " nuisance points. Total incoming: ", incoming_garbage_points)
 	AudioManager.play_garbage_incoming()
 	
-	# NEW: Show garbage warning notification
+	# NEW: Show or update garbage warning notification
 	var garbage_rows = int(incoming_garbage_points / GameState.nuisance_points_per_garbage_row)
 	if garbage_rows > 0 and event_notification:
 		event_notification.show_garbage_warning(garbage_rows)
@@ -748,6 +760,9 @@ func receive_garbage(nuisance_points: int):
 func drop_garbage():
 	if incoming_garbage_points <= 0:
 		pending_garbage_drop = false
+		# NEW: Clear warning if no more garbage
+		if event_notification:
+			event_notification.clear_garbage_warning()
 		return
 	
 	var garbage_count = int(incoming_garbage_points / GameState.nuisance_points_per_garbage_row) * GameState.grid_width
@@ -757,6 +772,9 @@ func drop_garbage():
 	
 	if garbage_count <= 0:
 		pending_garbage_drop = false
+		# NEW: Clear warning if no more garbage
+		if event_notification:
+			event_notification.clear_garbage_warning()
 		return
 	
 	print("Dropping ", garbage_count, " garbage bubbles")
@@ -794,6 +812,16 @@ func drop_garbage():
 				bubble.set_position_immediately(grid_to_pixel(Vector2(x, drop_y)))
 	
 	pending_garbage_drop = false
+	
+	# NEW: Update warning if there's still garbage left
+	if incoming_garbage_points > 0:
+		var remaining_rows = int(incoming_garbage_points / GameState.nuisance_points_per_garbage_row)
+		if remaining_rows > 0 and event_notification:
+			event_notification.show_garbage_warning(remaining_rows)
+		elif event_notification:
+			event_notification.clear_garbage_warning()
+	elif event_notification:
+		event_notification.clear_garbage_warning()
 	
 	apply_gravity()
 	await get_tree().create_timer(0.4).timeout

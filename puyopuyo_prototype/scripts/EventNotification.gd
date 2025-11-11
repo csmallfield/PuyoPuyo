@@ -51,6 +51,11 @@ func show_notification(text: String, type: NotificationType = NotificationType.C
 		_update_chain_text(text, duration)
 		return
 	
+	# Special case: If showing garbage warning and new warning comes in, update immediately
+	if type == NotificationType.GARBAGE_WARNING and current_notification_type == NotificationType.GARBAGE_WARNING and is_showing:
+		_update_chain_text(text, duration)
+		return
+	
 	notification_queue.append({
 		"text": text,
 		"type": type,
@@ -59,6 +64,17 @@ func show_notification(text: String, type: NotificationType = NotificationType.C
 	
 	if not is_showing:
 		_show_next_notification()
+
+func clear_garbage_warning():
+	"""Clear garbage warning if it's currently showing"""
+	if current_notification_type == NotificationType.GARBAGE_WARNING and is_showing:
+		if current_tween:
+			current_tween.kill()
+		
+		# Quick fade out
+		current_tween = create_tween()
+		current_tween.tween_property(notification_label, "modulate:a", 0.0, 0.2)
+		current_tween.tween_callback(_show_next_notification)
 
 func _update_chain_text(text: String, duration: float):
 	"""Update chain text and restart the timer"""
@@ -139,7 +155,7 @@ func _show_next_notification():
 
 func show_chain_notification(chain_count: int):
 	"""Show chain notification with count"""
-	var text = str(chain_count) + "-Chain!"
+	var text = str(chain_count) + "x Chain!"
 	show_notification(text, NotificationType.CHAIN, 0.6)
 
 func show_first_attack_notification():
@@ -153,7 +169,7 @@ func show_all_clear_notification():
 func show_garbage_warning(rows: int):
 	"""Show incoming garbage warning"""
 	var text = str(rows) + " Row" + ("s" if rows != 1 else "") + " Incoming!"
-	show_notification(text, NotificationType.GARBAGE_WARNING, 1.0)
+	show_notification(text, NotificationType.GARBAGE_WARNING, 2.0)  # Longer duration
 
 func show_danger_warning():
 	"""Show danger warning when board is getting full"""
