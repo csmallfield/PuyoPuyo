@@ -1,5 +1,5 @@
 extends Node2D
-# Piece.gd - Individual piece (puyo) with bomb support
+# Piece.gd - Individual piece (puyo) with shader-based graphics
 
 const BombController = preload("res://scripts/BombController.gd")
 
@@ -10,18 +10,22 @@ var is_bubble = false
 var bomb_type = BombController.BombType.NONE
 var bomb_timer = 5  # For time bombs
 var bomb_orientation = BombController.Orientation.VERTICAL  # For line bombs
-var first_turn_in_grid = true  # NEW: Track if this is the first turn after placement
+var first_turn_in_grid = true  # Track if this is the first turn after placement
 
-var sprite = null
+var graphic_rect = null  # ColorRect with shader
 var timer_label = null  # For time bomb countdown display
 var target_position = Vector2.ZERO
 var is_animating = false
 var animation_tween = null
 
+# Preload the graphic library scene
+static var graphic_library_scene = preload("res://scenes/graphic_library.tscn")
+static var graphic_library_instance = null
+
 func _ready():
-	# Create the sprite node
-	sprite = Sprite2D.new()
-	add_child(sprite)
+	# Ensure we have a graphic library instance
+	if graphic_library_instance == null:
+		graphic_library_instance = graphic_library_scene.instantiate()
 	
 	# Create timer label for time bombs (hidden by default)
 	timer_label = Label.new()
@@ -35,8 +39,8 @@ func _ready():
 	timer_label.visible = false
 	add_child(timer_label)
 	
-	# Create texture
-	create_piece_texture()
+	# Create graphic from library
+	create_piece_graphic()
 
 func _process(delta):
 	# Update timer display for time bombs
@@ -44,124 +48,87 @@ func _process(delta):
 		timer_label.text = str(bomb_timer)
 		timer_label.visible = true
 
-func create_piece_texture():
-	# Try to load sprite if using sprites
-	if GameState.use_sprites:
-		var texture = null
-		
-		# Load appropriate sprite based on bomb type
-		match bomb_type:
-			BombController.BombType.NORMAL:
-				texture = load("res://assets/bomb_piece.png")
-			BombController.BombType.LINE:
-				if bomb_orientation == BombController.Orientation.HORIZONTAL:
-					texture = load("res://assets/line_bomb_horizontal.png")
-				else:
-					texture = load("res://assets/line_bomb_vertical.png")
-			BombController.BombType.TIME:
-				texture = load("res://assets/time_bomb.png")
-			BombController.BombType.CROSS:
-				texture = load("res://assets/cross_bomb.png")
-			BombController.BombType.AREA:
-				texture = load("res://assets/area_bomb.png")
-			_:
-				# Regular piece
-				if GameState.sprite_paths.has(color):
-					texture = load(GameState.sprite_paths[color])
-		
-		if texture:
-			sprite.texture = texture
-			return
+func create_piece_graphic():
+	# Remove old graphic if it exists
+	if graphic_rect:
+		graphic_rect.queue_free()
+		graphic_rect = null
 	
-	# Fall back to procedural generation
-	create_procedural_texture()
-
-func create_procedural_texture():
-	var texture = ImageTexture.new()
-	var image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
-	image.fill(Color.TRANSPARENT)
+	# Determine which graphic to load from library
+	var graphic_name = get_graphic_name_for_piece()
 	
-	if bomb_type != BombController.BombType.NONE:
-		# Draw bomb base (black circle)
-		for y in range(64):
-			for x in range(64):
-				var dist = Vector2(x - 32, y - 32).length()
-				if dist < 28:
-					image.set_pixel(x, y, Color.BLACK)
-				elif dist < 32:
-					image.set_pixel(x, y, Color.WHITE)
+	# Get the ColorRect from the library and duplicate it
+	var source_rect = graphic_library_instance.get_node_or_null(graphic_name)
+	
+	if source_rect:
+		# Duplicate the ColorRect (this maintains the shader connection)
+		graphic_rect = source_rect.duplicate()
+		add_child(graphic_rect)
 		
-		# Add bomb type indicators
-		match bomb_type:
-			BombController.BombType.LINE:
-				# Draw line indicator
-				if bomb_orientation == BombController.Orientation.HORIZONTAL:
-					for x in range(8, 56):
-						image.set_pixel(x, 32, Color.RED)
-						image.set_pixel(x, 31, Color.RED)
-						image.set_pixel(x, 33, Color.RED)
-				else:
-					for y in range(8, 56):
-						image.set_pixel(32, y, Color.RED)
-						image.set_pixel(31, y, Color.RED)
-						image.set_pixel(33, y, Color.RED)
-			
-			BombController.BombType.CROSS:
-				# Draw cross indicator
-				for i in range(8, 56):
-					image.set_pixel(i, 32, Color.RED)
-					image.set_pixel(32, i, Color.RED)
-					image.set_pixel(i, 31, Color.RED)
-					image.set_pixel(32, i - 1, Color.RED)
-			
-			BombController.BombType.AREA:
-				# Draw radius indicator (circles)
-				for radius in [12, 18, 24]:
-					for angle in range(0, 360, 10):
-						var rad = deg_to_rad(angle)
-						var px = int(32 + cos(rad) * radius)
-						var py = int(32 + sin(rad) * radius)
-						if px >= 0 and px < 64 and py >= 0 and py < 64:
-							image.set_pixel(px, py, Color.ORANGE)
-	
-	elif is_bubble:
-		# Draw bubble piece
-		for y in range(64):
-			for x in range(64):
-				var dist = Vector2(x - 32, y - 32).length()
-				if dist < 24:
-					image.set_pixel(x, y, color)
-				elif dist < 28:
-					image.set_pixel(x, y, color.darkened(0.5))
-				elif dist < 30:
-					image.set_pixel(x, y, Color.WHITE)
+		# Center the rect (since ColorRects use top-left positioning)
+		graphic_rect.position = Vector2(-32, -32)
+		graphic_rect.size = Vector2(64, 64)
 	else:
-		# Draw normal piece
-		for y in range(64):
-			for x in range(64):
-				var dist = Vector2(x - 32, y - 32).length()
-				if dist < 28:
-					image.set_pixel(x, y, color)
-				elif dist < 32:
-					image.set_pixel(x, y, color.darkened(0.3))
+		# Fallback: create a simple colored rect
+		print("Warning: Could not find graphic '", graphic_name, "' in library, using fallback")
+		create_fallback_graphic()
+
+func get_graphic_name_for_piece() -> String:
+	"""Determine which ColorRect to use from the graphic library"""
 	
-	texture.set_image(image)
-	sprite.texture = texture
+	# Check for bomb types first
+	match bomb_type:
+		BombController.BombType.NORMAL:
+			return "bomb_piece"
+		BombController.BombType.TIME:
+			return "time_bomb"
+		BombController.BombType.AREA:
+			return "area_bomb"
+		BombController.BombType.CROSS:
+			return "cross_bomb"
+		BombController.BombType.LINE:
+			if bomb_orientation == BombController.Orientation.HORIZONTAL:
+				return "line_bomb_horizontal"
+			else:
+				return "line_bomb_vertical"
+	
+	# Check for bubble
+	if is_bubble:
+		return "bubble_piece"
+	
+	# Regular colored pieces
+	if color == Color.RED:
+		return "red_piece"
+	elif color == Color.GREEN:
+		return "green_piece"
+	elif color == Color.YELLOW:
+		return "yellow_piece"
+	elif color == Color.BLUE:
+		return "blue_piece"
+	
+	# Default fallback
+	return "red_piece"
+
+func create_fallback_graphic():
+	"""Create a simple colored rect as fallback"""
+	graphic_rect = ColorRect.new()
+	add_child(graphic_rect)
+	graphic_rect.position = Vector2(-32, -32)
+	graphic_rect.size = Vector2(64, 64)
+	graphic_rect.color = color
 
 func set_color(new_color):
 	color = new_color
 	bomb_type = BombController.BombType.NONE
 	first_turn_in_grid = true
-	if sprite:
-		create_piece_texture()
+	create_piece_graphic()
 
 func set_as_bubble():
 	is_bubble = true
 	bomb_type = BombController.BombType.NONE
 	color = GameState.bubble_color
 	first_turn_in_grid = true
-	if sprite:
-		create_piece_texture()
+	create_piece_graphic()
 
 func set_as_bomb(type: int, orientation: int = BombController.Orientation.VERTICAL):
 	bomb_type = type
@@ -172,10 +139,9 @@ func set_as_bomb(type: int, orientation: int = BombController.Orientation.VERTIC
 	# Set timer for time bombs
 	if bomb_type == BombController.BombType.TIME:
 		bomb_timer = 5
-		first_turn_in_grid = true  # NEW: Mark as first turn
+		first_turn_in_grid = true
 	
-	if sprite:
-		create_piece_texture()
+	create_piece_graphic()
 
 func get_bomb_type() -> int:
 	return bomb_type
@@ -187,7 +153,7 @@ func update_bomb_orientation(orientation: int):
 	"""Update orientation for line bombs"""
 	if bomb_type == BombController.BombType.LINE:
 		bomb_orientation = orientation
-		create_piece_texture()
+		create_piece_graphic()
 
 func animate_to_position(new_position):
 	stop_animation()

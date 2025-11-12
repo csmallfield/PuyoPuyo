@@ -71,14 +71,14 @@ var level_multipliers = [
 # Animation settings
 var piece_fall_speed = 400.0
 var use_sprites = true
-var sprite_paths = {
-	Color.RED: "res://assets/red_piece.png",
-	Color.BLUE: "res://assets/blue_piece.png", 
-	Color.GREEN: "res://assets/green_piece.png",
-	Color.YELLOW: "res://assets/yellow_piece.png",
-	Color.GRAY: "res://assets/bubble_piece.png",
-	Color.BLACK: "res://assets/bomb_piece.png"
-}
+#var sprite_paths = {
+#	Color.RED: "res://assets/red_piece.png",
+#	Color.BLUE: "res://assets/blue_piece.png", 
+#	Color.GREEN: "res://assets/green_piece.png",
+#	Color.YELLOW: "res://assets/yellow_piece.png",
+#	Color.GRAY: "res://assets/bubble_piece.png",
+#	Color.BLACK: "res://assets/bomb_piece.png"
+#}
 
 # Piece sequence management
 var piece_sequence = []
