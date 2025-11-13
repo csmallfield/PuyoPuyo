@@ -15,6 +15,36 @@
 [ext_resource type="Texture2D" uid="uid://ewnq5c0d3rut" path="res://assets/line_bomb_horizontal.png" id="8_5woyl"]
 [ext_resource type="Texture2D" uid="uid://bwvsi6ssk8b1d" path="res://assets/line_bomb_vertical.png" id="9_u8hsc"]
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sfkl4"]
+shader = ExtResource("1_x5ims")
+shader_parameter/orb_radius = 0.477
+shader_parameter/edge_softness = 0.015
+shader_parameter/shape_noise_scale = 3.369
+shader_parameter/shape_noise_strength = 0.275
+shader_parameter/shape_noise_octaves = 3.137
+shader_parameter/shape_seed = 358.94
+shader_parameter/sphere_strength = -2.944
+shader_parameter/surface_scale = 7.467
+shader_parameter/surface_strength = 0.335
+shader_parameter/surface_octaves = 3.945
+shader_parameter/surface_seed = 199.503
+shader_parameter/base_color = Color(0.419956, 0.43085, 0.447437, 1)
+shader_parameter/dark_color = Color(0.113342, 0.119524, 0.125754, 1)
+shader_parameter/color_variation = 0.129
+shader_parameter/light_direction = Vector2(-1.165, -0.675)
+shader_parameter/light_intensity = 1.148
+shader_parameter/light_color = Color(1, 0.95, 0.8, 1)
+shader_parameter/ambient_light = 0.388
+shader_parameter/ambient_color = Color(1, 1, 1, 1)
+shader_parameter/shadow_tint = Color(0.5, 0.6, 0.8, 1)
+shader_parameter/shadow_tint_strength = 0.091
+shader_parameter/rim_light_intensity = 0.191
+shader_parameter/rim_light_color = Color(0.8, 0.9, 1, 1)
+shader_parameter/rim_light_falloff = 0.598
+shader_parameter/rim_light_width = 0.579
+shader_parameter/specular_intensity = 0.233
+shader_parameter/specular_shininess = 12.568
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_5woyl"]
 shader = ExtResource("1_x5ims")
 shader_parameter/orb_radius = 0.477
@@ -645,37 +675,14 @@ shader_parameter/rim_light_width = 0.579
 shader_parameter/specular_intensity = 0.562
 shader_parameter/specular_shininess = 41.022
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_sfkl4"]
-shader = ExtResource("1_x5ims")
-shader_parameter/orb_radius = 0.477
-shader_parameter/edge_softness = 0.015
-shader_parameter/shape_noise_scale = 3.369
-shader_parameter/shape_noise_strength = 0.275
-shader_parameter/shape_noise_octaves = 3.137
-shader_parameter/shape_seed = 358.94
-shader_parameter/sphere_strength = -2.944
-shader_parameter/surface_scale = 7.467
-shader_parameter/surface_strength = 0.335
-shader_parameter/surface_octaves = 3.945
-shader_parameter/surface_seed = 199.503
-shader_parameter/base_color = Color(0.419956, 0.43085, 0.447437, 1)
-shader_parameter/dark_color = Color(0.113342, 0.119524, 0.125754, 1)
-shader_parameter/color_variation = 0.129
-shader_parameter/light_direction = Vector2(-1.165, -0.675)
-shader_parameter/light_intensity = 1.148
-shader_parameter/light_color = Color(1, 0.95, 0.8, 1)
-shader_parameter/ambient_light = 0.388
-shader_parameter/ambient_color = Color(1, 1, 1, 1)
-shader_parameter/shadow_tint = Color(0.5, 0.6, 0.8, 1)
-shader_parameter/shadow_tint_strength = 0.091
-shader_parameter/rim_light_intensity = 0.191
-shader_parameter/rim_light_color = Color(0.8, 0.9, 1, 1)
-shader_parameter/rim_light_falloff = 0.598
-shader_parameter/rim_light_width = 0.579
-shader_parameter/specular_intensity = 0.233
-shader_parameter/specular_shininess = 12.568
-
 [node name="GraphicLibrary" type="Node2D"]
+
+[node name="bubble_piece_old" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_sfkl4")
+offset_left = -68.0
+offset_top = 146.0
+offset_right = -4.0
+offset_bottom = 210.0
 
 [node name="bomb_piece" type="TextureRect" parent="."]
 offset_right = 64.0
@@ -823,10 +830,3 @@ offset_left = -51.0
 offset_top = 373.0
 offset_right = 13.0
 offset_bottom = 437.0
-
-[node name="bubble_piece_old" type="ColorRect" parent="procedural_attempts"]
-material = SubResource("ShaderMaterial_sfkl4")
-offset_left = -156.0
-offset_top = 233.0
-offset_right = -92.0
-offset_bottom = 297.0

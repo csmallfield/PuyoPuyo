@@ -80,3 +80,9 @@ pause={
 , Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":6,"pressure":0.0,"pressed":true,"script":null)
 ]
 }
+
+[rendering]
+
+anti_aliasing/quality/msaa_2d=3
+anti_aliasing/quality/screen_space_aa=1
+anti_aliasing/quality/use_taa=true
