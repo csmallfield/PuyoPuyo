@@ -17,6 +17,10 @@ enum Difficulty {
 var ai_difficulty = Difficulty.LEVEL_1
 var _has_been_configured = false
 
+# Randomization for varied play between AI instances
+var evaluation_noise = 0.0  # Amount of random noise to add to scores
+var rng = RandomNumberGenerator.new()
+
 # Feature flags
 var use_chain_counting = false
 var use_trigger_timing = false
@@ -64,6 +68,7 @@ var harassment_threshold = 0
 # ============================================
 
 func _ready():
+	rng.randomize()  # Each AI instance gets different random seed
 	if not _has_been_configured:
 		configure_difficulty(ai_difficulty)
 
@@ -93,6 +98,7 @@ func configure_difficulty(difficulty: Difficulty):
 	print("Optimal Chain Length: ", optimal_chain_length)
 	print("Trigger at Height: ", trigger_at_height)
 	print("Max Safe Height: ", max_safe_height)
+	print("Evaluation Noise: ", evaluation_noise)
 	print("=================================")
 
 func configure_level_0():
@@ -120,6 +126,7 @@ func configure_level_0():
 	
 	move_delay = 1.5
 	move_animation_speed = 0.7
+	evaluation_noise = 50.0  # Higher noise = more random/varied play
 
 func configure_level_1():
 	"""Competent - Good fundamentals, times clearing well"""
@@ -147,6 +154,7 @@ func configure_level_1():
 	
 	move_delay = 1.0
 	move_animation_speed = 0.5
+	evaluation_noise = 30.0  # Moderate noise
 
 func configure_level_2():
 	"""Advanced - Builds chains, times triggers strategically"""
@@ -174,6 +182,7 @@ func configure_level_2():
 	
 	move_delay = 0.65
 	move_animation_speed = 0.25
+	evaluation_noise = 20.0  # Low noise
 
 func configure_level_3():
 	"""Expert - Tournament level with aggressive safety"""
@@ -201,6 +210,7 @@ func configure_level_3():
 	
 	move_delay = 0.25
 	move_animation_speed = 0.08
+	evaluation_noise = 10.0  # Minimal noise (expert is more consistent)
 
 # ============================================
 # CORE AI LOGIC
@@ -567,6 +577,11 @@ func evaluate_placement_with_rotation(column: int, rotation: int) -> float:
 		print("    spawn=", spawn_score, " safety=", safety_score, " side=", side_score)
 		print("    center=", center_score, " flat=", flat_score, " chain=", chain_score, " clear=", clear_score)
 		print("    TOTAL=", score)
+	
+	# Add random noise for variation between AI instances
+	if evaluation_noise > 0:
+		var noise = rng.randf_range(-evaluation_noise, evaluation_noise)
+		score += noise
 	
 	return score
 

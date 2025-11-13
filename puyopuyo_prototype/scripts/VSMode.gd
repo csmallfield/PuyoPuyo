@@ -1,5 +1,5 @@
 extends Control
-# VSMode.gd - VS AI mode controller with garbage system
+# VSMode.gd - VS AI mode controller with garbage system and AI vs AI debug mode
 
 const BombController = preload("res://scripts/BombController.gd")
 const Grid = preload("res://scenes/Grid.tscn")
@@ -18,21 +18,29 @@ const AIController = preload("res://scripts/AIController.gd")
 
 @onready var player_level_label: Label = $GameContainer/PlayerSide/LevelLabel
 @onready var ai_level_label: Label = $GameContainer/AISide/LevelLabel
+@onready var player_name_label: Label = $GameContainer/PlayerSide/PlayerLabel
 
 # Pause panel elements
 @onready var pause_panel = $PausePanel
-@onready var difficulty_label: Label = $PausePanel/VBoxContainer/DifficultyLabel
 @onready var bomb_type_label: Label = $PausePanel/VBoxContainer/BombTypeLabel
 @onready var change_bomb_type_button: Button = $PausePanel/VBoxContainer/ChangeBombTypeButton
-@onready var change_difficulty_button: Button = $PausePanel/VBoxContainer/ChangeDifficultyButton
 @onready var pause_resume_button = $PausePanel/VBoxContainer/ResumeButton
 @onready var pause_restart_button = $PausePanel/VBoxContainer/RestartButton
 @onready var pause_menu_button = $PausePanel/VBoxContainer/PauseMenuButton
 @onready var music_player = $MusicPlayer
 
+# NEW: Debug mode controls
+@onready var debug_mode_label: Label = $PausePanel/VBoxContainer/DebugModeLabel
+@onready var debug_mode_button: Button = $PausePanel/VBoxContainer/DebugModeButton
+@onready var player_difficulty_label: Label = $PausePanel/VBoxContainer/PlayerDifficultyLabel
+@onready var player_difficulty_button: Button = $PausePanel/VBoxContainer/PlayerDifficultyButton
+@onready var opponent_difficulty_label: Label = $PausePanel/VBoxContainer/OpponentDifficultyLabel
+@onready var opponent_difficulty_button: Button = $PausePanel/VBoxContainer/OpponentDifficultyButton
+
 var player_grid = null
 var ai_grid = null
 var ai_controller = null
+var player_ai_controller = null  # NEW: AI controller for player side
 var game_active = false
 var is_paused = false
 
@@ -54,8 +62,12 @@ var meter_flash_duration = 0.5
 var player_has_sent_attack = false
 var ai_has_sent_attack = false
 
-# AI difficulty setting - starts at Level 1
-var ai_difficulty_level = AIController.Difficulty.LEVEL_1
+# AI difficulty settings
+var opponent_ai_difficulty = AIController.Difficulty.LEVEL_1
+var player_ai_difficulty = AIController.Difficulty.LEVEL_1
+
+# NEW: Debug mode flag
+var debug_ai_vs_ai_mode = false
 
 func _ready():
 	# Set process mode to WHEN_PAUSED for panels to work during pause
@@ -67,8 +79,6 @@ func _ready():
 	result_menu_button.connect("pressed", _on_result_menu_pressed)
 	
 	# Connect pause panel buttons
-	difficulty_label.text = get_difficulty_text(ai_difficulty_level)
-	change_difficulty_button.connect("pressed", _on_change_difficulty_pressed)
 	pause_resume_button.connect("pressed", _on_pause_resume_pressed)
 	pause_restart_button.connect("pressed", _on_pause_restart_pressed)
 	pause_menu_button.connect("pressed", _on_pause_menu_pressed)
@@ -77,8 +87,19 @@ func _ready():
 	if change_bomb_type_button:
 		change_bomb_type_button.connect("pressed", _on_change_bomb_type_pressed)
 	
+	# NEW: Connect debug mode buttons
+	if debug_mode_button:
+		debug_mode_button.connect("pressed", _on_toggle_debug_mode_pressed)
+	if player_difficulty_button:
+		player_difficulty_button.connect("pressed", _on_change_player_ai_difficulty_pressed)
+	if opponent_difficulty_button:
+		opponent_difficulty_button.connect("pressed", _on_change_opponent_ai_difficulty_pressed)
+	
 	# Connect to GameState score changes
 	GameState.connect("score_changed", _on_global_score_changed)
+	
+	# Initialize UI
+	update_debug_mode_ui()
 	
 	# Start the game
 	start_new_game()
@@ -91,6 +112,9 @@ func start_new_game():
 		ai_grid.queue_free()
 	if ai_controller:
 		ai_controller.queue_free()
+	if player_ai_controller:
+		player_ai_controller.queue_free()
+		player_ai_controller = null
 	
 	# Configure for VS mode BEFORE resetting game
 	GameState.configure_for_game_mode(GameState.GameMode.VS_MODE)
@@ -104,14 +128,14 @@ func start_new_game():
 	last_global_score = 0
 	player_level = 1
 	ai_level = 1
-	player_has_sent_attack = false  # NEW
-	ai_has_sent_attack = false  # NEW
+	player_has_sent_attack = false
+	ai_has_sent_attack = false
 	
 	# Create player grid
 	player_grid = Grid.instantiate()
 	player_grid_container.add_child(player_grid)
 	player_grid.position = Vector2(192, 0)
-	player_grid.enable_input = false
+	player_grid.enable_input = false  # Always false - we control input in _input
 	player_grid.enable_camera_shake = false
 	player_grid.connect("game_over", _on_player_game_over)
 	player_grid.connect("garbage_sent", _on_player_sends_garbage)
@@ -129,11 +153,19 @@ func start_new_game():
 	ai_grid.set_meta("owner_type", "ai")
 	ai_grid.set_fall_speed(GameState.level_speeds[0])
 	
-	# Create AI controller
+	# Create opponent AI controller
 	ai_controller = AIController.new()
 	ai_controller.grid = ai_grid
-	ai_controller.configure_difficulty(ai_difficulty_level)
+	ai_controller.configure_difficulty(opponent_ai_difficulty)
 	add_child(ai_controller)
+	
+	# NEW: Create player AI controller if in debug mode
+	if debug_ai_vs_ai_mode:
+		player_ai_controller = AIController.new()
+		player_ai_controller.grid = player_grid
+		player_ai_controller.configure_difficulty(player_ai_difficulty)
+		add_child(player_ai_controller)
+		print("DEBUG MODE: Player side controlled by AI (Level ", player_ai_difficulty, ")")
 	
 	# Start both grids
 	player_grid.start_game()
@@ -153,6 +185,7 @@ func start_new_game():
 	# Update UI
 	update_score_labels()
 	update_level_labels()
+	update_player_label()
 	
 	# Play game start sound
 	AudioManager.play_game_start()
@@ -162,9 +195,17 @@ func start_new_game():
 		music_player.volume_db = -12
 		music_player.play()
 
+func update_player_label():
+	"""Update the player label to show AI status in debug mode"""
+	if debug_ai_vs_ai_mode:
+		player_name_label.text = "AI (Level " + str(player_ai_difficulty) + ")"
+	else:
+		player_name_label.text = "PLAYER"
+
 func _on_player_sends_garbage(nuisance_points: int):
 	"""Player sent garbage to AI"""
-	print("Player sends ", nuisance_points, " nuisance points to AI")
+	var side_name = "Player" if not debug_ai_vs_ai_mode else ("AI-P L" + str(player_ai_difficulty))
+	print(side_name, " sends ", nuisance_points, " nuisance points to opponent")
 	if ai_grid:
 		ai_grid.receive_garbage(nuisance_points)
 		# Trigger flash effect on AI meter
@@ -172,7 +213,7 @@ func _on_player_sends_garbage(nuisance_points: int):
 
 func _on_ai_sends_garbage(nuisance_points: int):
 	"""AI sent garbage to player"""
-	print("AI sends ", nuisance_points, " nuisance points to Player")
+	print("AI-O L", opponent_ai_difficulty, " sends ", nuisance_points, " nuisance points to player side")
 	if player_grid:
 		player_grid.receive_garbage(nuisance_points)
 		# Trigger flash effect on player meter
@@ -250,19 +291,20 @@ func check_player_level_up():
 	if new_level != player_level:
 		var old_level = player_level
 		player_level = new_level
-		print("Player leveled up from ", old_level, " to ", player_level)
+		var side_name = "Player" if not debug_ai_vs_ai_mode else ("AI-P L" + str(player_ai_difficulty))
+		print(side_name, " leveled up from ", old_level, " to ", player_level)
 		
 		# Update fall speed
 		if player_grid:
 			var speed_index = min(player_level - 1, GameState.level_speeds.size() - 1)
 			var new_speed = GameState.level_speeds[speed_index]
 			player_grid.set_fall_speed(new_speed)
-			print("Player speed set to: ", new_speed)
+			print(side_name, " speed set to: ", new_speed)
 		
 		# Send level-up attack to opponent
 		var level_up_garbage = GameState.get_level_up_attack_nuisance(player_level)
 		if level_up_garbage > 0 and ai_grid:
-			print("Player level-up attack: sending ", level_up_garbage, " nuisance points to AI")
+			print(side_name, " level-up attack: sending ", level_up_garbage, " nuisance points to opponent")
 			ai_grid.receive_garbage(level_up_garbage)
 			ai_meter_flash_timer = meter_flash_duration  # Flash the AI's garbage meter
 		
@@ -275,19 +317,19 @@ func check_ai_level_up():
 	if new_level != ai_level:
 		var old_level = ai_level
 		ai_level = new_level
-		print("AI leveled up from ", old_level, " to ", ai_level)
+		print("AI-O L", opponent_ai_difficulty, " leveled up from ", old_level, " to ", ai_level)
 		
 		# Update fall speed
 		if ai_grid:
 			var speed_index = min(ai_level - 1, GameState.level_speeds.size() - 1)
 			var new_speed = GameState.level_speeds[speed_index]
 			ai_grid.set_fall_speed(new_speed)
-			print("AI speed set to: ", new_speed)
+			print("AI-O speed set to: ", new_speed)
 		
 		# Send level-up attack to opponent
 		var level_up_garbage = GameState.get_level_up_attack_nuisance(ai_level)
 		if level_up_garbage > 0 and player_grid:
-			print("AI level-up attack: sending ", level_up_garbage, " nuisance points to Player")
+			print("AI-O level-up attack: sending ", level_up_garbage, " nuisance points to player side")
 			player_grid.receive_garbage(level_up_garbage)
 			player_meter_flash_timer = meter_flash_duration  # Flash the player's garbage meter
 		
@@ -309,19 +351,19 @@ func update_level_labels():
 	player_level_label.text = "Level " + str(player_level)
 	ai_level_label.text = "Level " + str(ai_level)
 
-func get_difficulty_text(difficulty: int) -> String:
+func get_difficulty_text(difficulty: int, label: String = "AI") -> String:
 	"""Get display text for AI difficulty"""
 	match difficulty:
 		AIController.Difficulty.LEVEL_0:
-			return "AI Difficulty: Level 0 - Beginner"
+			return label + ": Level 0 - Beginner"
 		AIController.Difficulty.LEVEL_1:
-			return "AI Difficulty: Level 1 - Intermediate"
+			return label + ": Level 1 - Intermediate"
 		AIController.Difficulty.LEVEL_2:
-			return "AI Difficulty: Level 2 - Advanced"
+			return label + ": Level 2 - Advanced"
 		AIController.Difficulty.LEVEL_3:
-			return "AI Difficulty: Level 3 - Expert"
+			return label + ": Level 3 - Expert"
 		_:
-			return "AI Difficulty: Level 1"
+			return label + ": Level 1"
 
 func get_bomb_type_text(mode_index: int) -> String:
 	return "Bomb Type: " + GameState.get_bomb_mode_name(mode_index)
@@ -335,8 +377,8 @@ func _input(event):
 	if not game_active or is_paused:
 		return
 	
-	# Route input only to player grid
-	if player_grid and player_grid.current_piece_pair:
+	# NEW: Only route input to player grid if NOT in debug mode
+	if not debug_ai_vs_ai_mode and player_grid and player_grid.current_piece_pair:
 		if event.is_action_pressed("move_left"):
 			player_grid.move_piece_horizontal(-1)
 		elif event.is_action_pressed("move_right"):
@@ -397,18 +439,60 @@ func _on_pause_menu_pressed():
 		get_tree().paused = false
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
-func _on_change_difficulty_pressed():
-	"""Cycle through AI difficulty levels"""
+# NEW: Debug mode toggle
+func _on_toggle_debug_mode_pressed():
+	debug_ai_vs_ai_mode = not debug_ai_vs_ai_mode
+	update_debug_mode_ui()
+	AudioManager.play_difficulty_change()
+	
+	print("DEBUG MODE: AI vs AI ", "ENABLED" if debug_ai_vs_ai_mode else "DISABLED")
+
+# NEW: Update debug mode UI
+func update_debug_mode_ui():
+	if debug_mode_label:
+		debug_mode_label.text = "DEBUG: AI vs AI Mode " + ("ON" if debug_ai_vs_ai_mode else "OFF")
+	
+	# Show/hide player AI difficulty controls based on debug mode
+	if player_difficulty_label:
+		player_difficulty_label.visible = debug_ai_vs_ai_mode
+		player_difficulty_label.text = get_difficulty_text(player_ai_difficulty, "Player AI")
+	if player_difficulty_button:
+		player_difficulty_button.visible = debug_ai_vs_ai_mode
+	
+	# Update opponent label
+	if opponent_difficulty_label:
+		opponent_difficulty_label.text = get_difficulty_text(opponent_ai_difficulty, "Opponent AI")
+
+# NEW: Change player AI difficulty
+func _on_change_player_ai_difficulty_pressed():
 	# Cycle to next difficulty (0 → 1 → 2 → 3 → 0)
-	ai_difficulty_level = (ai_difficulty_level + 1) % 4
+	player_ai_difficulty = (player_ai_difficulty + 1) % 4
 	
 	# Update label
-	difficulty_label.text = get_difficulty_text(ai_difficulty_level)
+	if player_difficulty_label:
+		player_difficulty_label.text = get_difficulty_text(player_ai_difficulty, "Player AI")
+	
+	# Reconfigure player AI if it exists
+	if player_ai_controller:
+		player_ai_controller.configure_difficulty(player_ai_difficulty)
+		print("Player AI difficulty changed to Level ", player_ai_difficulty)
+	
+	# Play sound
+	AudioManager.play_difficulty_change()
+
+# NEW: Change opponent AI difficulty (renamed from _on_change_difficulty_pressed)
+func _on_change_opponent_ai_difficulty_pressed():
+	# Cycle to next difficulty (0 → 1 → 2 → 3 → 0)
+	opponent_ai_difficulty = (opponent_ai_difficulty + 1) % 4
+	
+	# Update label
+	if opponent_difficulty_label:
+		opponent_difficulty_label.text = get_difficulty_text(opponent_ai_difficulty, "Opponent AI")
 	
 	# Reconfigure AI with new difficulty
 	if ai_controller:
-		ai_controller.configure_difficulty(ai_difficulty_level)
-		print("AI difficulty changed to Level ", ai_difficulty_level)
+		ai_controller.configure_difficulty(opponent_ai_difficulty)
+		print("Opponent AI difficulty changed to Level ", opponent_ai_difficulty)
 	
 	# Play sound
 	AudioManager.play_difficulty_change()
@@ -455,7 +539,12 @@ func _on_player_game_over():
 	if music_player:
 		music_player.stop()
 	
-	result_label.text = "AI WINS!"
+	# NEW: Update result label based on debug mode
+	if debug_ai_vs_ai_mode:
+		result_label.text = "OPPONENT AI WINS!\n(Level " + str(opponent_ai_difficulty) + ")"
+	else:
+		result_label.text = "AI WINS!"
+	
 	result_panel.show()
 	
 	# Grab focus on restart button (use timer that works when paused)
@@ -478,7 +567,12 @@ func _on_ai_game_over():
 	if music_player:
 		music_player.stop()
 	
-	result_label.text = "YOU WIN!"
+	# NEW: Update result label based on debug mode
+	if debug_ai_vs_ai_mode:
+		result_label.text = "PLAYER AI WINS!\n(Level " + str(player_ai_difficulty) + ")"
+	else:
+		result_label.text = "YOU WIN!"
+	
 	result_panel.show()
 	
 	# Grab focus on restart button (use timer that works when paused)
