@@ -1,10 +1,9 @@
-[gd_scene load_steps=12 format=3 uid="uid://bxd6dtfvo73f7"]
+[gd_scene load_steps=11 format=3 uid="uid://da1bg04gnwvr5"]
 
-[ext_resource type="Script" uid="uid://b6jyw8ysm54rn" path="res://scripts/VSMode.gd" id="1_xtck3"]
-[ext_resource type="AudioStream" uid="uid://dm56rymqt7v5c" path="res://sounds/music/hexedex_quantumquasars.wav" id="2_61vjl"]
-[ext_resource type="Shader" uid="uid://bsu08ihllxkav" path="res://shaders/starfieldShader.gdshader" id="3_5cjec"]
-[ext_resource type="Shader" uid="uid://mptlw0qx27w6" path="res://shaders/nebulaShader.gdshader" id="4_ao2sj"]
-[ext_resource type="Shader" uid="uid://cofhbcycs1t11" path="res://shaders/planetShader.gdshader" id="5_drw8g"]
+[ext_resource type="AudioStream" uid="uid://dm56rymqt7v5c" path="res://sounds/music/hexedex_quantumquasars.wav" id="2_48rfm"]
+[ext_resource type="Shader" uid="uid://bsu08ihllxkav" path="res://shaders/starfieldShader.gdshader" id="3_kkchi"]
+[ext_resource type="Shader" uid="uid://mptlw0qx27w6" path="res://shaders/nebulaShader.gdshader" id="4_iyvrp"]
+[ext_resource type="Shader" uid="uid://cofhbcycs1t11" path="res://shaders/planetShader.gdshader" id="5_prvp1"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xtck3"]
 bg_color = Color(0.146015, 0.163751, 0.320833, 1)
@@ -13,7 +12,7 @@ bg_color = Color(0.146015, 0.163751, 0.320833, 1)
 bg_color = Color(0.834475, 0.214095, 0.795047, 1)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_07keg"]
-shader = ExtResource("3_5cjec")
+shader = ExtResource("3_kkchi")
 shader_parameter/star_density = 0.0911
 shader_parameter/star_brightness = 0.626
 shader_parameter/star_size = 3.209
@@ -22,7 +21,7 @@ shader_parameter/world_offset = Vector2(0, 0)
 shader_parameter/tile_size = 200.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_b6r7e"]
-shader = ExtResource("4_ao2sj")
+shader = ExtResource("4_iyvrp")
 shader_parameter/resolution_scale = 0.687
 shader_parameter/base_scale = 3.146
 shader_parameter/base_density = 0.824
@@ -52,7 +51,7 @@ shader_parameter/color_blend_smoothness = 1.0
 shader_parameter/overall_brightness = 1.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_pniv8"]
-shader = ExtResource("4_ao2sj")
+shader = ExtResource("4_iyvrp")
 shader_parameter/resolution_scale = 0.687
 shader_parameter/base_scale = 3.146
 shader_parameter/base_density = 0.804
@@ -82,7 +81,7 @@ shader_parameter/color_blend_smoothness = 1.0
 shader_parameter/overall_brightness = 1.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wdv0c"]
-shader = ExtResource("5_drw8g")
+shader = ExtResource("5_prvp1")
 shader_parameter/planet_radius = 0.433
 shader_parameter/edge_softness = 0.0
 shader_parameter/uv_offset_x = 0.0
@@ -171,14 +170,13 @@ shader_parameter/core_size = 1.476
 shader_parameter/color_variation = 0.095
 shader_parameter/variation_tint = Color(0.2, 0.5, 0.8, 1)
 
-[node name="VSMode" type="Control"]
+[node name="TournamentMode" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_xtck3")
 
 [node name="Background" type="ColorRect" parent="."]
 visible = false
@@ -310,23 +308,24 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 
-[node name="RestartButton" type="Button" parent="ResultPanel/VBoxContainer"]
+[node name="RetryButton" type="Button" parent="ResultPanel/VBoxContainer"]
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
 focus_neighbor_top = NodePath("../MenuButton")
 focus_neighbor_bottom = NodePath("../MenuButton")
 theme_override_font_sizes/font_size = 24
-text = "Restart"
+text = "Retry"
 
 [node name="MenuButton" type="Button" parent="ResultPanel/VBoxContainer"]
 custom_minimum_size = Vector2(300, 50)
 layout_mode = 2
-focus_neighbor_top = NodePath("../RestartButton")
-focus_neighbor_bottom = NodePath("../RestartButton")
+focus_neighbor_top = NodePath("../RetryButton")
+focus_neighbor_bottom = NodePath("../RetryButton")
 theme_override_font_sizes/font_size = 24
 text = "Main Menu"
 
 [node name="PausePanel" type="Panel" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -359,20 +358,6 @@ vertical_alignment = 1
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 
-[node name="BombTypeLabel" type="Label" parent="PausePanel/VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Bomb Type : Color Bomb"
-horizontal_alignment = 1
-
-[node name="ChangeBombTypeButton" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../OpponentDifficultyButton")
-focus_neighbor_bottom = NodePath("../ResumeButton")
-theme_override_font_sizes/font_size = 24
-text = "Change Bomb Type"
-
 [node name="ResumeButton" type="Button" parent="PausePanel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -392,38 +377,11 @@ text = "Restart Game"
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 focus_neighbor_top = NodePath("../RestartButton")
-focus_neighbor_bottom = NodePath("../DebugModeButton")
 theme_override_font_sizes/font_size = 24
 text = "Main Menu"
 
 [node name="HSeparator2" type="HSeparator" parent="PausePanel/VBoxContainer"]
 layout_mode = 2
-
-[node name="DebugModeLabel" type="Label" parent="PausePanel/VBoxContainer"]
-layout_mode = 2
-text = "DEBUG: AI vs AI Mode OFF"
-horizontal_alignment = 1
-
-[node name="DebugModeButton" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../PauseMenuButton")
-focus_neighbor_bottom = NodePath("../PlayerDifficultyButton")
-theme_override_font_sizes/font_size = 24
-text = "Toggle AI vs AI"
-
-[node name="PlayerDifficultyLabel" type="Label" parent="PausePanel/VBoxContainer"]
-layout_mode = 2
-text = "Player AI: Level 1"
-horizontal_alignment = 1
-
-[node name="PlayerDifficultyButton" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../DebugModeButton")
-focus_neighbor_bottom = NodePath("../OpponentDifficultyButton")
-theme_override_font_sizes/font_size = 24
-text = "Change Player AI"
 
 [node name="OpponentDifficultyLabel" type="Label" parent="PausePanel/VBoxContainer"]
 layout_mode = 2
@@ -433,13 +391,11 @@ horizontal_alignment = 1
 [node name="OpponentDifficultyButton" type="Button" parent="PausePanel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-focus_neighbor_top = NodePath("../PlayerDifficultyButton")
-focus_neighbor_bottom = NodePath("../ChangeBombTypeButton")
 theme_override_font_sizes/font_size = 24
 text = "Change Opponent AI"
 
 [node name="MusicPlayer" type="AudioStreamPlayer2D" parent="."]
-stream = ExtResource("2_61vjl")
+stream = ExtResource("2_48rfm")
 volume_db = -12.0
 
 [node name="DynamicBG" type="Node" parent="."]

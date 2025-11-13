@@ -225,9 +225,6 @@ func configure_level_3():
 	move_animation_speed = 0.08
 	evaluation_noise = 10.0
 
-# [REST OF THE CODE CONTINUES - same as before with evaluate_bomb_power and related functions]
-# ... (continue with make_move, evaluate_placement_with_rotation, evaluate_bomb_power, etc.)
-
 # ============================================
 # CORE AI LOGIC
 # ============================================
@@ -507,6 +504,7 @@ func trigger_best_chain():
 		# Execute the best safe move we found
 		print("AI CHAIN TRIGGER: Best safe move is col=", best_column, " rot=", best_rotation, " score=", best_score)
 		execute_move(best_column, best_rotation)
+
 # ============================================
 # PLACEMENT EVALUATION
 # ============================================
@@ -538,17 +536,84 @@ func evaluate_placement_with_rotation(column: int, rotation: int) -> float:
 	
 	# Find where each piece would actually land
 	var landing_positions = []
+	
+	# First pass: calculate base landing for each piece
 	for i in range(piece_positions.size()):
 		var pos = piece_positions[i]
 		var landing_y = find_landing_y(pos.x, pos.y)
 		landing_positions.append(Vector2(pos.x, landing_y))
+	
+	# CRITICAL FIX: For vertical placements, adjust so top piece lands on bottom piece
+	# Rotations 0 and 2 are vertical (same X coordinate)
+	if piece_positions[0].x == piece_positions[1].x:
+		# Vertical placement - pieces in same column
+		# Find which piece is on top (lower Y value in piece_positions)
+		var piece0_higher = piece_positions[0].y < piece_positions[1].y
+		
+		if piece0_higher:
+			# Piece 0 is on top, piece 1 is on bottom
+			# Piece 1 lands normally, piece 0 lands one above it
+			landing_positions[0] = Vector2(landing_positions[1].x, landing_positions[1].y - 1)
+		else:
+			# Piece 1 is on top, piece 0 is on bottom  
+			# Piece 0 lands normally, piece 1 lands one above it
+			landing_positions[1] = Vector2(landing_positions[0].x, landing_positions[0].y - 1)
+		
+		print("  [LANDING] Vertical pair: pos0=", landing_positions[0], " pos1=", landing_positions[1])
+	
+	# === SURVIVAL MODE CHECK ===
+	# If board is critically high, focus ONLY on survival
+	var max_height = get_max_column_height()
+	var avg_height = get_average_column_height()
+	var in_survival_mode = (max_height >= max_safe_height - 1) or (avg_height >= 10)
+	
+	if in_survival_mode:
+		# In survival mode, evaluate purely on staying alive
+		var survival_score = 0.0
+		
+		# Check spawn zone
+		var spawn_check = evaluate_spawn_zone_absolute(landing_positions)
+		if spawn_check < -50000:
+			return spawn_check  # Instant rejection
+		survival_score += spawn_check
+		
+		# Heavily reward LOWERING the board
+		var projected_max = get_projected_max_height(landing_positions)
+		if projected_max < max_height:
+			survival_score += 5000.0 * (max_height - projected_max)  # Big bonus for lowering
+		else:
+			survival_score -= 3000.0 * (projected_max - max_height)  # Big penalty for raising
+		
+		# Bonus for any clearing
+		var clear_count = simulate_placement_and_count_clears(landing_positions, ordered_pieces)
+		if clear_count > 0:
+			survival_score += 10000.0 * clear_count  # Massive bonus for clearing in survival mode
+		
+		# CRITICAL: Also evaluate bomb power in survival mode!
+		# Bombs (especially color bombs on bubbles) can be great survival moves
+		if use_bomb_tactics:
+			var bomb_score = evaluate_bomb_power(landing_positions, ordered_pieces, rotation)
+			# If it's the mega bubble bonus, don't double it (it's already huge!)
+			if bomb_score >= 500000:
+				survival_score += bomb_score
+				print("  -> SURVIVAL MODE: BUBBLE BOMB DETECTED, adding ", bomb_score)
+			else:
+				# Normal bomb scoring gets doubled in survival mode
+				survival_score += bomb_score * 2.0
+				if bomb_score > 0:
+					print("  -> SURVIVAL MODE: Added bomb bonus ", bomb_score * 2.0)
+		
+		print("  -> SURVIVAL MODE at col=", column, " rot=", rotation, " score=", survival_score)
+		return survival_score
 	
 	var score = 0.0
 	
 	# === CRITICAL: SPAWN ZONE PROTECTION ===
 	var spawn_score = evaluate_spawn_zone_absolute(landing_positions)
 	score += spawn_score
-	if score < -5000:
+	# Immediate rejection if ANY piece is in spawn zone
+	if score < -50000:  # Increased from -5000 to catch the 10x multiplier
+		print("  -> REJECTED: Spawn zone violation, score=", score)
 		return score
 	
 	# === NEW: BOARD SAFETY (HIGH PRIORITY) ===
@@ -587,12 +652,19 @@ func evaluate_placement_with_rotation(column: int, rotation: int) -> float:
 		
 		print("  -> CLEAR FOUND! col=", column, " rot=", rotation, " clears=", clear_count, " clear_bonus=", clear_score)
 	
-	# Debug detailed scoring for first few evaluations
-	if rotation == 0 and column <= 1:
+	# === BOMB POWER EVALUATION ===
+	var bomb_score = 0.0
+	if use_bomb_tactics:
+		# CRITICAL: Pass ordered_pieces, not pieces, so bomb position matches rotation!
+		bomb_score = evaluate_bomb_power(landing_positions, ordered_pieces, rotation)
+		score += bomb_score
+	
+	# Debug detailed scoring for first few evaluations OR when bomb is present
+	if rotation == 0 and (column <= 1 or bomb_score > 0):
 		print("  Detailed score for col=", column, " rot=", rotation, ":")
 		print("    spawn=", spawn_score, " safety=", safety_score, " side=", side_score)
 		print("    center=", center_score, " flat=", flat_score, " chain=", chain_score, " clear=", clear_score)
-		print("    TOTAL=", score)
+		print("    bomb=", bomb_score, " TOTAL=", score)
 	
 	# Add random noise for variation between AI instances
 	if evaluation_noise > 0:
@@ -602,7 +674,249 @@ func evaluate_placement_with_rotation(column: int, rotation: int) -> float:
 	return score
 
 # ============================================
-# BOARD SAFETY EVALUATION (NEW)
+# BOMB POWER EVALUATION (NEW)
+# ============================================
+
+func evaluate_bomb_power(landing_positions: Array, pieces: Array, rotation: int) -> float:
+	"""Evaluate the clearing power of bombs in this placement"""
+	var score = 0.0
+	
+	# Check each piece to see if it's a bomb
+	for i in range(pieces.size()):
+		var piece = pieces[i]
+		if not piece.is_bomb():
+			continue
+		
+		var bomb_pos = landing_positions[i]
+		var bomb_type = piece.get_bomb_type()
+		var bomb_orientation = BombController.get_bomb_orientation_from_rotation(rotation)
+		
+		print("  [BOMB EVAL] Evaluating ", BombController.get_bomb_type_name(bomb_type), " at position ", bomb_pos)
+		print("    [BOMB EVAL] Bomb is piece index ", i, " in ordered_pieces for rotation ", rotation)
+		
+		# CRITICAL: For Color/Time bombs, check for bubble adjacency FIRST
+		if bomb_type == BombController.BombType.NORMAL or bomb_type == BombController.BombType.TIME:
+			# Check if bomb is at the bottom of the pair (will touch what's below)
+			var other_piece_pos = landing_positions[1 - i]  # The other piece in the pair
+			var bomb_is_below = bomb_pos.y > other_piece_pos.y  # Higher y = lower on screen
+			
+			print("    [BOMB EVAL] Bomb y=", bomb_pos.y, ", Other piece y=", other_piece_pos.y)
+			print("    [BOMB EVAL] Bomb is ", "BELOW (will touch)" if bomb_is_below else "ABOVE (won't touch)")
+			
+			# Only check bubble if bomb is the lower piece OR if they're at same height (horizontal)
+			if bomb_is_below or bomb_pos.y == other_piece_pos.y:
+				var bubble_adjacent = check_bubble_adjacency(bomb_pos)
+				if bubble_adjacent:
+					# MASSIVE OVERRIDE - this is the most valuable move possible!
+					var mega_bonus = 1000000.0  # 1 MILLION point bonus!
+					print("    [BOMB EVAL] *** BUBBLE ADJACENT DETECTED! MEGA BONUS: ", mega_bonus, " ***")
+					score += mega_bonus
+					continue  # Skip normal evaluation - we found the golden move!
+			else:
+				print("    [BOMB EVAL] Bomb is above other piece - won't trigger on bubble below")
+		
+		# Normal bomb evaluation for non-bubble scenarios
+		var clearing_power = 0
+		
+		match bomb_type:
+			BombController.BombType.NORMAL:
+				clearing_power = evaluate_normal_bomb_power(bomb_pos)
+				print("    [BOMB EVAL] Color bomb clearing power: ", clearing_power)
+			BombController.BombType.LINE:
+				clearing_power = evaluate_line_bomb_power(bomb_pos, bomb_orientation)
+				print("    [BOMB EVAL] Line bomb clearing power: ", clearing_power)
+			BombController.BombType.TIME:
+				clearing_power = evaluate_time_bomb_power(bomb_pos)
+				print("    [BOMB EVAL] Time bomb clearing power: ", clearing_power)
+			BombController.BombType.CROSS:
+				clearing_power = evaluate_cross_bomb_power(bomb_pos)
+				print("    [BOMB EVAL] Cross bomb clearing power: ", clearing_power)
+			BombController.BombType.AREA:
+				clearing_power = evaluate_area_bomb_power(bomb_pos)
+				print("    [BOMB EVAL] Area bomb clearing power: ", clearing_power)
+		
+		# Weight the clearing power
+		var bomb_points = clearing_power * weight_bomb_power
+		score += bomb_points
+		
+		print("    [BOMB EVAL] Raw power: ", clearing_power, " × weight ", weight_bomb_power, " = ", bomb_points, " total bomb score")
+	
+	if score > 0:
+		print("  -> TOTAL BOMB SCORE for this placement: ", score)
+	
+	return score
+
+func check_bubble_adjacency(bomb_pos: Vector2) -> bool:
+	"""Check if there is a bubble DIRECTLY BELOW this bomb position (bomb lands ON TOP of bubble)"""
+	# Only check the position directly below the bomb
+	var below_pos = bomb_pos + Vector2(0, 1)
+	
+	if not is_valid_grid_position(below_pos):
+		print("      [BUBBLE CHECK] Position below bomb is out of bounds")
+		return false
+	
+	var piece_below = grid.grid_data[int(below_pos.y)][int(below_pos.x)]
+	if piece_below != null and piece_below.is_bubble:
+		print("      [BUBBLE CHECK] *** BUBBLE FOUND DIRECTLY BELOW at ", below_pos, " (bomb at ", bomb_pos, ") ***")
+		return true
+	
+	print("      [BUBBLE CHECK] No bubble directly below ", bomb_pos, " (checked ", below_pos, ")")
+	return false
+
+func evaluate_normal_bomb_power(bomb_pos: Vector2) -> int:
+	"""Evaluate NORMAL/COLOR bomb - clears all pieces of adjacent color"""
+	# PRIORITY CHECK: Is there a bubble DIRECTLY BELOW this bomb?
+	var below_pos = bomb_pos + Vector2(0, 1)
+	if is_valid_grid_position(below_pos):
+		var piece_below = grid.grid_data[int(below_pos.y)][int(below_pos.x)]
+		if piece_below != null and piece_below.is_bubble:
+			# Count total bubbles on board
+			var total_bubbles = 0
+			for y in range(GameState.grid_height):
+				for x in range(GameState.grid_width):
+					var piece = grid.grid_data[y][x]
+					if piece != null and piece.is_bubble:
+						total_bubbles += 1
+			
+			print("    [BOMB EVAL] Bomb landing ON TOP of bubble! Total bubbles: ", total_bubbles)
+			return total_bubbles * 50  # MASSIVE bonus for bubble clearing
+	
+	# Check other adjacent positions for color matching
+	var adjacent_positions = [
+		bomb_pos + Vector2(0, 1),   # Down
+		bomb_pos + Vector2(0, -1),  # Up
+		bomb_pos + Vector2(-1, 0),  # Left
+		bomb_pos + Vector2(1, 0)    # Right
+	]
+	
+	var color_counts = {}
+	
+	for adj_pos in adjacent_positions:
+		if not is_valid_grid_position(adj_pos):
+			continue
+		
+		var adj_piece = grid.grid_data[int(adj_pos.y)][int(adj_pos.x)]
+		if adj_piece == null or adj_piece.is_bomb() or adj_piece.is_bubble:
+			continue
+		
+		var color = adj_piece.color
+		if not color_counts.has(color):
+			color_counts[color] = 0
+		color_counts[color] += 1
+	
+	# Find the most common color
+	var max_count = 0
+	var target_color = null
+	for color in color_counts:
+		if color_counts[color] > max_count:
+			max_count = color_counts[color]
+			target_color = color
+	
+	if target_color == null:
+		return 0  # No adjacent targets at all
+	
+	# Count matching colored pieces
+	var total_matching = 0
+	for y in range(GameState.grid_height):
+		for x in range(GameState.grid_width):
+			var piece = grid.grid_data[y][x]
+			if piece != null and not piece.is_bomb() and not piece.is_bubble:
+				if piece.color == target_color:
+					total_matching += 1
+	
+	return total_matching
+
+func evaluate_line_bomb_power(bomb_pos: Vector2, orientation: int) -> int:
+	"""Evaluate LINE bomb - clears entire row or column"""
+	var clear_count = 0
+	
+	if orientation == BombController.Orientation.HORIZONTAL:
+		# Count pieces in the row
+		var row = int(bomb_pos.y)
+		for x in range(GameState.grid_width):
+			if grid.grid_data[row][x] != null:
+				clear_count += 1
+	else:  # VERTICAL
+		# Count pieces in the column
+		var col = int(bomb_pos.x)
+		for y in range(GameState.grid_height):
+			if grid.grid_data[y][col] != null:
+				clear_count += 1
+	
+	# Bonus for placing line bombs in dense rows/columns
+	if clear_count >= 4:
+		clear_count += 2
+	
+	return clear_count
+
+func evaluate_time_bomb_power(bomb_pos: Vector2) -> int:
+	"""Evaluate TIME bomb - same as normal bomb but with countdown"""
+	# PRIORITY CHECK: Is there a bubble DIRECTLY BELOW this bomb?
+	var below_pos = bomb_pos + Vector2(0, 1)
+	if is_valid_grid_position(below_pos):
+		var piece_below = grid.grid_data[int(below_pos.y)][int(below_pos.x)]
+		if piece_below != null and piece_below.is_bubble:
+			# Count total bubbles on board
+			var total_bubbles = 0
+			for y in range(GameState.grid_height):
+				for x in range(GameState.grid_width):
+					var piece = grid.grid_data[y][x]
+					if piece != null and piece.is_bubble:
+						total_bubbles += 1
+			
+			print("    [BOMB EVAL] Time bomb landing ON TOP of bubble! Total bubbles: ", total_bubbles)
+			# High bonus but slightly less than normal bomb due to countdown delay
+			return int(total_bubbles * 40)  # 40 points per bubble vs 50 for normal bomb
+	
+	# Otherwise use normal bomb logic with slight penalty for delay
+	var normal_power = evaluate_normal_bomb_power(bomb_pos)
+	return int(normal_power * 0.8)  # 20% penalty for countdown delay
+
+func evaluate_cross_bomb_power(bomb_pos: Vector2) -> int:
+	"""Evaluate CROSS bomb - clears both row AND column"""
+	var clear_count = 0
+	var row = int(bomb_pos.y)
+	var col = int(bomb_pos.x)
+	
+	# Count pieces in the row
+	for x in range(GameState.grid_width):
+		if grid.grid_data[row][x] != null:
+			clear_count += 1
+	
+	# Count pieces in the column (avoid double-counting intersection)
+	for y in range(GameState.grid_height):
+		if y != row and grid.grid_data[y][col] != null:
+			clear_count += 1
+	
+	# Big bonus for cross bombs - they're very powerful
+	if clear_count >= 6:
+		clear_count += 4
+	
+	return clear_count
+
+func evaluate_area_bomb_power(bomb_pos: Vector2) -> int:
+	"""Evaluate AREA bomb - clears everything in 2-cell radius"""
+	var clear_count = 0
+	var radius = 2
+	
+	for y in range(GameState.grid_height):
+		for x in range(GameState.grid_width):
+			var distance = bomb_pos.distance_to(Vector2(x, y))
+			if distance <= radius and grid.grid_data[y][x] != null:
+				clear_count += 1
+	
+	# Bonus for area bombs in dense regions
+	if clear_count >= 8:
+		clear_count += 3
+	
+	return clear_count
+
+func is_valid_grid_position(pos: Vector2) -> bool:
+	"""Check if position is within grid bounds"""
+	return pos.x >= 0 and pos.x < GameState.grid_width and pos.y >= 0 and pos.y < GameState.grid_height
+
+# ============================================
+# BOARD SAFETY EVALUATION
 # ============================================
 
 func evaluate_board_safety(landing_positions: Array) -> float:
@@ -650,18 +964,24 @@ func get_projected_max_height(landing_positions: Array) -> int:
 # ============================================
 
 func evaluate_spawn_zone_absolute(landing_positions: Array) -> float:
-	"""Rows 0-1 are INSTANT DEATH"""
+	"""Rows 0-1 are INSTANT DEATH - ABSOLUTE REJECTION"""
 	var penalty = 0.0
 	
 	for pos in landing_positions:
 		var row = int(pos.y)
 		
+		# CRITICAL: If ANY piece lands in spawn zone (row < 2), this is instant death
 		if row < GameState.playfield_start_row:
-			penalty -= weight_spawn_zone_death
-			print("WARNING: AI attempted spawn zone placement at row ", row)
-		elif row < GameState.playfield_start_row + 3:
-			var proximity = GameState.playfield_start_row + 3 - row
-			penalty -= 1000.0 * proximity
+			penalty -= weight_spawn_zone_death * 10  # 10x multiplier = -100000 penalty
+			print("CRITICAL: AI attempted spawn zone placement at row ", row, " - REJECTING")
+		# Very close to spawn zone is also extremely dangerous
+		elif row < GameState.playfield_start_row + 2:
+			var proximity = GameState.playfield_start_row + 2 - row
+			penalty -= 5000.0 * proximity  # Increased from 1000
+		# Still dangerous near spawn zone
+		elif row < GameState.playfield_start_row + 4:
+			var proximity = GameState.playfield_start_row + 4 - row
+			penalty -= 2000.0 * proximity
 	
 	return penalty
 
