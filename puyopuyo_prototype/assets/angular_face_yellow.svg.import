@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://df448xi2jjsgi"
-path="res://.godot/imported/angular_face_pink.svg-40f374abfeb4610ecac63a1584d89d2a.ctex"
+uid="uid://dg8ccf0a4vwt0"
+path="res://.godot/imported/angular_face_yellow.svg-216ba405fb709b0ea7da19ed9c5b1658.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/SVG/SVG/angular_face_pink.svg"
-dest_files=["res://.godot/imported/angular_face_pink.svg-40f374abfeb4610ecac63a1584d89d2a.ctex"]
+source_file="res://assets/angular_face_yellow.svg"
+dest_files=["res://.godot/imported/angular_face_yellow.svg-216ba405fb709b0ea7da19ed9c5b1658.ctex"]
 
 [params]
 

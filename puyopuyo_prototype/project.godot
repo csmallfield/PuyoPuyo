@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 GameState="*res://scripts/GameState.gd"
 AudioManager="*res://scripts/AudioManager.gd"
+TournamentManager="*res://scripts/TournamentManager.gd"
 
 [display]
 
