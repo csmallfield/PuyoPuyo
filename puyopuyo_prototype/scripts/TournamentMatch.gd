@@ -286,6 +286,7 @@ func show_round_result_overlay(player_won: bool):
 	round_result_overlay.show()
 	
 	var tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)  # ADD THIS LINE
 	tween.tween_property(round_result_overlay, "modulate:a", 1.0, 0.3)
 	tween.tween_interval(2.0)
 	tween.tween_property(round_result_overlay, "modulate:a", 0.0, 0.3)
@@ -309,6 +310,7 @@ func show_match_victory_overlay():
 	round_result_overlay.show()
 	
 	var tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)  # ADD THIS LINE
 	tween.tween_property(round_result_overlay, "modulate:a", 1.0, 0.3)
 	tween.tween_interval(2.5)
 	tween.tween_property(round_result_overlay, "modulate:a", 0.0, 0.3)
@@ -339,6 +341,7 @@ func show_continue_prompt():
 	continue_overlay.show()
 	
 	var tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)  # ADD THIS LINE
 	tween.tween_property(continue_overlay, "modulate:a", 1.0, 0.3)
 	
 	await get_tree().create_timer(0.1, true).timeout
@@ -383,6 +386,7 @@ func show_game_over():
 	round_result_overlay.show()
 	
 	var tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)  # ADD THIS LINE
 	tween.tween_property(round_result_overlay, "modulate:a", 1.0, 0.3)
 	tween.tween_interval(2.0)
 	tween.tween_property(round_result_overlay, "modulate:a", 0.0, 0.3)
