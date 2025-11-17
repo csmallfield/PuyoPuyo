@@ -153,7 +153,7 @@ func select_random_opponent():
 		"Hard":
 			difficulty_enum = TournamentManager.Difficulty.HARD
 	
-	# Initialize tournament with correct argument order: (roster, difficulty)
+	# FIXED: Correct argument order (roster, difficulty)
 	TournamentManager.initialize_tournament(tournament_roster, difficulty_enum)
 	
 	# Get first opponent
@@ -164,10 +164,7 @@ func select_random_opponent():
 		return
 	
 	print("Selected first opponent: ", current_opponent.opponent_name)
-	
 	AudioManager.play_button_click()
-	
-	# Animate presentation
 	present_selected_opponent()
 
 func present_selected_opponent():
