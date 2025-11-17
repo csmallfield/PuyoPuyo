@@ -2,13 +2,14 @@ extends Control
 # TournamentIntro.gd - Tournament difficulty selection and opponent showcase
 
 @onready var difficulty_panel = $DifficultyPanel
-@onready var opponent_showcase = $OpponentShowcase
-@onready var portrait_container = $OpponentShowcase/PortraitContainer
-@onready var selected_opponent_panel = $OpponentShowcase/SelectedOpponentPanel
-@onready var portrait_large = $OpponentShowcase/SelectedOpponentPanel/PortraitLarge
-@onready var name_label = $OpponentShowcase/SelectedOpponentPanel/NameLabel
-@onready var bio_label = $OpponentShowcase/SelectedOpponentPanel/BioLabel
-@onready var continue_prompt = $OpponentShowcase/SelectedOpponentPanel/ContinuePrompt
+@onready var shuffle_panel = $ShufflePanel
+@onready var shuffle_label = $ShufflePanel/ShuffleLabel
+@onready var portrait_grid = $ShufflePanel/PortraitGrid
+@onready var presentation_panel = $PresentationPanel
+@onready var opponent_portrait = $PresentationPanel/OpponentPortrait
+@onready var opponent_name = $PresentationPanel/OpponentName
+@onready var opponent_bio = $PresentationPanel/OpponentBio
+@onready var continue_prompt = $PresentationPanel/ContinuePrompt
 
 @onready var easy_button = $DifficultyPanel/VBoxContainer/EasyButton
 @onready var normal_button = $DifficultyPanel/VBoxContainer/NormalButton
@@ -22,7 +23,7 @@ var portrait_nodes = []
 
 func _ready():
 	# Load tournament roster
-	tournament_roster = load("res://resources/tournament_roster.tres")
+	tournament_roster = load("res://resources/default_tournament_roster.tres")
 	
 	if not tournament_roster:
 		push_error("Failed to load tournament_roster.tres")
@@ -36,7 +37,8 @@ func _ready():
 	
 	# Start with difficulty selection visible
 	difficulty_panel.show()
-	opponent_showcase.hide()
+	shuffle_panel.hide()
+	presentation_panel.hide()
 	
 	# Grab focus on normal button
 	normal_button.grab_focus()
@@ -57,17 +59,16 @@ func _on_difficulty_pressed(difficulty: String):
 
 func show_opponent_portraits():
 	"""Display all opponent portraits in the lineup"""
-	opponent_showcase.show()
-	opponent_showcase.modulate.a = 0.0
+	shuffle_panel.show()
+	shuffle_panel.modulate.a = 0.0
 	
 	# Clear any existing portraits
-	for child in portrait_container.get_children():
+	for child in portrait_grid.get_children():
 		child.queue_free()
 	portrait_nodes.clear()
 	
-	# Create portrait nodes for all opponents (regular + boss)
-	var all_opponents = tournament_roster.regular_opponents.duplicate()
-	all_opponents.append(tournament_roster.boss_opponent)
+	# Get all opponents from roster
+	var all_opponents = tournament_roster.opponents
 	
 	print("Loading ", all_opponents.size(), " opponent portraits")
 	
@@ -96,7 +97,7 @@ func show_opponent_portraits():
 			portrait.modulate = Color(randf(), randf(), randf())
 		
 		# Add to container
-		portrait_container.add_child(portrait)
+		portrait_grid.add_child(portrait)
 		portrait_nodes.append(portrait)
 		
 		# Store opponent data in metadata
@@ -104,7 +105,7 @@ func show_opponent_portraits():
 	
 	# Fade in portraits
 	var tween = create_tween()
-	tween.tween_property(opponent_showcase, "modulate:a", 1.0, 0.5)
+	tween.tween_property(shuffle_panel, "modulate:a", 1.0, 0.5)
 	
 	# Start shuffle animation
 	tween.tween_callback(shuffle_portraits)
@@ -142,17 +143,21 @@ func shuffle_portraits():
 
 func select_random_opponent():
 	"""Select and present a random opponent"""
-	# Randomize opponent order
-	var opponent_indices = []
-	for i in range(tournament_roster.regular_opponents.size()):
-		opponent_indices.append(i)
-	opponent_indices.shuffle()
+	# Convert string difficulty to enum
+	var difficulty_enum = TournamentManager.Difficulty.NORMAL  # Default
+	match selected_difficulty:
+		"Easy":
+			difficulty_enum = TournamentManager.Difficulty.EASY
+		"Normal":
+			difficulty_enum = TournamentManager.Difficulty.NORMAL
+		"Hard":
+			difficulty_enum = TournamentManager.Difficulty.HARD
 	
-	# Initialize tournament with shuffled opponents
-	TournamentManager.initialize_tournament(selected_difficulty, tournament_roster)
+	# Initialize tournament with correct argument order: (roster, difficulty)
+	TournamentManager.initialize_tournament(tournament_roster, difficulty_enum)
 	
 	# Get first opponent
-	current_opponent = TournamentManager.get_next_opponent()
+	current_opponent = TournamentManager.get_current_opponent()
 	
 	if not current_opponent:
 		push_error("Failed to get first opponent")
@@ -171,29 +176,35 @@ func present_selected_opponent():
 	if current_opponent.portrait_path and current_opponent.portrait_path != "":
 		var texture = load(current_opponent.portrait_path)
 		if texture:
-			portrait_large.texture = texture
+			opponent_portrait.texture = texture
+			print("Loaded large portrait for ", current_opponent.opponent_name)
 		else:
 			# Fallback: solid color
-			portrait_large.texture = null
-			portrait_large.modulate = Color(0.5, 0.5, 0.5)
+			print("WARNING: Failed to load large portrait, using fallback")
+			opponent_portrait.texture = null
+			opponent_portrait.modulate = Color(0.5, 0.5, 0.5)
 	else:
 		# Fallback: solid color
-		portrait_large.texture = null
-		portrait_large.modulate = Color(0.5, 0.5, 0.5)
+		print("WARNING: No portrait path, using fallback")
+		opponent_portrait.texture = null
+		opponent_portrait.modulate = Color(0.5, 0.5, 0.5)
 	
 	# Set name and bio
-	name_label.text = current_opponent.opponent_name
-	bio_label.text = current_opponent.bio_text
+	opponent_name.text = current_opponent.opponent_name
+	opponent_bio.text = current_opponent.bio_text
+	
+	# Hide shuffle panel
+	shuffle_panel.hide()
 	
 	# Animate panel appearance
-	selected_opponent_panel.modulate.a = 0.0
-	selected_opponent_panel.show()
+	presentation_panel.modulate.a = 0.0
+	presentation_panel.show()
 	
 	var tween = create_tween()
-	tween.tween_property(selected_opponent_panel, "modulate:a", 1.0, 0.5)
+	tween.tween_property(presentation_panel, "modulate:a", 1.0, 0.5)
 	
 	# Show continue prompt
-	continue_prompt.text = "Press any key to begin..."
+	continue_prompt.text = "Press SPACE to begin..."
 	
 	# Enable input to continue
 	set_process_input(true)
@@ -201,7 +212,7 @@ func present_selected_opponent():
 func _input(event):
 	# Wait for any key press to continue to match
 	if event is InputEventKey or event is InputEventJoypadButton:
-		if event.pressed and selected_opponent_panel.visible:
+		if event.pressed and presentation_panel.visible:
 			set_process_input(false)
 			start_tournament_match()
 
