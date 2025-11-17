@@ -43,8 +43,8 @@ func _on_tournament_pressed():
 	# SOUND: Transition
 	AudioManager.play_transition()
 	
-	# Load Tournament Mode (placeholder for now - will be TournamentIntro in Phase 2)
-	get_tree().change_scene_to_file("res://scenes/TournamentMode.tscn")
+	# Load Tournament Intro
+	get_tree().change_scene_to_file("res://scenes/TournamentIntro.tscn")
 
 func _on_vs_ai_pressed():
 	# SOUND: Button click

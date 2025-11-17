@@ -6,7 +6,7 @@
 script = ExtResource("1")
 opponent_id = "the_champion"
 opponent_name = "The Champion"
-portrait_path = ""
+portrait_path = "res://assets/opponents/the_champion.png"
 bio_text = "The reigning champion of the Galactic Tournament. A master of all bomb types and unparalleled strategy."
 music_track_path = ""
 is_boss = true

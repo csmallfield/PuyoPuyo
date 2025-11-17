@@ -6,7 +6,7 @@
 script = ExtResource("1")
 opponent_id = "combo_king"
 opponent_name = "Combo King"
-portrait_path = ""
+portrait_path = "res://assets/opponents/combo_king.png"
 bio_text = "The master of chain reactions. Combo King builds devastating cascades that overwhelm opponents."
 music_track_path = ""
 is_boss = false

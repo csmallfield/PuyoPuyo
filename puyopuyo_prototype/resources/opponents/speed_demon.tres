@@ -6,7 +6,7 @@
 script = ExtResource("1")
 opponent_id = "speed_demon"
 opponent_name = "Speed Demon"
-portrait_path = ""
+portrait_path = "res://assets/opponents/speed_demon.png"
 bio_text = "Lightning fast reflexes and aggressive play. Speed Demon doesn't give opponents time to breathe."
 music_track_path = ""
 is_boss = false

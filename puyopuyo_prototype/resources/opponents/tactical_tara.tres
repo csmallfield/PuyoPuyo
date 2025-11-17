@@ -6,7 +6,7 @@
 script = ExtResource("1")
 opponent_id = "tactical_tara"
 opponent_name = "Tactical Tara"
-portrait_path = ""
+portrait_path = "res://assets/opponents/tactical_tara.png"
 bio_text = "A methodical player who thinks three moves ahead. Tara's patient approach wears down opponents."
 music_track_path = ""
 is_boss = false

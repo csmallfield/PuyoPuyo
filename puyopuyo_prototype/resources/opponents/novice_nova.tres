@@ -6,7 +6,7 @@
 script = ExtResource("1")
 opponent_id = "novice_nova"
 opponent_name = "Novice Nova"
-portrait_path = ""
+portrait_path = "res://assets/opponents/novice_nova.png"
 bio_text = "A beginner just learning the ropes. Nova plays it safe with simple strategies."
 music_track_path = ""
 is_boss = false
