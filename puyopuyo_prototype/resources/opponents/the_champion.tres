@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="OpponentData" load_steps=2 format=3 uid="uid://qre5sdbcsofx"]
+
+[ext_resource type="Script" uid="uid://dfauy8ia2dp62" path="res://scripts/OpponentData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+opponent_id = "the_champion"
+opponent_name = "The Champion"
+portrait_path = ""
+bio_text = "The reigning champion of the Galactic Tournament. A master of all bomb types and unparalleled strategy."
+music_track_path = ""
+is_boss = true
+easy_ai_difficulty = 2
+normal_ai_difficulty = 3
+hard_ai_difficulty = 3
+easy_bomb_type = 1
+normal_bomb_type = 2
+hard_bomb_type = 3
+metadata/_custom_type_script = "uid://dfauy8ia2dp62"

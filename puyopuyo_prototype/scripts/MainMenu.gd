@@ -2,18 +2,20 @@ extends Control
 # MainMenu.gd - Main menu controller
 
 @onready var single_player_button = $CenterContainer/VBoxContainer/SinglePlayerButton
+@onready var tournament_button = $CenterContainer/VBoxContainer/TournamentButton
 @onready var vs_ai_button = $CenterContainer/VBoxContainer/VSAIButton
 @onready var quit_button = $CenterContainer/VBoxContainer/QuitButton
 
 func _ready():
 	# Connect button signals
 	single_player_button.connect("pressed", _on_single_player_pressed)
+	tournament_button.connect("pressed", _on_tournament_pressed)
 	vs_ai_button.connect("pressed", _on_vs_ai_pressed)
 	quit_button.connect("pressed", _on_quit_pressed)
 	
 	# Optional: Connect hover signals for button hover sounds
-	# Uncomment these if you want hover sounds
 	single_player_button.connect("mouse_entered", _on_button_hover)
+	tournament_button.connect("mouse_entered", _on_button_hover)
 	vs_ai_button.connect("mouse_entered", _on_button_hover)
 	quit_button.connect("mouse_entered", _on_button_hover)
 	
@@ -34,6 +36,16 @@ func _on_single_player_pressed():
 	# Load the existing single player game
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")
 
+func _on_tournament_pressed():
+	# SOUND: Button click
+	AudioManager.play_button_click()
+	
+	# SOUND: Transition
+	AudioManager.play_transition()
+	
+	# Load Tournament Mode (placeholder for now - will be TournamentIntro in Phase 2)
+	get_tree().change_scene_to_file("res://scenes/TournamentMode.tscn")
+
 func _on_vs_ai_pressed():
 	# SOUND: Button click
 	AudioManager.play_button_click()
@@ -41,7 +53,7 @@ func _on_vs_ai_pressed():
 	# SOUND: Transition
 	AudioManager.play_transition()
 	
-	# This will load VS mode (we'll create this in Phase 3)
+	# Load VS mode
 	get_tree().change_scene_to_file("res://scenes/VSMode.tscn")
 
 func _on_quit_pressed():

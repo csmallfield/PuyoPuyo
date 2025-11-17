@@ -203,14 +203,22 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 focus_neighbor_top = NodePath("../QuitButton")
-focus_neighbor_bottom = NodePath("../VSAIButton")
+focus_neighbor_bottom = NodePath("../TournamentButton")
 theme_override_font_sizes/font_size = 36
 text = "Single Player"
+
+[node name="TournamentButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(300, 60)
+layout_mode = 2
+focus_neighbor_top = NodePath("../SinglePlayerButton")
+focus_neighbor_bottom = NodePath("../VSAIButton")
+theme_override_font_sizes/font_size = 36
+text = "Tournament Mode"
 
 [node name="VSAIButton" type="Button" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
-focus_neighbor_top = NodePath("../SinglePlayerButton")
+focus_neighbor_top = NodePath("../TournamentButton")
 focus_neighbor_bottom = NodePath("../QuitButton")
 theme_override_font_sizes/font_size = 36
 text = "VS Computer

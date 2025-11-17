@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="TournamentRoster" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/TournamentRoster.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/opponents/novice_nova.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/opponents/tactical_tara.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/opponents/combo_king.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/opponents/speed_demon.tres" id="5"]
+[ext_resource type="Resource" path="res://resources/opponents/the_champion.tres" id="6"]
+
+[resource]
+script = ExtResource("1")
+opponents = Array[Resource("res://scripts/OpponentData.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])

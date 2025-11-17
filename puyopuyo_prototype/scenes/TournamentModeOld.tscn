@@ -1,12 +1,18 @@
-[gd_scene load_steps=9 format=3 uid="uid://cpr8b8qlqotka"]
+[gd_scene load_steps=11 format=3 uid="uid://da1bg04gnwvr5"]
 
-[ext_resource type="Script" path="res://scripts/TournamentMode.gd" id="1"]
-[ext_resource type="Shader" uid="uid://bsu08ihllxkav" path="res://shaders/starfieldShader.gdshader" id="2"]
-[ext_resource type="Shader" uid="uid://mptlw0qx27w6" path="res://shaders/nebulaShader.gdshader" id="3"]
-[ext_resource type="Shader" uid="uid://cofhbcycs1t11" path="res://shaders/planetShader.gdshader" id="4"]
+[ext_resource type="AudioStream" uid="uid://dm56rymqt7v5c" path="res://sounds/music/hexedex_quantumquasars.wav" id="1_hoedi"]
+[ext_resource type="Shader" uid="uid://bsu08ihllxkav" path="res://shaders/starfieldShader.gdshader" id="2_6ijv4"]
+[ext_resource type="Shader" uid="uid://mptlw0qx27w6" path="res://shaders/nebulaShader.gdshader" id="3_ye36h"]
+[ext_resource type="Shader" uid="uid://cofhbcycs1t11" path="res://shaders/planetShader.gdshader" id="4_q8rpe"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xtck3"]
+bg_color = Color(0.146015, 0.163751, 0.320833, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_61vjl"]
+bg_color = Color(0.834475, 0.214095, 0.795047, 1)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_07keg"]
-shader = ExtResource("2")
+shader = ExtResource("2_6ijv4")
 shader_parameter/star_density = 0.0911
 shader_parameter/star_brightness = 0.626
 shader_parameter/star_size = 3.209
@@ -15,7 +21,7 @@ shader_parameter/world_offset = Vector2(0, 0)
 shader_parameter/tile_size = 200.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_b6r7e"]
-shader = ExtResource("3")
+shader = ExtResource("3_ye36h")
 shader_parameter/resolution_scale = 0.687
 shader_parameter/base_scale = 3.146
 shader_parameter/base_density = 0.824
@@ -45,7 +51,7 @@ shader_parameter/color_blend_smoothness = 1.0
 shader_parameter/overall_brightness = 1.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_pniv8"]
-shader = ExtResource("3")
+shader = ExtResource("3_ye36h")
 shader_parameter/resolution_scale = 0.687
 shader_parameter/base_scale = 3.146
 shader_parameter/base_density = 0.804
@@ -75,7 +81,7 @@ shader_parameter/color_blend_smoothness = 1.0
 shader_parameter/overall_brightness = 1.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wdv0c"]
-shader = ExtResource("4")
+shader = ExtResource("4_q8rpe")
 shader_parameter/planet_radius = 0.433
 shader_parameter/edge_softness = 0.0
 shader_parameter/uv_offset_x = 0.0
@@ -171,7 +177,226 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1782, 0.27, 0.23175, 1)
+
+[node name="GameContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 40
+
+[node name="PlayerSide" type="VBoxContainer" parent="GameContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PlayerLabel" type="Label" parent="GameContainer/PlayerSide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "PLAYER"
+horizontal_alignment = 1
+
+[node name="GarbageMeter" type="ProgressBar" parent="GameContainer/PlayerSide"]
+custom_minimum_size = Vector2(384, 30)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_xtck3")
+theme_override_styles/fill = SubResource("StyleBoxFlat_61vjl")
+max_value = 1.0
+show_percentage = false
+
+[node name="PlayerGridContainer" type="Control" parent="GameContainer/PlayerSide"]
+custom_minimum_size = Vector2(384, 896)
+layout_mode = 2
+
+[node name="PlayerScoreLabel" type="Label" parent="GameContainer/PlayerSide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Score:0"
+horizontal_alignment = 1
+
+[node name="LevelLabel" type="Label" parent="GameContainer/PlayerSide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Level 1"
+horizontal_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="GameContainer"]
+custom_minimum_size = Vector2(4, 0)
+layout_mode = 2
+
+[node name="AISide" type="VBoxContainer" parent="GameContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AILabel" type="Label" parent="GameContainer/AISide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "AI OPPONENT"
+horizontal_alignment = 1
+
+[node name="GarbageMeter" type="ProgressBar" parent="GameContainer/AISide"]
+custom_minimum_size = Vector2(384, 30)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_xtck3")
+theme_override_styles/fill = SubResource("StyleBoxFlat_61vjl")
+max_value = 1.0
+show_percentage = false
+
+[node name="AIGridContainer" type="Control" parent="GameContainer/AISide"]
+custom_minimum_size = Vector2(384, 896)
+layout_mode = 2
+
+[node name="AIScoreLabel" type="Label" parent="GameContainer/AISide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Score:0"
+horizontal_alignment = 1
+
+[node name="LevelLabel" type="Label" parent="GameContainer/AISide"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Level 1"
+horizontal_alignment = 1
+
+[node name="ResultPanel" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -150.0
+offset_right = 150.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ResultPanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResultLabel" type="Label" parent="ResultPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_font_sizes/font_size = 48
+text = "YOU WIN!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="ResultPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="RetryButton" type="Button" parent="ResultPanel/VBoxContainer"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../MenuButton")
+focus_neighbor_bottom = NodePath("../MenuButton")
+theme_override_font_sizes/font_size = 24
+text = "Retry"
+
+[node name="MenuButton" type="Button" parent="ResultPanel/VBoxContainer"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../RetryButton")
+focus_neighbor_bottom = NodePath("../RetryButton")
+theme_override_font_sizes/font_size = 24
+text = "Main Menu"
+
+[node name="PausePanel" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -200.0
+offset_right = 150.0
+offset_bottom = 350.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PausePanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PauseTitle" type="Label" parent="PausePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "PAUSED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="ResumeButton" type="Button" parent="PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_bottom = NodePath("../RestartButton")
+theme_override_font_sizes/font_size = 24
+text = "Resume Game"
+
+[node name="RestartButton" type="Button" parent="PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../ResumeButton")
+focus_neighbor_bottom = NodePath("../PauseMenuButton")
+theme_override_font_sizes/font_size = 24
+text = "Restart Game"
+
+[node name="PauseMenuButton" type="Button" parent="PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../RestartButton")
+theme_override_font_sizes/font_size = 24
+text = "Main Menu"
+
+[node name="HSeparator2" type="HSeparator" parent="PausePanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="OpponentDifficultyLabel" type="Label" parent="PausePanel/VBoxContainer"]
+layout_mode = 2
+text = "Opponent AI: Level 1"
+horizontal_alignment = 1
+
+[node name="OpponentDifficultyButton" type="Button" parent="PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Change Opponent AI"
+
+[node name="MusicPlayer" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("1_hoedi")
+volume_db = -12.0
 
 [node name="DynamicBG" type="Node" parent="."]
 

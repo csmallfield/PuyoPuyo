@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="OpponentData" load_steps=2 format=3 uid="uid://bbcuvfhjbdud2"]
+
+[ext_resource type="Script" uid="uid://dfauy8ia2dp62" path="res://scripts/OpponentData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+opponent_id = "combo_king"
+opponent_name = "Combo King"
+portrait_path = ""
+bio_text = "The master of chain reactions. Combo King builds devastating cascades that overwhelm opponents."
+music_track_path = ""
+is_boss = false
+easy_ai_difficulty = 1
+normal_ai_difficulty = 2
+hard_ai_difficulty = 3
+easy_bomb_type = 1
+normal_bomb_type = 2
+hard_bomb_type = 3
+metadata/_custom_type_script = "uid://dfauy8ia2dp62"

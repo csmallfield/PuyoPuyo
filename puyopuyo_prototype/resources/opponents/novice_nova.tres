@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="OpponentData" load_steps=2 format=3 uid="uid://fdhmxigvgmr5"]
+
+[ext_resource type="Script" uid="uid://dfauy8ia2dp62" path="res://scripts/OpponentData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+opponent_id = "novice_nova"
+opponent_name = "Novice Nova"
+portrait_path = ""
+bio_text = "A beginner just learning the ropes. Nova plays it safe with simple strategies."
+music_track_path = ""
+is_boss = false
+easy_ai_difficulty = 0
+normal_ai_difficulty = 1
+hard_ai_difficulty = 2
+easy_bomb_type = 1
+normal_bomb_type = 2
+hard_bomb_type = 3
+metadata/_custom_type_script = "uid://dfauy8ia2dp62"
