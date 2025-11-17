@@ -1,352 +1,222 @@
 extends Control
-# TournamentIntro.gd - Tournament Mode intro and difficulty selection
+# TournamentIntro.gd - Tournament difficulty selection and opponent showcase
 
-# ============================================
-# SCENE REFERENCES
-# ============================================
-
-# Difficulty Selection Panel
 @onready var difficulty_panel = $DifficultyPanel
+@onready var opponent_showcase = $OpponentShowcase
+@onready var portrait_container = $OpponentShowcase/PortraitContainer
+@onready var selected_opponent_panel = $OpponentShowcase/SelectedOpponentPanel
+@onready var portrait_large = $OpponentShowcase/SelectedOpponentPanel/PortraitLarge
+@onready var name_label = $OpponentShowcase/SelectedOpponentPanel/NameLabel
+@onready var bio_label = $OpponentShowcase/SelectedOpponentPanel/BioLabel
+@onready var continue_prompt = $OpponentShowcase/SelectedOpponentPanel/ContinuePrompt
+
 @onready var easy_button = $DifficultyPanel/VBoxContainer/EasyButton
 @onready var normal_button = $DifficultyPanel/VBoxContainer/NormalButton
 @onready var hard_button = $DifficultyPanel/VBoxContainer/HardButton
 @onready var back_button = $DifficultyPanel/VBoxContainer/BackButton
 
-# Portrait Shuffle Panel
-@onready var shuffle_panel = $ShufflePanel
-@onready var shuffle_label = $ShufflePanel/ShuffleLabel
-@onready var portrait_grid = $ShufflePanel/PortraitGrid
-
-# Opponent Presentation Panel
-@onready var presentation_panel = $PresentationPanel
-@onready var opponent_portrait = $PresentationPanel/OpponentPortrait
-@onready var opponent_name_label = $PresentationPanel/OpponentName
-@onready var opponent_bio_label = $PresentationPanel/OpponentBio
-@onready var continue_prompt = $PresentationPanel/ContinuePrompt
-
-# ============================================
-# STATE
-# ============================================
-
-enum State {
-	DIFFICULTY_SELECT,
-	SHUFFLING,
-	PRESENTING,
-	TRANSITIONING
-}
-
-var current_state = State.DIFFICULTY_SELECT
-var selected_difficulty = TournamentManager.Difficulty.NORMAL
-var tournament_roster: TournamentRoster = null
-var current_opponent_index = 0
-
-# Portrait shuffle animation
-var shuffle_timer = 0.0
-var shuffle_duration = 2.0
-var shuffle_speed = 0.1
-var portraits: Array[TextureRect] = []
-
-# ============================================
-# INITIALIZATION
-# ============================================
+var tournament_roster: Resource = null
+var selected_difficulty: String = ""
+var current_opponent: Resource = null
+var portrait_nodes = []
 
 func _ready():
 	# Load tournament roster
-	tournament_roster = load("res://resources/default_tournament_roster.tres")
+	tournament_roster = load("res://resources/tournament_roster.tres")
 	
 	if not tournament_roster:
-		push_error("TournamentIntro: Failed to load tournament roster!")
+		push_error("Failed to load tournament_roster.tres")
 		return
 	
 	# Connect difficulty buttons
-	easy_button.connect("pressed", _on_easy_pressed)
-	normal_button.connect("pressed", _on_normal_pressed)
-	hard_button.connect("pressed", _on_hard_pressed)
+	easy_button.connect("pressed", _on_difficulty_pressed.bind("Easy"))
+	normal_button.connect("pressed", _on_difficulty_pressed.bind("Normal"))
+	hard_button.connect("pressed", _on_difficulty_pressed.bind("Hard"))
 	back_button.connect("pressed", _on_back_pressed)
 	
-	# Setup initial state
-	show_difficulty_selection()
-	
-	# Play intro music (if you have one)
-	AudioManager.play_transition()
-
-# ============================================
-# DIFFICULTY SELECTION
-# ============================================
-
-func show_difficulty_selection():
-	"""Show difficulty selection panel"""
-	current_state = State.DIFFICULTY_SELECT
-	
+	# Start with difficulty selection visible
 	difficulty_panel.show()
-	shuffle_panel.hide()
-	presentation_panel.hide()
+	opponent_showcase.hide()
 	
 	# Grab focus on normal button
 	normal_button.grab_focus()
 
-func _on_easy_pressed():
+func _on_difficulty_pressed(difficulty: String):
+	print("Selected difficulty: ", difficulty)
+	selected_difficulty = difficulty
+	
 	AudioManager.play_button_click()
-	selected_difficulty = TournamentManager.Difficulty.EASY
-	start_tournament()
-
-func _on_normal_pressed():
-	AudioManager.play_button_click()
-	selected_difficulty = TournamentManager.Difficulty.NORMAL
-	start_tournament()
-
-func _on_hard_pressed():
-	AudioManager.play_button_click()
-	selected_difficulty = TournamentManager.Difficulty.HARD
-	start_tournament()
-
-func _on_back_pressed():
-	AudioManager.play_button_click()
-	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
-
-# ============================================
-# TOURNAMENT START
-# ============================================
-
-func start_tournament():
-	"""Initialize tournament and begin portrait shuffle"""
-	print("\n=== TOURNAMENT START ===")
-	print("Difficulty: ", ["Easy", "Normal", "Hard"][selected_difficulty])
 	
-	# Initialize tournament in manager
-	TournamentManager.initialize_tournament(tournament_roster, selected_difficulty)
+	# Fade out difficulty panel
+	var tween = create_tween()
+	tween.tween_property(difficulty_panel, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(difficulty_panel.hide)
 	
-	# Start portrait shuffle sequence
-	current_opponent_index = 0
-	show_portrait_shuffle()
+	# Show opponent showcase
+	tween.tween_callback(show_opponent_portraits)
 
-# ============================================
-# PORTRAIT SHUFFLE
-# ============================================
-
-func show_portrait_shuffle():
-	"""Show portrait shuffle animation"""
-	current_state = State.SHUFFLING
+func show_opponent_portraits():
+	"""Display all opponent portraits in the lineup"""
+	opponent_showcase.show()
+	opponent_showcase.modulate.a = 0.0
 	
-	difficulty_panel.hide()
-	shuffle_panel.show()
-	presentation_panel.hide()
+	# Clear any existing portraits
+	for child in portrait_container.get_children():
+		child.queue_free()
+	portrait_nodes.clear()
 	
-	shuffle_label.text = "SELECTING OPPONENTS..."
+	# Create portrait nodes for all opponents (regular + boss)
+	var all_opponents = tournament_roster.regular_opponents.duplicate()
+	all_opponents.append(tournament_roster.boss_opponent)
 	
-	# Create portrait grid
-	create_portrait_grid()
+	print("Loading ", all_opponents.size(), " opponent portraits")
+	
+	for i in range(all_opponents.size()):
+		var opponent = all_opponents[i]
+		
+		# Create TextureRect for portrait
+		var portrait = TextureRect.new()
+		portrait.custom_minimum_size = Vector2(128, 128)
+		portrait.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		# Load portrait image
+		if opponent.portrait_path and opponent.portrait_path != "":
+			var texture = load(opponent.portrait_path)
+			if texture:
+				portrait.texture = texture
+				print("Loaded portrait for ", opponent.opponent_name, " from ", opponent.portrait_path)
+			else:
+				print("WARNING: Failed to load portrait from ", opponent.portrait_path)
+				# Create fallback colored rect
+				portrait.modulate = Color(randf(), randf(), randf())
+		else:
+			print("WARNING: No portrait path for ", opponent.opponent_name)
+			# Create fallback colored rect
+			portrait.modulate = Color(randf(), randf(), randf())
+		
+		# Add to container
+		portrait_container.add_child(portrait)
+		portrait_nodes.append(portrait)
+		
+		# Store opponent data in metadata
+		portrait.set_meta("opponent_data", opponent)
+	
+	# Fade in portraits
+	var tween = create_tween()
+	tween.tween_property(opponent_showcase, "modulate:a", 1.0, 0.5)
 	
 	# Start shuffle animation
-	shuffle_timer = 0.0
-	
-	print("Starting portrait shuffle animation")
+	tween.tween_callback(shuffle_portraits)
 
-func create_portrait_grid():
-	"""Create grid of opponent portraits"""
-	# Clear existing portraits
-	for child in portrait_grid.get_children():
-		child.queue_free()
-	portraits.clear()
+func shuffle_portraits():
+	"""Animate portrait shuffling"""
+	print("Shuffling portraits...")
 	
-	# Create 5 portrait placeholders in a grid
-	# Grid will be 3 columns: [X] [X] [X]
-	#                          [X] [X]
+	var shuffle_duration = 1.5
+	var shuffle_count = 8
+	var interval = shuffle_duration / shuffle_count
 	
-	portrait_grid.columns = 3
+	AudioManager.play_button_hover()  # Use hover sound for shuffle
 	
-	for i in range(5):
-		var portrait_rect = TextureRect.new()
-		portrait_rect.custom_minimum_size = Vector2(150, 150)
-		portrait_rect.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		portrait_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	for i in range(shuffle_count):
+		await get_tree().create_timer(interval).timeout
 		
-		# For now, use colored backgrounds as placeholders
-		var panel = Panel.new()
-		panel.custom_minimum_size = Vector2(150, 150)
+		# Swap random portraits visually (not the actual nodes)
+		var idx1 = randi() % portrait_nodes.size()
+		var idx2 = randi() % portrait_nodes.size()
 		
-		# Add opponent name label
-		var name_label = Label.new()
-		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		name_label.add_theme_font_size_override("font_size", 18)
-		name_label.add_theme_color_override("font_outline_color", Color.BLACK)
-		name_label.add_theme_constant_override("outline_size", 4)
-		
-		# Set initial appearance (will be updated in animation)
-		var opponent = tournament_roster.opponents[i]
-		name_label.text = "?"
-		panel.modulate = Color(0.3, 0.3, 0.3)
-		
-		panel.add_child(name_label)
-		name_label.anchors_preset = Control.PRESET_FULL_RECT
-		name_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
-		name_label.grow_vertical = Control.GROW_DIRECTION_BOTH
-		
-		portrait_grid.add_child(panel)
-		portraits.append(panel)
+		if idx1 != idx2:
+			# Swap positions with animation
+			var pos1 = portrait_nodes[idx1].position
+			var pos2 = portrait_nodes[idx2].position
+			
+			var tween = create_tween()
+			tween.set_parallel(true)
+			tween.tween_property(portrait_nodes[idx1], "position", pos2, 0.2)
+			tween.tween_property(portrait_nodes[idx2], "position", pos1, 0.2)
+	
+	# Select opponent after shuffle
+	await get_tree().create_timer(0.3).timeout
+	select_random_opponent()
 
-func _process(delta):
-	if current_state == State.SHUFFLING:
-		process_shuffle_animation(delta)
-
-func process_shuffle_animation(delta):
-	"""Animate the portrait shuffle"""
-	shuffle_timer += delta
+func select_random_opponent():
+	"""Select and present a random opponent"""
+	# Randomize opponent order
+	var opponent_indices = []
+	for i in range(tournament_roster.regular_opponents.size()):
+		opponent_indices.append(i)
+	opponent_indices.shuffle()
 	
-	# Flash portraits during shuffle
-	var flash_interval = shuffle_speed
-	var flash_count = int(shuffle_timer / flash_interval)
+	# Initialize tournament with shuffled opponents
+	TournamentManager.initialize_tournament(selected_difficulty, tournament_roster)
 	
-	for i in range(portraits.size()):
-		var portrait = portraits[i]
-		var opponent = tournament_roster.opponents[i]
-		
-		# Alternate between showing and hiding opponent info
-		if int(shuffle_timer / flash_interval) % 2 == 0:
-			portrait.modulate = Color(0.5 + randf() * 0.5, 0.5 + randf() * 0.5, 0.5 + randf() * 0.5)
-			if portrait.get_child_count() > 0:
-				var label = portrait.get_child(0)
-				label.text = "?"
-		else:
-			# Randomly assign colors during shuffle
-			portrait.modulate = Color(randf(), randf(), randf())
+	# Get first opponent
+	current_opponent = TournamentManager.get_next_opponent()
 	
-	# After shuffle duration, reveal opponents
-	if shuffle_timer >= shuffle_duration:
-		reveal_opponents()
-
-func reveal_opponents():
-	"""Reveal the opponent lineup after shuffle"""
-	print("Revealing opponent lineup")
+	if not current_opponent:
+		push_error("Failed to get first opponent")
+		return
 	
-	# Get the actual opponent order from TournamentManager
-	var opponent_queue = TournamentManager.opponent_queue
+	print("Selected first opponent: ", current_opponent.opponent_name)
 	
-	# Reveal each opponent
-	for i in range(portraits.size()):
-		var portrait = portraits[i]
-		var opponent = opponent_queue[i]
-		
-		# Set final appearance
-		if opponent.is_boss:
-			portrait.modulate = Color(1.0, 0.8, 0.0)  # Gold for boss
-		else:
-			portrait.modulate = Color(0.6, 0.8, 1.0)  # Blue for regulars
-		
-		if portrait.get_child_count() > 0:
-			var label = portrait.get_child(0)
-			label.text = opponent.opponent_name
-
-	# Play reveal sound
-	AudioManager.play_difficulty_change()
-	
-	# Wait a moment, then present first opponent
-	await get_tree().create_timer(1.5).timeout
-	present_opponent(0)
-
-# ============================================
-# OPPONENT PRESENTATION
-# ============================================
-
-func present_opponent(opponent_index: int):
-	"""Present a specific opponent with zoom-in effect"""
-	current_state = State.PRESENTING
-	current_opponent_index = opponent_index
-	
-	var opponent = TournamentManager.opponent_queue[opponent_index]
-	
-	print("Presenting opponent: ", opponent.opponent_name)
-	
-	# Hide shuffle panel, show presentation panel
-	shuffle_panel.hide()
-	presentation_panel.show()
-	
-	# Set opponent info
-	opponent_name_label.text = opponent.opponent_name
-	opponent_bio_label.text = opponent.bio_text
-	
-	# Set portrait appearance (placeholder for now)
-	if opponent.is_boss:
-		opponent_portrait.modulate = Color(1.0, 0.8, 0.0)
-	else:
-		opponent_portrait.modulate = Color(0.6, 0.8, 1.0)
-	
-	# Show continue prompt
-	continue_prompt.text = "Press SPACE to continue..."
-	continue_prompt.modulate.a = 0.0
-	
-	# Animate presentation
-	animate_presentation()
-
-func animate_presentation():
-	"""Animate the opponent presentation"""
-	# Fade in name
-	opponent_name_label.modulate.a = 0.0
-	var tween = create_tween()
-	tween.tween_property(opponent_name_label, "modulate:a", 1.0, 0.5)
-	
-	# Scale in portrait
-	opponent_portrait.scale = Vector2(0.1, 0.1)
-	tween.parallel().tween_property(opponent_portrait, "scale", Vector2(1.0, 1.0), 0.5)
-	
-	# Fade in bio
-	opponent_bio_label.modulate.a = 0.0
-	tween.tween_property(opponent_bio_label, "modulate:a", 1.0, 0.5)
-	
-	# Fade in continue prompt
-	tween.tween_property(continue_prompt, "modulate:a", 1.0, 0.3)
-	
-	# Play sound
-	AudioManager.play_game_start()
-
-# ============================================
-# INPUT HANDLING
-# ============================================
-
-func _input(event):
-	if current_state == State.PRESENTING:
-		if event.is_action_pressed("ui_accept") or event.is_action_pressed("fast_drop"):
-			advance_to_next()
-	
-	# Allow escape to go back during difficulty selection
-	if current_state == State.DIFFICULTY_SELECT:
-		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("pause"):
-			_on_back_pressed()
-
-# ============================================
-# PROGRESSION
-# ============================================
-
-func advance_to_next():
-	"""Advance to next opponent presentation or start matches"""
 	AudioManager.play_button_click()
 	
-	current_opponent_index += 1
-	
-	if current_opponent_index < TournamentManager.opponent_queue.size():
-		# Present next opponent
-		present_opponent(current_opponent_index)
-	else:
-		# All opponents presented, start tournament matches!
-		start_matches()
+	# Animate presentation
+	present_selected_opponent()
 
-func start_matches():
-	"""Transition to tournament matches"""
-	current_state = State.TRANSITIONING
+func present_selected_opponent():
+	"""Present the selected opponent with details"""
+	# Load large portrait
+	if current_opponent.portrait_path and current_opponent.portrait_path != "":
+		var texture = load(current_opponent.portrait_path)
+		if texture:
+			portrait_large.texture = texture
+		else:
+			# Fallback: solid color
+			portrait_large.texture = null
+			portrait_large.modulate = Color(0.5, 0.5, 0.5)
+	else:
+		# Fallback: solid color
+		portrait_large.texture = null
+		portrait_large.modulate = Color(0.5, 0.5, 0.5)
 	
-	print("All opponents presented! Starting tournament matches...")
+	# Set name and bio
+	name_label.text = current_opponent.opponent_name
+	bio_label.text = current_opponent.bio_text
+	
+	# Animate panel appearance
+	selected_opponent_panel.modulate.a = 0.0
+	selected_opponent_panel.show()
+	
+	var tween = create_tween()
+	tween.tween_property(selected_opponent_panel, "modulate:a", 1.0, 0.5)
+	
+	# Show continue prompt
+	continue_prompt.text = "Press any key to begin..."
+	
+	# Enable input to continue
+	set_process_input(true)
+
+func _input(event):
+	# Wait for any key press to continue to match
+	if event is InputEventKey or event is InputEventJoypadButton:
+		if event.pressed and selected_opponent_panel.visible:
+			set_process_input(false)
+			start_tournament_match()
+
+func start_tournament_match():
+	"""Transition to tournament match scene"""
+	print("Starting tournament match against ", current_opponent.opponent_name)
 	
 	AudioManager.play_transition()
 	
 	# Fade out
 	var tween = create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.5)
-	await tween.finished
-	
-	# Load tournament match scene (placeholder for now - Phase 3)
-	# For now, go back to main menu as a placeholder
-	get_tree().change_scene_to_file("res://scenes/TournamentMode.tscn")
-	
-	# In Phase 3, this will be:
-	# get_tree().change_scene_to_file("res://scenes/TournamentMatch.tscn")
+	tween.tween_callback(func(): get_tree().change_scene_to_file("res://scenes/TournamentMatch.tscn"))
+
+func _on_back_pressed():
+	"""Return to main menu"""
+	AudioManager.play_button_click()
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")

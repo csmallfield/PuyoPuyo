@@ -1,6 +1,6 @@
-[gd_scene load_steps=10 format=3 uid="uid://cyh3qr5nw8b7v"]
+[gd_scene load_steps=10 format=3 uid="uid://crqkxdvnr82rd"]
 
-[ext_resource type="Script" path="res://scripts/TournamentIntro.gd" id="1"]
+[ext_resource type="Script" uid="uid://bq266383xhx2t" path="res://scripts/TournamentIntro.gd" id="1"]
 [ext_resource type="Shader" uid="uid://bsu08ihllxkav" path="res://shaders/starfieldShader.gdshader" id="2"]
 [ext_resource type="Shader" uid="uid://mptlw0qx27w6" path="res://shaders/nebulaShader.gdshader" id="3"]
 [ext_resource type="Shader" uid="uid://cofhbcycs1t11" path="res://shaders/planetShader.gdshader" id="4"]
@@ -231,6 +231,7 @@ offset_bottom = 2179.0
 rotation = 1.56438
 
 [node name="DifficultyPanel" type="Panel" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -311,7 +312,6 @@ theme_override_font_sizes/font_size = 24
 text = "Back to Main Menu"
 
 [node name="ShufflePanel" type="Panel" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -377,7 +377,7 @@ theme_override_font_sizes/font_size = 56
 text = "OPPONENT NAME"
 horizontal_alignment = 1
 
-[node name="OpponentPortrait" type="ColorRect" parent="PresentationPanel"]
+[node name="OpponentPortrait" type="TextureRect" parent="PresentationPanel"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -390,7 +390,6 @@ offset_right = 150.0
 offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.6, 0.8, 1, 1)
 
 [node name="OpponentBio" type="Label" parent="PresentationPanel"]
 layout_mode = 1
