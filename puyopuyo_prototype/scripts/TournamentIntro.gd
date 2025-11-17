@@ -35,13 +35,30 @@ func _ready():
 	hard_button.connect("pressed", _on_difficulty_pressed.bind("Hard"))
 	back_button.connect("pressed", _on_back_pressed)
 	
-	# Start with difficulty selection visible
-	difficulty_panel.show()
-	shuffle_panel.hide()
-	presentation_panel.hide()
+	# NEW: Check if tournament is already in progress
+	# Use the class variable, not a local variable!
+	current_opponent = TournamentManager.get_current_opponent()
 	
-	# Grab focus on normal button
-	normal_button.grab_focus()
+	if current_opponent != null:
+		# Tournament already started - skip difficulty selection and show next opponent
+		print("Tournament in progress - showing next opponent: ", current_opponent.opponent_name)
+		difficulty_panel.hide()
+		shuffle_panel.hide()
+		presentation_panel.hide()
+		
+		# Set the selected difficulty from TournamentManager
+		selected_difficulty = TournamentManager.get_difficulty_name()
+		
+		# Go directly to presenting the opponent (no need to reassign current_opponent)
+		present_selected_opponent()
+	else:
+		# New tournament - start with difficulty selection visible
+		difficulty_panel.show()
+		shuffle_panel.hide()
+		presentation_panel.hide()
+		
+		# Grab focus on normal button
+		normal_button.grab_focus()
 
 func _on_difficulty_pressed(difficulty: String):
 	print("Selected difficulty: ", difficulty)
