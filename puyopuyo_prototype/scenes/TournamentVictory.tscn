@@ -1,0 +1,124 @@
+[gd_scene load_steps=3 format=3 uid="uid://b7gkfvd2t223h"]
+
+[ext_resource type="Script" uid="uid://n8ar4j3ox236" path="res://scripts/TournamentVictory.gd" id="1_c1l06"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lv1c2"]
+bg_color = Color(0.1, 0.1, 0.2, 0.8)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.7, 1, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[node name="TournamentVictory" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_c1l06")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1782, 0.27, 0.23175, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+custom_minimum_size = Vector2(800, 600)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.9, 0.3, 1)
+theme_override_font_sizes/font_size = 72
+text = "TOURNAMENT COMPLETE!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="StatsPanel" type="Panel" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(700, 200)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_lv1c2")
+
+[node name="StatsVbox" type="VBoxContainer" parent="CenterContainer/VBoxContainer/StatsPanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="ScoreLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVbox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Score: 0"
+horizontal_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVbox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Time: 0"
+horizontal_alignment = 1
+
+[node name="ContinuesLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVbox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Continues: 0"
+horizontal_alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVbox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="OpponentsLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "Defeated Opponents"
+horizontal_alignment = 1
+
+[node name="OpponentsScroll" type="ScrollContainer" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(700, 200)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="OpponentsList" type="VBoxContainer" parent="CenterContainer/VBoxContainer/OpponentsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="HSeparator3" type="HSeparator" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="MenuButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(400, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Return to Main Menu"
