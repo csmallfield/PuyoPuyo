@@ -320,8 +320,7 @@ func _on_ai_loses_round():
 
 func show_round_result_overlay(player_won: bool):
 	"""Show round result and continue to next round"""
-	get_tree().paused = true
-	dim_overlay.show() 
+	get_tree().paused = true 
 	
 	if player_won:
 		round_result_label.text = "ROUND WIN!"
@@ -342,7 +341,6 @@ func show_round_result_overlay(player_won: bool):
 	tween.tween_property(round_result_overlay, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(func():
 		round_result_overlay.hide()
-		dim_overlay.hide()
 		get_tree().paused = false
 		current_round += 1
 		start_new_round()
@@ -351,7 +349,6 @@ func show_round_result_overlay(player_won: bool):
 func show_match_victory_overlay():
 	"""Player won the match - proceed to next opponent"""
 	get_tree().paused = true
-	dim_overlay.show() 
 	
 	round_result_label.text = "MATCH WIN!"
 	round_result_sublabel.text = "Defeated " + current_opponent.opponent_name + "!"
@@ -368,7 +365,6 @@ func show_match_victory_overlay():
 	tween.tween_property(round_result_overlay, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(func():
 		round_result_overlay.hide()
-		dim_overlay.hide()
 		get_tree().paused = false
 		proceed_to_next_opponent()
 	)
@@ -377,7 +373,6 @@ func show_match_defeat_overlay():
 	"""Player lost the match - show continue prompt"""
 	get_tree().paused = true
 	game_active = false
-	dim_overlay.show() 
 	
 	AudioManager.play_defeat()
 	
