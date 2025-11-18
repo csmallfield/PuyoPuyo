@@ -94,7 +94,7 @@ func show_opponent_portraits():
 		
 		# Create TextureRect for portrait
 		var portrait = TextureRect.new()
-		portrait.custom_minimum_size = Vector2(128, 128)
+		portrait.custom_minimum_size = Vector2(256, 256)
 		portrait.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		
