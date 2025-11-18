@@ -43,6 +43,11 @@ const AIController = preload("res://scripts/AIController.gd")
 @onready var pause_menu_button = $PausePanel/VBoxContainer/PauseMenuButton
 @onready var music_player = $MusicPlayer
 
+@onready var quit_confirm_panel: Panel = $QuitConfirmPanel
+@onready var confirm_yes_button: Button = $QuitConfirmPanel/VBoxContainer/ConfirmYesButton
+@onready var confirm_no_button: Button = $QuitConfirmPanel/VBoxContainer/ConfirmNoButton
+
+
 # Debug
 @onready var debug_autowin_button: Button = $PausePanel/VBoxContainer/Autowin
 
@@ -85,6 +90,16 @@ func _ready():
 	pause_resume_button.connect("pressed", _on_pause_resume_pressed)
 	pause_restart_button.connect("pressed", _on_pause_restart_pressed)
 	pause_menu_button.connect("pressed", _on_pause_menu_pressed)
+	
+	# Set quit confirm panel to process when paused
+	quit_confirm_panel.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	quit_confirm_panel.hide()
+
+	# Connect confirmation buttons
+	if confirm_yes_button:
+		confirm_yes_button.connect("pressed", _on_confirm_quit_yes)
+	if confirm_no_button:
+		confirm_no_button.connect("pressed", _on_confirm_quit_no)
 	
 	#Debug Button Connect
 	# Connect debug button
@@ -398,11 +413,18 @@ func _on_continue_yes_pressed():
 func _on_continue_no_pressed():
 	"""Player chose not to continue"""
 	AudioManager.play_button_click()
+	
+	# Reset tournament state before showing game over
+	TournamentManager.reset_tournament()
+	
 	show_game_over()
 
 func show_game_over():
 	"""Show game over and return to menu"""
 	continue_overlay.hide()
+	
+	# Ensure tournament is reset (in case called from elsewhere)
+	TournamentManager.reset_tournament()
 	
 	round_result_label.text = "GAME OVER"
 	round_result_sublabel.text = "Tournament ended"
@@ -411,12 +433,14 @@ func show_game_over():
 	round_result_overlay.show()
 	
 	var tween = create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)  # ADD THIS LINE
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(round_result_overlay, "modulate:a", 1.0, 0.3)
 	tween.tween_interval(2.0)
 	tween.tween_property(round_result_overlay, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(func():
 		get_tree().paused = false
+		if music_player:
+			music_player.stop()
 		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 	)
 
@@ -537,9 +561,41 @@ func _on_pause_restart_pressed():
 	start_new_round()
 
 func _on_pause_menu_pressed():
+	"""Show quit confirmation"""
 	AudioManager.play_button_click()
+	
+	# Hide pause panel, show confirmation
+	pause_panel.hide()
+	quit_confirm_panel.show()
+	
+	await get_tree().create_timer(0.01, true).timeout
+	confirm_no_button.grab_focus()
+
+func _on_confirm_quit_yes():
+	"""Player confirmed quit"""
+	AudioManager.play_button_click()
+	
+	# Stop music
 	if music_player:
 		music_player.stop()
+	
+	# Reset tournament state
+	TournamentManager.reset_tournament()
+	
+	# Unpause and return to menu
 	if is_paused:
+		is_paused = false
 		get_tree().paused = false
+	
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+func _on_confirm_quit_no():
+	"""Player cancelled quit"""
+	AudioManager.play_button_click()
+	
+	# Return to pause menu
+	quit_confirm_panel.hide()
+	pause_panel.show()
+	
+	await get_tree().create_timer(0.01, true).timeout
+	pause_menu_button.grab_focus()

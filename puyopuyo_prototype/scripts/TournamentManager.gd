@@ -289,6 +289,33 @@ func get_opponent_count() -> int:
 func get_current_opponent_number() -> int:
 	"""Get current opponent number (1-indexed)"""
 	return current_opponent_index + 1
+	
+# ============================================
+# TOURNAMENT RESET
+# ============================================
+
+func reset_tournament():
+	"""Reset all tournament state - call when tournament ends or player quits"""
+	print("=== RESETTING TOURNAMENT ===")
+	
+	tournament_roster = null
+	current_difficulty = Difficulty.NORMAL
+	opponent_queue.clear()
+	current_opponent_index = 0
+	defeated_opponents.clear()
+	continues_remaining = 5
+	continues_used = 0
+	tournament_score = 0
+	tournament_start_time = 0.0
+	current_match_start_time = 0.0
+	current_round_start_time = 0.0
+	
+	player_round_wins = 0
+	opponent_round_wins = 0
+	current_round = 1
+	
+	print("Tournament state cleared")
+	print("============================")
 
 # ============================================
 # DEBUG

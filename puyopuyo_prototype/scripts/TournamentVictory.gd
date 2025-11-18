@@ -85,4 +85,8 @@ func animate_entrance():
 
 func _on_menu_button_pressed():
 	AudioManager.play_button_click()
+	
+	# Reset tournament state after victory
+	TournamentManager.reset_tournament()
+	
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
