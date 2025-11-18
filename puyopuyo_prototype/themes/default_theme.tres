@@ -2,13 +2,13 @@
 
 [ext_resource type="StyleBox" uid="uid://cktoy5fxduxos" path="res://resources/styles/button_style_normal.tres" id="1_het5a"]
 [ext_resource type="FontFile" uid="uid://cb5yj0wongru8" path="res://assets/fonts/Asimovian-Regular.ttf" id="1_mlkpy"]
-[ext_resource type="StyleBox" uid="uid://cy3n6yhsp82w6" path="res://resources/styles/button_style_hover.tres" id="1_nwjvr"]
+[ext_resource type="StyleBox" uid="uid://cy3n6yhsp82w6" path="res://resources/styles/button_style_focus.tres" id="1_nwjvr"]
 [ext_resource type="StyleBox" uid="uid://b6cfsyw453hk7" path="res://resources/styles/style_box_line.tres" id="2_fx2g0"]
 [ext_resource type="StyleBox" uid="uid://dsc2lhl7dx1nn" path="res://resources/styles/panel_style.tres" id="3_nwjvr"]
 
 [resource]
 default_font = ExtResource("1_mlkpy")
-Button/styles/hover = ExtResource("1_nwjvr")
+Button/styles/focus = ExtResource("1_nwjvr")
 Button/styles/normal = ExtResource("1_het5a")
 HSeparator/styles/separator = ExtResource("2_fx2g0")
 Panel/styles/panel = ExtResource("3_nwjvr")
