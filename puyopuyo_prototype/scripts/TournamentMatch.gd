@@ -79,10 +79,14 @@ var meter_flash_duration = 0.5
 
 
 func _ready():
+	# Allow input processing even when paused (for pause toggle)
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	
 	# Set process modes for overlays
 	round_result_overlay.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	continue_overlay.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	pause_panel.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	quit_confirm_panel.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	
 	# Connect buttons
 	continue_yes_button.connect("pressed", _on_continue_yes_pressed)
@@ -198,6 +202,7 @@ func start_new_round():
 	player_grid.connect("garbage_sent", _on_player_sends_garbage)
 	player_grid.set_meta("owner_type", "player")
 	player_grid.set_fall_speed(GameState.level_speeds[0])
+	player_grid.process_mode = Node.PROCESS_MODE_PAUSABLE 
 	
 	# Create AI grid
 	ai_grid = Grid.instantiate()
@@ -209,6 +214,7 @@ func start_new_round():
 	ai_grid.connect("garbage_sent", _on_ai_sends_garbage)
 	ai_grid.set_meta("owner_type", "ai")
 	ai_grid.set_fall_speed(GameState.level_speeds[0])
+	ai_grid.process_mode = Node.PROCESS_MODE_PAUSABLE
 	
 	# Create AI controller with opponent difficulty
 	ai_controller = AIController.new()
@@ -216,6 +222,7 @@ func start_new_round():
 	var ai_difficulty = current_opponent.get_ai_difficulty(TournamentManager.current_difficulty)
 	ai_controller.configure_difficulty(ai_difficulty)
 	add_child(ai_controller)
+	ai_controller.process_mode = Node.PROCESS_MODE_PAUSABLE
 	
 	# Start both grids
 	player_grid.start_game()

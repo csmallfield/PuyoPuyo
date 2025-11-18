@@ -70,6 +70,9 @@ var player_ai_difficulty = AIController.Difficulty.LEVEL_1
 var debug_ai_vs_ai_mode = false
 
 func _ready():
+	# Allow input processing even when paused (for pause toggle)
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	
 	# Set process mode to WHEN_PAUSED for panels to work during pause
 	pause_panel.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	result_panel.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
@@ -141,6 +144,7 @@ func start_new_game():
 	player_grid.connect("garbage_sent", _on_player_sends_garbage)
 	player_grid.set_meta("owner_type", "player")
 	player_grid.set_fall_speed(GameState.level_speeds[0])
+	player_grid.process_mode = Node.PROCESS_MODE_PAUSABLE 
 	
 	# Create AI grid
 	ai_grid = Grid.instantiate()
@@ -152,12 +156,14 @@ func start_new_game():
 	ai_grid.connect("garbage_sent", _on_ai_sends_garbage)
 	ai_grid.set_meta("owner_type", "ai")
 	ai_grid.set_fall_speed(GameState.level_speeds[0])
+	ai_grid.process_mode = Node.PROCESS_MODE_PAUSABLE
 	
 	# Create opponent AI controller
 	ai_controller = AIController.new()
 	ai_controller.grid = ai_grid
 	ai_controller.configure_difficulty(opponent_ai_difficulty)
 	add_child(ai_controller)
+	ai_controller.process_mode = Node.PROCESS_MODE_PAUSABLE
 	
 	# NEW: Create player AI controller if in debug mode
 	if debug_ai_vs_ai_mode:
@@ -165,6 +171,7 @@ func start_new_game():
 		player_ai_controller.grid = player_grid
 		player_ai_controller.configure_difficulty(player_ai_difficulty)
 		add_child(player_ai_controller)
+		player_ai_controller.process_mode = Node.PROCESS_MODE_PAUSABLE
 		print("DEBUG MODE: Player side controlled by AI (Level ", player_ai_difficulty, ")")
 	
 	# Start both grids
