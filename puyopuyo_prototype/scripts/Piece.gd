@@ -36,6 +36,7 @@ func _ready():
 	timer_label.add_theme_color_override("font_color", Color.WHITE)
 	timer_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	timer_label.add_theme_constant_override("outline_size", 4)
+	timer_label.z_index = 10
 	timer_label.visible = false
 	add_child(timer_label)
 	
