@@ -43,6 +43,10 @@ const AIController = preload("res://scripts/AIController.gd")
 @onready var pause_menu_button = $PausePanel/VBoxContainer/PauseMenuButton
 @onready var music_player = $MusicPlayer
 
+# Debug
+@onready var debug_autowin_button: Button = $PausePanel/VBoxContainer/Autowin
+
+
 # State variables
 var player_grid = null
 var ai_grid = null
@@ -82,6 +86,11 @@ func _ready():
 	pause_restart_button.connect("pressed", _on_pause_restart_pressed)
 	pause_menu_button.connect("pressed", _on_pause_menu_pressed)
 	
+	#Debug Button Connect
+	# Connect debug button
+	if debug_autowin_button:
+		debug_autowin_button.connect("pressed", _on_debug_autowin_pressed)
+	
 	# Connect to GameState
 	GameState.connect("score_changed", _on_score_changed)
 	
@@ -105,6 +114,22 @@ func _ready():
 	
 	# Start first round
 	start_new_round()
+	
+func _on_debug_autowin_pressed():
+	"""DEBUG: Instantly win the current round"""
+	AudioManager.play_button_click()
+	
+	print("DEBUG: Auto-winning round for player")
+	
+	# Unpause
+	is_paused = false
+	pause_panel.hide()
+	get_tree().paused = false
+	
+	# Force AI to lose
+	if ai_grid:
+		# Trigger game over on AI grid
+		ai_grid.emit_signal("game_over")
 
 func setup_opponent_info():
 	"""Setup opponent info panel"""

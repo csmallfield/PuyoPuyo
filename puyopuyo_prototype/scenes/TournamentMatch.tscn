@@ -354,7 +354,6 @@ theme_override_font_sizes/font_size = 24
 text = "Main Menu"
 
 [node name="PausePanel" type="Panel" parent="."]
-visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -462,9 +461,20 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 focus_neighbor_top = NodePath("../PlayerDifficultyButton")
-focus_neighbor_bottom = NodePath("../ChangeBombTypeButton")
+focus_neighbor_bottom = NodePath("../Autowin")
 theme_override_font_sizes/font_size = 24
 text = "Change Opponent AI"
+
+[node name="HSeparator3" type="HSeparator" parent="PausePanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="Autowin" type="Button" parent="PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../OpponentDifficultyButton")
+focus_neighbor_bottom = NodePath("../ChangeBombTypeButton")
+theme_override_font_sizes/font_size = 24
+text = "DEBUG: Auto-Win Round"
 
 [node name="MusicPlayer" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("2_ndmuw")
