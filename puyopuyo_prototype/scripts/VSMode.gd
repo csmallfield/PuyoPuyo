@@ -29,6 +29,9 @@ const AIController = preload("res://scripts/AIController.gd")
 @onready var pause_menu_button = $PausePanel/VBoxContainer/PauseMenuButton
 @onready var music_player = $MusicPlayer
 
+@onready var dim_overlay: ColorRect = $DimOverlay
+
+
 # NEW: Debug mode controls
 @onready var debug_mode_label: Label = $PausePanel/VBoxContainer/DebugModeLabel
 @onready var debug_mode_button: Button = $PausePanel/VBoxContainer/DebugModeButton
@@ -181,6 +184,7 @@ func start_new_game():
 	# Hide panels
 	result_panel.hide()
 	pause_panel.hide()
+	dim_overlay.hide()
 	
 	# Reset garbage meters
 	player_garbage_meter.value = 0
@@ -404,6 +408,7 @@ func toggle_pause():
 	if not is_paused:
 		# Pause the game using Godot's pause system
 		is_paused = true
+		dim_overlay.show()
 		pause_panel.show()
 		get_tree().paused = true
 		
@@ -417,6 +422,7 @@ func toggle_pause():
 		# Unpause the game
 		is_paused = false
 		pause_panel.hide()
+		dim_overlay.hide()
 		get_tree().paused = false
 		
 		# Play unpause sound

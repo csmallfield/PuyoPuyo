@@ -1,175 +1,14 @@
-[gd_scene load_steps=15 format=3 uid="uid://bxpjlwk2kakrb"]
+[gd_scene load_steps=9 format=3 uid="uid://bxpjlwk2kakrb"]
 
 [ext_resource type="Script" uid="uid://djxvimbipu447" path="res://scripts/TournamentMatch.gd" id="1_7ai5b"]
 [ext_resource type="AudioStream" uid="uid://dm56rymqt7v5c" path="res://sounds/music/hexedex_quantumquasars.wav" id="2_ndmuw"]
-[ext_resource type="Shader" uid="uid://bsu08ihllxkav" path="res://shaders/starfieldShader.gdshader" id="3_7nhoy"]
-[ext_resource type="Shader" uid="uid://mptlw0qx27w6" path="res://shaders/nebulaShader.gdshader" id="4_1fcca"]
-[ext_resource type="Shader" uid="uid://cofhbcycs1t11" path="res://shaders/planetShader.gdshader" id="5_62iog"]
+[ext_resource type="PackedScene" uid="uid://dqfq2lsbv3nto" path="res://scenes/BackgroundScenes/BG_TournamentMatch.tscn" id="3_i6rep"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xtck3"]
 bg_color = Color(0.146015, 0.163751, 0.320833, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_61vjl"]
 bg_color = Color(0.834475, 0.214095, 0.795047, 1)
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_07keg"]
-shader = ExtResource("3_7nhoy")
-shader_parameter/star_density = 0.0911
-shader_parameter/star_brightness = 0.626
-shader_parameter/star_size = 3.209
-shader_parameter/twinkle_speed = 0.743
-shader_parameter/world_offset = Vector2(0, 0)
-shader_parameter/tile_size = 200.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_b6r7e"]
-shader = ExtResource("4_1fcca")
-shader_parameter/resolution_scale = 0.687
-shader_parameter/base_scale = 3.146
-shader_parameter/base_density = 0.824
-shader_parameter/base_softness = 0.705
-shader_parameter/base_octaves = 6.0
-shader_parameter/base_lacunarity = 2.895
-shader_parameter/base_gain = 0.488
-shader_parameter/structure_scale = 10.0
-shader_parameter/structure_strength = 0.75
-shader_parameter/structure_contrast = 1.25
-shader_parameter/structure_octaves = 3.0
-shader_parameter/structure_lacunarity = 2.0
-shader_parameter/structure_gain = 0.5
-shader_parameter/wispy_scale = 8.0
-shader_parameter/wispy_strength = 0.5
-shader_parameter/wispy_octaves = 6.0
-shader_parameter/wispy_lacunarity = 2.0
-shader_parameter/wispy_gain = 0.5
-shader_parameter/edge_falloff = 1.5
-shader_parameter/edge_irregularity = 4.0
-shader_parameter/hard_edge_mix = 0.0
-shader_parameter/nebula_base_color = Color(0.102, 0.3842, 0.6, 1)
-shader_parameter/structure_color = Color(0.8, 0.3, 0.5, 1)
-shader_parameter/wispy_color = Color(0.3, 0.5, 0.9, 1)
-shader_parameter/edge_color = Color(0.2, 0.5, 0.8, 1)
-shader_parameter/color_blend_smoothness = 1.0
-shader_parameter/overall_brightness = 1.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_pniv8"]
-shader = ExtResource("4_1fcca")
-shader_parameter/resolution_scale = 0.687
-shader_parameter/base_scale = 3.146
-shader_parameter/base_density = 0.804
-shader_parameter/base_softness = 0.705
-shader_parameter/base_octaves = 5.805
-shader_parameter/base_lacunarity = 2.895
-shader_parameter/base_gain = 0.488
-shader_parameter/structure_scale = 10.0
-shader_parameter/structure_strength = 0.75
-shader_parameter/structure_contrast = 1.25
-shader_parameter/structure_octaves = 4.317
-shader_parameter/structure_lacunarity = 2.0
-shader_parameter/structure_gain = 0.5
-shader_parameter/wispy_scale = 8.0
-shader_parameter/wispy_strength = 0.441
-shader_parameter/wispy_octaves = 6.0
-shader_parameter/wispy_lacunarity = 2.0
-shader_parameter/wispy_gain = 0.687
-shader_parameter/edge_falloff = 1.5
-shader_parameter/edge_irregularity = 4.488
-shader_parameter/hard_edge_mix = 0.0
-shader_parameter/nebula_base_color = Color(0.148849, 0.270679, 0.361345, 1)
-shader_parameter/structure_color = Color(0.8, 0.3, 0.5, 1)
-shader_parameter/wispy_color = Color(0.3, 0.5, 0.9, 1)
-shader_parameter/edge_color = Color(0.2, 0.5, 0.8, 1)
-shader_parameter/color_blend_smoothness = 1.0
-shader_parameter/overall_brightness = 1.0
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_wdv0c"]
-shader = ExtResource("5_62iog")
-shader_parameter/planet_radius = 0.433
-shader_parameter/edge_softness = 0.0
-shader_parameter/uv_offset_x = 0.0
-shader_parameter/uv_offset_y = 0.0
-shader_parameter/continent_seed = 42.0
-shader_parameter/terrain_seed = 123.0
-shader_parameter/river_seed = 456.0
-shader_parameter/detail_seed = 789.0
-shader_parameter/cloud_seed = 999.0
-shader_parameter/output_mode = 0
-shader_parameter/normal_map_intensity = 0.1
-shader_parameter/sphere_strength = -1.25
-shader_parameter/light_direction = Vector2(-1.815, 0.545)
-shader_parameter/light_intensity = 0.902
-shader_parameter/light_color = Color(0.907544, 0.834909, 0.813211, 1)
-shader_parameter/shadow_tint = Color(0.5, 0.6, 0.8, 1)
-shader_parameter/shadow_tint_strength = 0.2
-shader_parameter/ambient_light = 0.198
-shader_parameter/ambient_color = Color(0.4, 0.6, 1, 1)
-shader_parameter/rim_light_intensity = 1.219
-shader_parameter/rim_light_color = Color(0.811335, 0.536344, 0.751337, 1)
-shader_parameter/rim_light_falloff = 1.415
-shader_parameter/rim_light_crescent_power = 2.223
-shader_parameter/rim_light_crescent_offset = -0.07
-shader_parameter/rim_light_glow_intensity = 1.537
-shader_parameter/rim_light_glow_radius = 0.163
-shader_parameter/rim_light_glow_enabled = true
-shader_parameter/continent_scale = 5.434
-shader_parameter/continent_threshold = 0.508
-shader_parameter/continent_sharpness = 0.25
-shader_parameter/continent_octaves = 7.063
-shader_parameter/continent_persistence = 0.6
-shader_parameter/ocean_depth = 0.532
-shader_parameter/warp_strength = 0.15
-shader_parameter/warp_scale = 5.0
-shader_parameter/terrain_scale = 5.0
-shader_parameter/terrain_strength = 1.935
-shader_parameter/terrain_octaves = 6.522
-shader_parameter/terrain_persistence = 0.5
-shader_parameter/terrain_softness = 0.1
-shader_parameter/detail_scale = 6.068
-shader_parameter/detail_strength = 0.3
-shader_parameter/detail_octaves = 7.385
-shader_parameter/mountain_threshold = 0.7
-shader_parameter/highland_threshold = 0.441
-shader_parameter/cloud_coverage = 0.488
-shader_parameter/cloud_scale = 4.0
-shader_parameter/cloud_stretch_x = 1.0
-shader_parameter/cloud_stretch_y = 1.0
-shader_parameter/cloud_octaves = 11.249
-shader_parameter/cloud_persistence = 0.583
-shader_parameter/cloud_density = 1.005
-shader_parameter/cloud_sharpness = 0.131
-shader_parameter/cloud_color = Color(1, 1, 1, 1)
-shader_parameter/cloud_shadow_color = Color(0.7, 0.7, 0.8, 1)
-shader_parameter/cloud_opacity = 0.7
-shader_parameter/cloud_shadow_strength = 0.3
-shader_parameter/cloud_offset_x = 0.0
-shader_parameter/cloud_offset_y = 0.0
-shader_parameter/river_scale = 0.5
-shader_parameter/river_strength = 0.05
-shader_parameter/river_width = 0.05
-shader_parameter/river_octaves = 2.0
-shader_parameter/river_persistence = 0.5
-shader_parameter/river_glow_enabled = false
-shader_parameter/river_glow_intensity = 1.0
-shader_parameter/river_glow_radius = 0.02
-shader_parameter/river_glow_color = Color(0.4, 0.8, 1, 1)
-shader_parameter/ice_cap_size = 0.071
-shader_parameter/ice_cap_softness = 0.441
-shader_parameter/desert_latitude = 0.492
-shader_parameter/desert_width = 0.864
-shader_parameter/desert_intensity = 0.871
-shader_parameter/deep_ocean_color = Color(0.1, 0.2, 0.4, 1)
-shader_parameter/shallow_water_color = Color(0.364381, 0.345884, 0.625936, 1)
-shader_parameter/river_color = Color(0.532413, 0.446059, 0.583889, 1)
-shader_parameter/mountain_color = Color(0.559315, 0.338438, 0.470291, 1)
-shader_parameter/highland_color = Color(0.3, 0.5, 0.2, 1)
-shader_parameter/lowland_color = Color(0.2, 0.6, 0.3, 1)
-shader_parameter/desert_color = Color(0.73, 0.3942, 0.601277, 1)
-shader_parameter/ice_color = Color(0.9, 0.95, 1, 1)
-shader_parameter/coastal_blend = 0.051
-shader_parameter/beach_color = Color(0.7, 0.6, 0.4, 1)
-shader_parameter/core_color = Color(1, 0.8, 0.3, 1)
-shader_parameter/core_size = 1.476
-shader_parameter/color_variation = 0.095
-shader_parameter/variation_tint = Color(0.2, 0.5, 0.8, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_7ai5b"]
 bg_color = Color(0.0784314, 0.0784314, 0.117647, 0.784314)
@@ -231,10 +70,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="PlayerLabel" type="Label" parent="GameContainer/PlayerSide"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "PLAYER"
 horizontal_alignment = 1
+vertical_alignment = 2
 
 [node name="GarbageMeter" type="ProgressBar" parent="GameContainer/PlayerSide"]
 custom_minimum_size = Vector2(384, 30)
@@ -250,17 +91,18 @@ layout_mode = 2
 
 [node name="PlayerScoreLabel" type="Label" parent="GameContainer/PlayerSide"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "Score:0"
 horizontal_alignment = 1
 
 [node name="LevelLabel" type="Label" parent="GameContainer/PlayerSide"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 28
 text = "Level 1"
 horizontal_alignment = 1
 
 [node name="VSeparator" type="VSeparator" parent="GameContainer"]
+visible = false
 custom_minimum_size = Vector2(4, 0)
 layout_mode = 2
 
@@ -269,10 +111,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="AILabel" type="Label" parent="GameContainer/AISide"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "AI OPPONENT"
 horizontal_alignment = 1
+vertical_alignment = 2
 
 [node name="GarbageMeter" type="ProgressBar" parent="GameContainer/AISide"]
 custom_minimum_size = Vector2(384, 30)
@@ -288,291 +132,21 @@ layout_mode = 2
 
 [node name="AIScoreLabel" type="Label" parent="GameContainer/AISide"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 32
 text = "Score:0"
 horizontal_alignment = 1
 
 [node name="LevelLabel" type="Label" parent="GameContainer/AISide"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 28
 text = "Level 1"
 horizontal_alignment = 1
-
-[node name="ResultPanel" type="Panel" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -150.0
-offset_right = 150.0
-offset_bottom = 150.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="ResultPanel"]
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = -20.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="ResultLabel" type="Label" parent="ResultPanel/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 6
-theme_override_font_sizes/font_size = 48
-text = "YOU WIN!"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="ResultPanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
-
-[node name="RestartButton" type="Button" parent="ResultPanel/VBoxContainer"]
-custom_minimum_size = Vector2(300, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../MenuButton")
-focus_neighbor_bottom = NodePath("../MenuButton")
-theme_override_font_sizes/font_size = 24
-text = "Restart"
-
-[node name="MenuButton" type="Button" parent="ResultPanel/VBoxContainer"]
-custom_minimum_size = Vector2(300, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../RestartButton")
-focus_neighbor_bottom = NodePath("../RestartButton")
-theme_override_font_sizes/font_size = 24
-text = "Main Menu"
-
-[node name="PausePanel" type="Panel" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -200.0
-offset_right = 150.0
-offset_bottom = 350.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="PausePanel"]
-layout_mode = 1
-anchors_preset = -1
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="PauseTitle" type="Label" parent="PausePanel/VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 36
-text = "PAUSED"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 40)
-layout_mode = 2
-
-[node name="BombTypeLabel" type="Label" parent="PausePanel/VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Bomb Type : Color Bomb"
-horizontal_alignment = 1
-
-[node name="ChangeBombTypeButton" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../OpponentDifficultyButton")
-focus_neighbor_bottom = NodePath("../ResumeButton")
-theme_override_font_sizes/font_size = 24
-text = "Change Bomb Type"
-
-[node name="ResumeButton" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_bottom = NodePath("../RestartButton")
-theme_override_font_sizes/font_size = 24
-text = "Resume Game"
-
-[node name="RestartButton" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../ResumeButton")
-focus_neighbor_bottom = NodePath("../PauseMenuButton")
-theme_override_font_sizes/font_size = 24
-text = "Restart Game"
-
-[node name="PauseMenuButton" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../RestartButton")
-focus_neighbor_bottom = NodePath("../DebugModeButton")
-theme_override_font_sizes/font_size = 24
-text = "Main Menu"
-
-[node name="HSeparator2" type="HSeparator" parent="PausePanel/VBoxContainer"]
-layout_mode = 2
-
-[node name="DebugModeLabel" type="Label" parent="PausePanel/VBoxContainer"]
-layout_mode = 2
-text = "DEBUG: AI vs AI Mode OFF"
-horizontal_alignment = 1
-
-[node name="DebugModeButton" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../PauseMenuButton")
-focus_neighbor_bottom = NodePath("../PlayerDifficultyButton")
-theme_override_font_sizes/font_size = 24
-text = "Toggle AI vs AI"
-
-[node name="PlayerDifficultyLabel" type="Label" parent="PausePanel/VBoxContainer"]
-layout_mode = 2
-text = "Player AI: Level 1"
-horizontal_alignment = 1
-
-[node name="PlayerDifficultyButton" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../DebugModeButton")
-focus_neighbor_bottom = NodePath("../OpponentDifficultyButton")
-theme_override_font_sizes/font_size = 24
-text = "Change Player AI"
-
-[node name="OpponentDifficultyLabel" type="Label" parent="PausePanel/VBoxContainer"]
-layout_mode = 2
-text = "Opponent AI: Level 1"
-horizontal_alignment = 1
-
-[node name="OpponentDifficultyButton" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../PlayerDifficultyButton")
-focus_neighbor_bottom = NodePath("../Autowin")
-theme_override_font_sizes/font_size = 24
-text = "Change Opponent AI"
-
-[node name="HSeparator3" type="HSeparator" parent="PausePanel/VBoxContainer"]
-layout_mode = 2
-
-[node name="Autowin" type="Button" parent="PausePanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-focus_neighbor_top = NodePath("../OpponentDifficultyButton")
-focus_neighbor_bottom = NodePath("../ChangeBombTypeButton")
-theme_override_font_sizes/font_size = 24
-text = "DEBUG: Auto-Win Round"
-
-[node name="QuitConfirmPanel" type="Panel" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="QuitConfirmPanel"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -100.0
-offset_right = 150.0
-offset_bottom = 100.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="ConfirmLabel" type="Label" parent="QuitConfirmPanel/VBoxContainer"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 32
-text = "Quit Tournament? Progress will be lost."
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="QuitConfirmPanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="ConfirmYesButton" type="Button" parent="QuitConfirmPanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Yes, Quit"
-
-[node name="ConfirmNoButton" type="Button" parent="QuitConfirmPanel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "No, Continue Playing"
 
 [node name="MusicPlayer" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("2_ndmuw")
 volume_db = -12.0
 
-[node name="DynamicBG" type="Node" parent="."]
-
-[node name="Background" type="ColorRect" parent="DynamicBG"]
-z_index = -5
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.0607332, 0.0580242, 0.126102, 1)
-
-[node name="starfield" type="ColorRect" parent="DynamicBG"]
-z_index = -4
-material = SubResource("ShaderMaterial_07keg")
-offset_left = -32.0
-offset_top = -345.0
-offset_right = 1989.0
-offset_bottom = 1676.0
-
-[node name="nebula01" type="ColorRect" parent="DynamicBG"]
-z_index = -4
-material = SubResource("ShaderMaterial_b6r7e")
-offset_left = -517.0
-offset_top = -417.0
-offset_right = 1711.0
-offset_bottom = 1811.0
-
-[node name="nebula02" type="ColorRect" parent="DynamicBG"]
-z_index = -4
-material = SubResource("ShaderMaterial_pniv8")
-offset_left = 2799.0
-offset_top = 1272.0
-offset_right = 5027.0
-offset_bottom = 3500.0
-rotation = 3.0666
-
-[node name="planet" type="ColorRect" parent="DynamicBG"]
-z_index = -4
-material = SubResource("ShaderMaterial_wdv0c")
-offset_left = 1685.0
-offset_top = 753.0
-offset_right = 3111.0
-offset_bottom = 2179.0
-rotation = 1.56438
+[node name="BG_TournamentMatch" parent="." instance=ExtResource("3_i6rep")]
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -602,41 +176,67 @@ offset_top = 100.0
 offset_right = 1060.0
 offset_bottom = 150.0
 theme_override_colors/font_color = Color(1, 0.866667, 0.266667, 1)
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 36
 text = "ROUND 1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="OpponentInfoPanel" type="Panel" parent="UI"]
-offset_right = 40.0
-offset_bottom = 40.0
+custom_minimum_size = Vector2(256, 256)
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -128.0
+offset_top = -340.0
+offset_right = 128.0
+offset_bottom = -84.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="OpponentPortrait" type="TextureRect" parent="UI/OpponentInfoPanel"]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 90.0
-offset_bottom = 90.0
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -128.0
+offset_top = -128.0
+offset_right = 128.0
+offset_bottom = 128.0
+grow_horizontal = 2
+grow_vertical = 2
 expand_mode = 3
 stretch_mode = 5
 
 [node name="OpponentName" type="Label" parent="UI/OpponentInfoPanel"]
+custom_minimum_size = Vector2(256, 0)
 layout_mode = 0
-offset_left = 100.0
-offset_top = 30.0
-offset_right = 290.0
-offset_bottom = 70.0
+offset_top = 256.0
+offset_right = 256.0
+offset_bottom = 306.0
 theme_override_font_sizes/font_size = 20
 text = "Opponent Name"
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="ContinuesLabel" type="Label" parent="UI"]
-offset_left = 20.0
-offset_top = 20.0
-offset_right = 220.0
-offset_bottom = 60.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -386.0
+offset_right = 100.0
+offset_bottom = -346.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_font_sizes/font_size = 22
 text = "Continues: 5"
+horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="RoundResultOverlay" type="Panel" parent="UI"]
@@ -738,3 +338,239 @@ custom_minimum_size = Vector2(0, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "NO - Quit"
+
+[node name="MenuLayer" type="CanvasLayer" parent="."]
+
+[node name="DimOverlay" type="ColorRect" parent="MenuLayer"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.085, 0.058, 0.153, 0.7)
+
+[node name="ResultPanel" type="Panel" parent="MenuLayer"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -150.0
+offset_right = 150.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MenuLayer/ResultPanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResultLabel" type="Label" parent="MenuLayer/ResultPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_font_sizes/font_size = 48
+text = "YOU WIN!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MenuLayer/ResultPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="RestartButton" type="Button" parent="MenuLayer/ResultPanel/VBoxContainer"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../MenuButton")
+focus_neighbor_bottom = NodePath("../MenuButton")
+theme_override_font_sizes/font_size = 24
+text = "Restart"
+
+[node name="MenuButton" type="Button" parent="MenuLayer/ResultPanel/VBoxContainer"]
+custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../RestartButton")
+focus_neighbor_bottom = NodePath("../RestartButton")
+theme_override_font_sizes/font_size = 24
+text = "Main Menu"
+
+[node name="PausePanel" type="Panel" parent="MenuLayer"]
+custom_minimum_size = Vector2(0, 650)
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -340.0
+offset_right = 150.0
+offset_bottom = 310.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MenuLayer/PausePanel"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PauseTitle" type="Label" parent="MenuLayer/PausePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 36
+text = "PAUSED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MenuLayer/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="BombTypeLabel" type="Label" parent="MenuLayer/PausePanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Bomb Type : Color Bomb"
+horizontal_alignment = 1
+
+[node name="ChangeBombTypeButton" type="Button" parent="MenuLayer/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../OpponentDifficultyButton")
+focus_neighbor_bottom = NodePath("../ResumeButton")
+theme_override_font_sizes/font_size = 24
+text = "Change Bomb Type"
+
+[node name="ResumeButton" type="Button" parent="MenuLayer/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_bottom = NodePath("../RestartButton")
+theme_override_font_sizes/font_size = 24
+text = "Resume Game"
+
+[node name="RestartButton" type="Button" parent="MenuLayer/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../ResumeButton")
+focus_neighbor_bottom = NodePath("../PauseMenuButton")
+theme_override_font_sizes/font_size = 24
+text = "Restart Game"
+
+[node name="PauseMenuButton" type="Button" parent="MenuLayer/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../RestartButton")
+focus_neighbor_bottom = NodePath("../DebugModeButton")
+theme_override_font_sizes/font_size = 24
+text = "Main Menu"
+
+[node name="HSeparator2" type="HSeparator" parent="MenuLayer/PausePanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="DebugModeLabel" type="Label" parent="MenuLayer/PausePanel/VBoxContainer"]
+layout_mode = 2
+text = "DEBUG: AI vs AI Mode OFF"
+horizontal_alignment = 1
+
+[node name="DebugModeButton" type="Button" parent="MenuLayer/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../PauseMenuButton")
+focus_neighbor_bottom = NodePath("../PlayerDifficultyButton")
+theme_override_font_sizes/font_size = 24
+text = "Toggle AI vs AI"
+
+[node name="PlayerDifficultyLabel" type="Label" parent="MenuLayer/PausePanel/VBoxContainer"]
+layout_mode = 2
+text = "Player AI: Level 1"
+horizontal_alignment = 1
+
+[node name="PlayerDifficultyButton" type="Button" parent="MenuLayer/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../DebugModeButton")
+focus_neighbor_bottom = NodePath("../OpponentDifficultyButton")
+theme_override_font_sizes/font_size = 24
+text = "Change Player AI"
+
+[node name="OpponentDifficultyLabel" type="Label" parent="MenuLayer/PausePanel/VBoxContainer"]
+layout_mode = 2
+text = "Opponent AI: Level 1"
+horizontal_alignment = 1
+
+[node name="OpponentDifficultyButton" type="Button" parent="MenuLayer/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../PlayerDifficultyButton")
+focus_neighbor_bottom = NodePath("../Autowin")
+theme_override_font_sizes/font_size = 24
+text = "Change Opponent AI"
+
+[node name="HSeparator3" type="HSeparator" parent="MenuLayer/PausePanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="Autowin" type="Button" parent="MenuLayer/PausePanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+focus_neighbor_top = NodePath("../OpponentDifficultyButton")
+focus_neighbor_bottom = NodePath("../ChangeBombTypeButton")
+theme_override_font_sizes/font_size = 24
+text = "DEBUG: Auto-Win Round"
+
+[node name="QuitConfirmPanel" type="Panel" parent="MenuLayer"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MenuLayer/QuitConfirmPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -100.0
+offset_right = 150.0
+offset_bottom = 100.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ConfirmLabel" type="Label" parent="MenuLayer/QuitConfirmPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Quit Tournament? Progress will be lost."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MenuLayer/QuitConfirmPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ConfirmYesButton" type="Button" parent="MenuLayer/QuitConfirmPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Yes, Quit"
+
+[node name="ConfirmNoButton" type="Button" parent="MenuLayer/QuitConfirmPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "No, Continue Playing"

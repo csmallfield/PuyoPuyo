@@ -37,19 +37,21 @@ const AIController = preload("res://scripts/AIController.gd")
 
 
 # Pause
-@onready var pause_panel = $PausePanel
-@onready var pause_resume_button = $PausePanel/VBoxContainer/ResumeButton
-@onready var pause_restart_button = $PausePanel/VBoxContainer/RestartButton
-@onready var pause_menu_button = $PausePanel/VBoxContainer/PauseMenuButton
+@onready var pause_panel = $MenuLayer/PausePanel
+@onready var pause_resume_button = $MenuLayer/PausePanel/VBoxContainer/ResumeButton
+@onready var pause_restart_button = $MenuLayer/PausePanel/VBoxContainer/RestartButton
+@onready var pause_menu_button = $MenuLayer/PausePanel/VBoxContainer/PauseMenuButton
 @onready var music_player = $MusicPlayer
 
-@onready var quit_confirm_panel: Panel = $QuitConfirmPanel
-@onready var confirm_yes_button: Button = $QuitConfirmPanel/VBoxContainer/ConfirmYesButton
-@onready var confirm_no_button: Button = $QuitConfirmPanel/VBoxContainer/ConfirmNoButton
+@onready var quit_confirm_panel: Panel = $MenuLayer/QuitConfirmPanel
+@onready var confirm_yes_button: Button = $MenuLayer/QuitConfirmPanel/VBoxContainer/ConfirmYesButton
+@onready var confirm_no_button: Button = $MenuLayer/QuitConfirmPanel/VBoxContainer/ConfirmNoButton
+
+@onready var dim_overlay: ColorRect = $MenuLayer/DimOverlay
 
 
 # Debug
-@onready var debug_autowin_button: Button = $PausePanel/VBoxContainer/Autowin
+@onready var debug_autowin_button: Button = $MenuLayer/PausePanel/VBoxContainer/Autowin
 
 
 # State variables
@@ -319,6 +321,7 @@ func _on_ai_loses_round():
 func show_round_result_overlay(player_won: bool):
 	"""Show round result and continue to next round"""
 	get_tree().paused = true
+	dim_overlay.show() 
 	
 	if player_won:
 		round_result_label.text = "ROUND WIN!"
@@ -339,6 +342,7 @@ func show_round_result_overlay(player_won: bool):
 	tween.tween_property(round_result_overlay, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(func():
 		round_result_overlay.hide()
+		dim_overlay.hide()
 		get_tree().paused = false
 		current_round += 1
 		start_new_round()
@@ -347,6 +351,7 @@ func show_round_result_overlay(player_won: bool):
 func show_match_victory_overlay():
 	"""Player won the match - proceed to next opponent"""
 	get_tree().paused = true
+	dim_overlay.show() 
 	
 	round_result_label.text = "MATCH WIN!"
 	round_result_sublabel.text = "Defeated " + current_opponent.opponent_name + "!"
@@ -363,6 +368,7 @@ func show_match_victory_overlay():
 	tween.tween_property(round_result_overlay, "modulate:a", 0.0, 0.3)
 	tween.tween_callback(func():
 		round_result_overlay.hide()
+		dim_overlay.hide()
 		get_tree().paused = false
 		proceed_to_next_opponent()
 	)
@@ -371,6 +377,7 @@ func show_match_defeat_overlay():
 	"""Player lost the match - show continue prompt"""
 	get_tree().paused = true
 	game_active = false
+	dim_overlay.show() 
 	
 	AudioManager.play_defeat()
 	
@@ -540,6 +547,7 @@ func toggle_pause():
 	"""Toggle pause state"""
 	if not is_paused:
 		is_paused = true
+		dim_overlay.show()  # ADD THIS
 		pause_panel.show()
 		get_tree().paused = true
 		AudioManager.play_pause()
@@ -547,6 +555,7 @@ func toggle_pause():
 		pause_resume_button.grab_focus()
 	else:
 		is_paused = false
+		dim_overlay.hide()  # ADD THIS
 		pause_panel.hide()
 		get_tree().paused = false
 		AudioManager.play_unpause()

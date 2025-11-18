@@ -1,12 +1,11 @@
-[gd_scene load_steps=9 format=3 uid="uid://cpr8b8qlqotka"]
+[gd_scene load_steps=8 format=3 uid="uid://dqfq2lsbv3nto"]
 
-[ext_resource type="Script" uid="uid://d3nl5dieareew" path="res://scripts/TournamentMode.gd" id="1"]
-[ext_resource type="Shader" uid="uid://bsu08ihllxkav" path="res://shaders/starfieldShader.gdshader" id="2"]
-[ext_resource type="Shader" uid="uid://mptlw0qx27w6" path="res://shaders/nebulaShader.gdshader" id="3"]
-[ext_resource type="Shader" uid="uid://cofhbcycs1t11" path="res://shaders/planetShader.gdshader" id="4"]
+[ext_resource type="Shader" uid="uid://bsu08ihllxkav" path="res://shaders/starfieldShader.gdshader" id="1_t47br"]
+[ext_resource type="Shader" uid="uid://mptlw0qx27w6" path="res://shaders/nebulaShader.gdshader" id="2_sb1iv"]
+[ext_resource type="Shader" uid="uid://cofhbcycs1t11" path="res://shaders/planetShader.gdshader" id="3_7g0rb"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_07keg"]
-shader = ExtResource("2")
+shader = ExtResource("1_t47br")
 shader_parameter/star_density = 0.0911
 shader_parameter/star_brightness = 0.626
 shader_parameter/star_size = 3.209
@@ -15,7 +14,7 @@ shader_parameter/world_offset = Vector2(0, 0)
 shader_parameter/tile_size = 200.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_b6r7e"]
-shader = ExtResource("3")
+shader = ExtResource("2_sb1iv")
 shader_parameter/resolution_scale = 0.687
 shader_parameter/base_scale = 3.146
 shader_parameter/base_density = 0.824
@@ -45,7 +44,7 @@ shader_parameter/color_blend_smoothness = 1.0
 shader_parameter/overall_brightness = 1.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_pniv8"]
-shader = ExtResource("3")
+shader = ExtResource("2_sb1iv")
 shader_parameter/resolution_scale = 0.687
 shader_parameter/base_scale = 3.146
 shader_parameter/base_density = 0.804
@@ -75,7 +74,7 @@ shader_parameter/color_blend_smoothness = 1.0
 shader_parameter/overall_brightness = 1.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_wdv0c"]
-shader = ExtResource("4")
+shader = ExtResource("3_7g0rb")
 shader_parameter/planet_radius = 0.433
 shader_parameter/edge_softness = 0.0
 shader_parameter/uv_offset_x = 0.0
@@ -164,18 +163,9 @@ shader_parameter/core_size = 1.476
 shader_parameter/color_variation = 0.095
 shader_parameter/variation_tint = Color(0.2, 0.5, 0.8, 1)
 
-[node name="TournamentMode" type="Control"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("1")
+[node name="BG_TournamentMatch" type="Node"]
 
-[node name="DynamicBG" type="Node" parent="."]
-
-[node name="Background" type="ColorRect" parent="DynamicBG"]
+[node name="Background" type="ColorRect" parent="."]
 z_index = -5
 anchors_preset = 15
 anchor_right = 1.0
@@ -184,7 +174,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.0607332, 0.0580242, 0.126102, 1)
 
-[node name="starfield" type="ColorRect" parent="DynamicBG"]
+[node name="starfield" type="ColorRect" parent="."]
 z_index = -4
 material = SubResource("ShaderMaterial_07keg")
 offset_left = -32.0
@@ -192,7 +182,7 @@ offset_top = -345.0
 offset_right = 1989.0
 offset_bottom = 1676.0
 
-[node name="nebula01" type="ColorRect" parent="DynamicBG"]
+[node name="nebula01" type="ColorRect" parent="."]
 z_index = -4
 material = SubResource("ShaderMaterial_b6r7e")
 offset_left = -517.0
@@ -200,7 +190,7 @@ offset_top = -417.0
 offset_right = 1711.0
 offset_bottom = 1811.0
 
-[node name="nebula02" type="ColorRect" parent="DynamicBG"]
+[node name="nebula02" type="ColorRect" parent="."]
 z_index = -4
 material = SubResource("ShaderMaterial_pniv8")
 offset_left = 2799.0
@@ -209,7 +199,7 @@ offset_right = 5027.0
 offset_bottom = 3500.0
 rotation = 3.0666
 
-[node name="planet" type="ColorRect" parent="DynamicBG"]
+[node name="planet" type="ColorRect" parent="."]
 z_index = -4
 material = SubResource("ShaderMaterial_wdv0c")
 offset_left = 1685.0
