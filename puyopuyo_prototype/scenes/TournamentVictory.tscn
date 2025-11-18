@@ -62,7 +62,7 @@ custom_minimum_size = Vector2(700, 200)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_lv1c2")
 
-[node name="StatsVbox" type="VBoxContainer" parent="CenterContainer/VBoxContainer/StatsPanel"]
+[node name="StatsVBox" type="VBoxContainer" parent="CenterContainer/VBoxContainer/StatsPanel"]
 layout_mode = 1
 anchors_preset = -1
 anchor_right = 1.0
@@ -75,25 +75,25 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 15
 
-[node name="ScoreLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVbox"]
+[node name="ScoreLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Score: 0"
 horizontal_alignment = 1
 
-[node name="TimeLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVbox"]
+[node name="TimeLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Time: 0"
 horizontal_alignment = 1
 
-[node name="ContinuesLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVbox"]
+[node name="ContinuesLabel" type="Label" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Continues: 0"
 horizontal_alignment = 1
 
-[node name="HSeparator2" type="HSeparator" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVbox"]
+[node name="HSeparator2" type="HSeparator" parent="CenterContainer/VBoxContainer/StatsPanel/StatsVBox"]
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 

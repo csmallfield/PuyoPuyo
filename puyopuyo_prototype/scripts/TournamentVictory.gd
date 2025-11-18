@@ -8,6 +8,8 @@ extends Control
 @onready var opponents_list = $CenterContainer/VBoxContainer/OpponentsScroll/OpponentsList
 @onready var menu_button = $CenterContainer/VBoxContainer/MenuButton
 
+
+
 func _ready():
 	# Ensure we're not paused
 	get_tree().paused = false
