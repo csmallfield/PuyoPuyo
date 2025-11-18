@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BombTypeData" load_steps=2 format=3 uid="uid://c2namdfqq6773"]
+
+[ext_resource type="Script" uid="uid://cby7f0iox0h0e" path="res://scripts/BombTypeData.gd" id="1_iafs1"]
+
+[resource]
+script = ExtResource("1_iafs1")
+bomb_type = 4
+bomb_name = "Cross Bomb"
+bomb_icon_path = "res://assets/cross_bomb.png"
+description = "Clears both the entire row AND column where it lands, creating a massive cross-shaped explosion!"
+metadata/_custom_type_script = "uid://cby7f0iox0h0e"

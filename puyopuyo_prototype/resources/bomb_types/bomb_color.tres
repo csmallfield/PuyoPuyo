@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BombTypeData" load_steps=2 format=3 uid="uid://bnphry3trmtxj"]
+
+[ext_resource type="Script" uid="uid://cby7f0iox0h0e" path="res://scripts/BombTypeData.gd" id="1_gdq5w"]
+
+[resource]
+script = ExtResource("1_gdq5w")
+bomb_type = 1
+bomb_name = "Color Bomb"
+bomb_icon_path = "res://assets/bomb_piece.png"
+description = "Clears all pieces of the same color as an adjacent piece. Landing on a bubble clears all bubbles on the board!"
+metadata/_custom_type_script = "uid://cby7f0iox0h0e"

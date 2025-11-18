@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BombTypeData" load_steps=2 format=3 uid="uid://cd4w28i4me5fq"]
+
+[ext_resource type="Script" uid="uid://cby7f0iox0h0e" path="res://scripts/BombTypeData.gd" id="1_ren7m"]
+
+[resource]
+script = ExtResource("1_ren7m")
+bomb_type = 3
+bomb_name = "Time Bomb"
+bomb_icon_path = "res://assets/time_bomb.png"
+description = "Works like a Color Bomb but with a 5-turn countdown. Explodes automatically after 5 turns, clearing all pieces of an adjacent color."
+metadata/_custom_type_script = "uid://cby7f0iox0h0e"

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BombTypeData" load_steps=2 format=3 uid="uid://co22rvl0o87ht"]
+
+[ext_resource type="Script" uid="uid://cby7f0iox0h0e" path="res://scripts/BombTypeData.gd" id="1_rswmu"]
+
+[resource]
+script = ExtResource("1_rswmu")
+bomb_type = 6
+bomb_name = "All Bombs"
+bomb_icon_path = "res://assets/time_bomb.png"
+description = "Any type of bomb can appear in this match! Color, Line, Time, Cross, and Area bombs will all show up randomly. Adapt your strategy!"
+metadata/_custom_type_script = "uid://cby7f0iox0h0e"

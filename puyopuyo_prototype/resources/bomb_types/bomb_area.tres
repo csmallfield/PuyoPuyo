@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BombTypeData" load_steps=2 format=3 uid="uid://qlskakdjeos3"]
+
+[ext_resource type="Script" uid="uid://cby7f0iox0h0e" path="res://scripts/BombTypeData.gd" id="1_8l4r1"]
+
+[resource]
+script = ExtResource("1_8l4r1")
+bomb_type = 5
+bomb_name = "Area Bomb"
+bomb_icon_path = "res://assets/area_bomb.png"
+description = "Clears all pieces within a 2-cell radius when placed, ignoring colors. Creates a powerful localized explosion!"
+metadata/_custom_type_script = "uid://cby7f0iox0h0e"

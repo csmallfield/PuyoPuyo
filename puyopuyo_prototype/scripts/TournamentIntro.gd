@@ -1,15 +1,23 @@
 extends Control
 # TournamentIntro.gd - Tournament difficulty selection and opponent showcase
 
+const BombController = preload("res://scripts/BombController.gd")
+
 @onready var difficulty_panel = $DifficultyPanel
 @onready var shuffle_panel = $ShufflePanel
 @onready var shuffle_label = $ShufflePanel/ShuffleLabel
 @onready var portrait_grid = $ShufflePanel/PortraitGrid
 @onready var presentation_panel = $PresentationPanel
-@onready var opponent_portrait = $PresentationPanel/OpponentPortrait
-@onready var opponent_name = $PresentationPanel/OpponentName
-@onready var opponent_bio = $PresentationPanel/OpponentBio
-@onready var continue_prompt = $PresentationPanel/ContinuePrompt
+@onready var opponent_portrait = $PresentationPanel/VBoxContainer/MiddleSection/LeftSide/OpponentPortrait
+@onready var opponent_name = $PresentationPanel/VBoxContainer/OpponentName
+@onready var opponent_bio = $PresentationPanel/VBoxContainer/MiddleSection/RightSide/OpponentBioPanel/MarginContainer/OpponentBio
+@onready var continue_prompt = $PresentationPanel/VBoxContainer/ContinuePrompt
+
+# NEW: Match data UI elements
+@onready var bomb_icon = $PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel/MarginContainer/HBoxContainer/BombIcon
+@onready var bomb_type_label = $PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel/MarginContainer/HBoxContainer/InfoVBox/BombTypeLabel
+@onready var bomb_description = $PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel/MarginContainer/HBoxContainer/InfoVBox/BombDescription
+@onready var match_number_label = $PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel/MarginContainer/HBoxContainer/InfoVBox/MatchNumber
 
 @onready var easy_button = $DifficultyPanel/VBoxContainer/EasyButton
 @onready var normal_button = $DifficultyPanel/VBoxContainer/NormalButton
@@ -21,6 +29,9 @@ var selected_difficulty: String = ""
 var current_opponent: Resource = null
 var portrait_nodes = []
 
+# NEW: Bomb type data mapping
+var bomb_type_data_map = {}
+
 func _ready():
 	# Load tournament roster
 	tournament_roster = load("res://resources/default_tournament_roster.tres")
@@ -29,6 +40,9 @@ func _ready():
 		push_error("Failed to load tournament_roster.tres")
 		return
 	
+	# NEW: Load bomb type data resources
+	load_bomb_type_data()
+	
 	# Connect difficulty buttons
 	easy_button.connect("pressed", _on_difficulty_pressed.bind("Easy"))
 	normal_button.connect("pressed", _on_difficulty_pressed.bind("Normal"))
@@ -36,7 +50,6 @@ func _ready():
 	back_button.connect("pressed", _on_back_pressed)
 	
 	# NEW: Check if tournament is already in progress
-	# Use the class variable, not a local variable!
 	current_opponent = TournamentManager.get_current_opponent()
 	
 	if current_opponent != null:
@@ -49,7 +62,7 @@ func _ready():
 		# Set the selected difficulty from TournamentManager
 		selected_difficulty = TournamentManager.get_difficulty_name()
 		
-		# Go directly to presenting the opponent (no need to reassign current_opponent)
+		# Go directly to presenting the opponent
 		present_selected_opponent()
 	else:
 		# New tournament - start with difficulty selection visible
@@ -59,6 +72,22 @@ func _ready():
 		
 		# Grab focus on normal button
 		normal_button.grab_focus()
+
+# NEW: Load all bomb type data resources
+func load_bomb_type_data():
+	"""Load BombTypeData resources into a lookup dictionary"""
+	bomb_type_data_map[BombController.BombType.NONE] = load("res://resources/bomb_types/bomb_none.tres")
+	bomb_type_data_map[BombController.BombType.NORMAL] = load("res://resources/bomb_types/bomb_color.tres")
+	bomb_type_data_map[BombController.BombType.LINE] = load("res://resources/bomb_types/bomb_line.tres")
+	bomb_type_data_map[BombController.BombType.TIME] = load("res://resources/bomb_types/bomb_time.tres")
+	bomb_type_data_map[BombController.BombType.CROSS] = load("res://resources/bomb_types/bomb_cross.tres")
+	bomb_type_data_map[BombController.BombType.AREA] = load("res://resources/bomb_types/bomb_area.tres")
+	
+	# NEW: Special scenario types (using values 6 and 7)
+	bomb_type_data_map[6] = load("res://resources/bomb_types/bomb_all.tres")
+	bomb_type_data_map[7] = load("res://resources/bomb_types/bomb_line_cross.tres")
+	
+	print("Loaded ", bomb_type_data_map.size(), " bomb type data resources")
 
 func _on_difficulty_pressed(difficulty: String):
 	print("Selected difficulty: ", difficulty)
@@ -170,7 +199,7 @@ func select_random_opponent():
 		"Hard":
 			difficulty_enum = TournamentManager.Difficulty.HARD
 	
-	# FIXED: Correct argument order (roster, difficulty)
+	# Initialize tournament (roster, difficulty)
 	TournamentManager.initialize_tournament(tournament_roster, difficulty_enum)
 	
 	# Get first opponent
@@ -207,6 +236,12 @@ func present_selected_opponent():
 	opponent_name.text = current_opponent.opponent_name
 	opponent_bio.text = current_opponent.bio_text
 	
+	# NEW: Set bomb type data
+	display_bomb_info()
+	
+	# NEW: Set match number
+	display_match_number()
+	
 	# Hide shuffle panel
 	shuffle_panel.hide()
 	
@@ -222,6 +257,56 @@ func present_selected_opponent():
 	
 	# Enable input to continue
 	set_process_input(true)
+
+# NEW: Display bomb type information
+func display_bomb_info():
+	"""Load and display bomb type information for this opponent"""
+	# Get tournament difficulty enum
+	var difficulty_enum = TournamentManager.current_difficulty
+	
+	# Get opponent's bomb type for this difficulty
+	var opponent_bomb_type = current_opponent.get_bomb_type(difficulty_enum)
+	
+	# Get the bomb type data
+	var bomb_data = bomb_type_data_map.get(opponent_bomb_type)
+	
+	if bomb_data:
+		# Set bomb type name
+		bomb_type_label.text = bomb_data.bomb_name.to_upper()
+		
+		# Set description
+		bomb_description.text = bomb_data.description
+		
+		# Load and set icon
+		if bomb_data.bomb_icon_path and bomb_data.bomb_icon_path != "":
+			var icon_texture = load(bomb_data.bomb_icon_path)
+			if icon_texture:
+				bomb_icon.texture = icon_texture
+				print("Loaded bomb icon: ", bomb_data.bomb_icon_path)
+			else:
+				print("WARNING: Failed to load bomb icon from ", bomb_data.bomb_icon_path)
+				bomb_icon.texture = null
+		else:
+			# No bombs - hide icon
+			bomb_icon.visible = (opponent_bomb_type != BombController.BombType.NONE)
+			bomb_icon.texture = null
+		
+		print("Displaying bomb info: ", bomb_data.bomb_name, " (Type ", opponent_bomb_type, ")")
+	else:
+		print("WARNING: No bomb type data found for type ", opponent_bomb_type)
+		bomb_type_label.text = "UNKNOWN BOMB"
+		bomb_description.text = "Bomb information unavailable."
+		bomb_icon.texture = null
+
+# NEW: Display match number
+func display_match_number():
+	"""Display current match number in the tournament"""
+	var current_match = TournamentManager.get_current_opponent_number()
+	var total_matches = TournamentManager.get_opponent_count()
+	
+	match_number_label.text = "Match " + str(current_match) + " of " + str(total_matches)
+	
+	print("Match info: ", current_match, " / ", total_matches)
 
 func _input(event):
 	# Wait for any key press to continue to match

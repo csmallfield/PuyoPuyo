@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BombTypeData" load_steps=2 format=3 uid="uid://dn6gsjm5g2oem"]
+
+[ext_resource type="Script" uid="uid://cby7f0iox0h0e" path="res://scripts/BombTypeData.gd" id="1_rqr24"]
+
+[resource]
+script = ExtResource("1_rqr24")
+bomb_type = 0
+bomb_name = "No Bombs"
+bomb_icon_path = ""
+description = "No bombs will appear in this match. Focus on creating chains with colored pieces!"
+metadata/_custom_type_script = "uid://cby7f0iox0h0e"

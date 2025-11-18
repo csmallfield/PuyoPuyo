@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BombTypeData" load_steps=2 format=3 uid="uid://6s21sgeqy0nc"]
+
+[ext_resource type="Script" uid="uid://cby7f0iox0h0e" path="res://scripts/BombTypeData.gd" id="1_dmg85"]
+
+[resource]
+script = ExtResource("1_dmg85")
+bomb_type = 2
+bomb_name = "Line Bomb"
+bomb_icon_path = "res://assets/line_bomb_vertical.png"
+description = "Clears an entire row or column when placed. The orientation depends on how you rotate the piece pair."
+metadata/_custom_type_script = "uid://cby7f0iox0h0e"

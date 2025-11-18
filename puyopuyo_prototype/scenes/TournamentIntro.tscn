@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3 uid="uid://crqkxdvnr82rd"]
 
-[ext_resource type="Script" uid="uid://bq266383xhx2t" path="res://scripts/TournamentIntro.gd" id="1"]
+[ext_resource type="Script" uid="uid://bh5ard1ewlye4" path="res://scripts/TournamentIntro.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://pcsiexkobqsk" path="res://scenes/BackgroundScenes/BG_TournamentIntro.tscn" id="2_5sx7s"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
@@ -161,65 +161,125 @@ offset_bottom = -150.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="OpponentName" type="Label" parent="PresentationPanel"]
+[node name="VBoxContainer" type="VBoxContainer" parent="PresentationPanel"]
 layout_mode = 1
-anchors_preset = 10
+anchors_preset = 15
 anchor_right = 1.0
-offset_top = 30.0
-offset_bottom = 100.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
 grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="OpponentName" type="Label" parent="PresentationPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 80)
+layout_mode = 2
 theme_override_font_sizes/font_size = 56
 text = "OPPONENT NAME"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="OpponentPortrait" type="TextureRect" parent="PresentationPanel"]
-custom_minimum_size = Vector2(512, 512)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -256.0
-offset_top = -256.0
-offset_right = 256.0
-offset_bottom = 256.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="HSeparator" type="HSeparator" parent="PresentationPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
 
-[node name="OpponentBio" type="Label" parent="PresentationPanel"]
-layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 50.0
-offset_top = -150.0
-offset_right = -50.0
-offset_bottom = -50.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_font_sizes/font_size = 28
+[node name="MiddleSection" type="HBoxContainer" parent="PresentationPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 30
+
+[node name="LeftSide" type="CenterContainer" parent="PresentationPanel/VBoxContainer/MiddleSection"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="OpponentPortrait" type="TextureRect" parent="PresentationPanel/VBoxContainer/MiddleSection/LeftSide"]
+custom_minimum_size = Vector2(400, 400)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RightSide" type="VBoxContainer" parent="PresentationPanel/VBoxContainer/MiddleSection"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 20
+
+[node name="OpponentBioPanel" type="PanelContainer" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide/OpponentBioPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="OpponentBio" type="Label" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide/OpponentBioPanel/MarginContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "Opponent biography and description will appear here."
-horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="MatchDataPanel" type="PanelContainer" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide"]
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="BombIcon" type="TextureRect" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(128, 128)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="InfoVBox" type="VBoxContainer" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="BombTypeLabel" type="Label" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel/MarginContainer/HBoxContainer/InfoVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.3, 1)
+theme_override_font_sizes/font_size = 28
+text = "BOMB TYPE"
+
+[node name="BombDescription" type="Label" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel/MarginContainer/HBoxContainer/InfoVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 18
+text = "Bomb description will appear here."
 vertical_alignment = 1
 autowrap_mode = 3
 
-[node name="ContinuePrompt" type="Label" parent="PresentationPanel"]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -200.0
-offset_top = -40.0
-offset_right = 200.0
-offset_bottom = -10.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_font_sizes/font_size = 18
+[node name="MatchNumber" type="Label" parent="PresentationPanel/VBoxContainer/MiddleSection/RightSide/MatchDataPanel/MarginContainer/HBoxContainer/InfoVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "Match 1 of 5"
+horizontal_alignment = 1
+
+[node name="HSeparator2" type="HSeparator" parent="PresentationPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="ContinuePrompt" type="Label" parent="PresentationPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
 text = "Press SPACE to continue..."
 horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="BG_TournamentIntro" parent="." instance=ExtResource("2_5sx7s")]

@@ -151,7 +151,6 @@ volume_db = -12.0
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="SeriesScorePanel" type="Panel" parent="UI"]
-anchors_preset = -1
 offset_left = 860.0
 offset_top = 20.0
 offset_right = 1060.0

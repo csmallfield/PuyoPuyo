@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BombTypeData" load_steps=2 format=3 uid="uid://bsgnbqm0o8jce"]
+
+[ext_resource type="Script" uid="uid://cby7f0iox0h0e" path="res://scripts/BombTypeData.gd" id="1_uvqps"]
+
+[resource]
+script = ExtResource("1_uvqps")
+bomb_type = 7
+bomb_name = "Line & Cross"
+bomb_icon_path = "res://assets/cross_bomb.png"
+description = "Line Bombs and Cross Bombs will appear in this match. Master both horizontal/vertical clears and devastating cross explosions!"
+metadata/_custom_type_script = "uid://cby7f0iox0h0e"
