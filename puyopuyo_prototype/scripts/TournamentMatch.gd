@@ -125,6 +125,7 @@ func _ready():
 	
 	# Initialize UI
 	setup_opponent_info()
+	load_opponent_music() 
 	update_series_score()
 	update_round_indicator()
 	update_continues_label()
@@ -170,6 +171,33 @@ func setup_opponent_info():
 	print("Difficulty: ", TournamentManager.get_difficulty_name())
 	print("Overtime Mode: ", "ENABLED" if overtime_enabled else "DISABLED")
 	print("========================")
+
+func load_opponent_music():
+	"""Load and set the opponent's unique music track"""
+	if not current_opponent:
+		return
+	
+	var music_path = current_opponent.music_track_path
+	
+	# Check if opponent has a music track defined
+	if music_path and music_path != "":
+		var music_track = load(music_path)
+		
+		if music_track:
+			print("Loading opponent music: ", music_path)
+			
+			# Enable looping for WAV files
+			if music_track is AudioStreamWAV:
+				music_track.loop_mode = AudioStreamWAV.LOOP_FORWARD
+			# Enable looping for OGG files
+			elif music_track is AudioStreamOggVorbis:
+				music_track.loop = true
+			
+			music_player.stream = music_track
+		else:
+			print("WARNING: Failed to load music from ", music_path, " - using default")
+	else:
+		print("No music track defined for opponent - using default")
 
 func start_new_round():
 	"""Start new round"""
