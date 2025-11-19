@@ -175,6 +175,7 @@ func setup_opponent_info():
 func load_opponent_music():
 	"""Load and set the opponent's unique music track"""
 	if not current_opponent or not music_player:
+		print("✗ No opponent or music player")
 		return
 	
 	var music_path = current_opponent.music_track_path
@@ -194,7 +195,7 @@ func load_opponent_music():
 		else:
 			print("✗ Failed to load music from ", music_path)
 	else:
-		print("⚠ No music track defined for opponent")
+		print("⚠ No music track defined for opponent - keeping default")
 		
 func start_new_round():
 	"""Start new round"""
