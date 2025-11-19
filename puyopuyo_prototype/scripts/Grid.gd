@@ -45,6 +45,9 @@ var enable_camera_shake = true
 
 var enable_input = true
 
+# Overtime mode
+var pending_overtime_bubble_spawn = false
+
 # Garbage/Nuisance system
 signal garbage_sent(nuisance_points)
 var incoming_garbage_points = 0
@@ -207,6 +210,12 @@ func clear_all_pieces():
 			child.queue_free()
 
 func spawn_new_piece_pair():
+	# NEW: Check for pending overtime bubble spawn
+	if pending_overtime_bubble_spawn:
+		print("Executing pending overtime bubble spawn before new piece")
+		spawn_bottom_bubble_row()
+		# Brief delay to let animations settle
+		await get_tree().create_timer(0.5).timeout
 	if next_piece_pair:
 		current_piece_pair = next_piece_pair
 	else:
@@ -996,18 +1005,23 @@ func spawn_bottom_bubble_row():
 	print("Spawning bottom bubble row - pushing grid up")
 	
 	# First, check if pushing up would cause game over
-	# If top row has pieces, game over
 	if has_pieces_in_spawn_zone_after_push():
 		print("Cannot push up - would cause game over")
 		emit_signal("game_over")
 		return
 	
-	# Shift all existing pieces up by one row
-	for y in range(1, GameState.grid_height):
-		var source_row = GameState.grid_height - y
-		var dest_row = source_row - 1
+	# FIXED: Shift all existing pieces up by one row
+	# Process from TOP to BOTTOM to avoid overwriting pieces that haven't moved yet
+	for dest_row in range(0, GameState.grid_height - 1):  # 0 to 12
+		var source_row = dest_row + 1  # Row below (1 to 13)
 		
 		for x in range(GameState.grid_width):
+			# Clear destination first
+			if grid_data[dest_row][x] != null:
+				grid_data[dest_row][x].queue_free()
+				grid_data[dest_row][x] = null
+			
+			# Move piece from source to destination
 			if grid_data[source_row][x] != null:
 				var piece = grid_data[source_row][x]
 				grid_data[dest_row][x] = piece
@@ -1016,7 +1030,7 @@ func spawn_bottom_bubble_row():
 				# Animate piece to new position
 				piece.animate_to_position(grid_to_pixel(Vector2(x, dest_row)))
 	
-	# Spawn bubbles in the bottom row
+	# Spawn bubbles in the bottom row (now cleared by the loop above)
 	for x in range(GameState.grid_width):
 		var bubble = Piece.instantiate()
 		add_child(bubble)
@@ -1027,6 +1041,14 @@ func spawn_bottom_bubble_row():
 		bubble.set_position_immediately(grid_to_pixel(Vector2(x, bottom_row)))
 	
 	print("Bottom bubble row spawned")
+	
+	# Clear the pending flag
+	pending_overtime_bubble_spawn = false
+	
+func request_overtime_bubble_spawn():
+	"""Request that overtime bubbles spawn at the start of the next turn"""
+	pending_overtime_bubble_spawn = true
+	print("Overtime bubble spawn requested - will execute on next piece spawn")
 
 func has_pieces_in_spawn_zone_after_push() -> bool:
 	"""Check if pushing the grid up would put pieces in the spawn zone"""

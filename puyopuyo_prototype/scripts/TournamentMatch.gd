@@ -332,19 +332,19 @@ func activate_overtime():
 
 # NEW: Spawn overtime bubble rows
 func spawn_overtime_bubbles():
-	"""Spawn a row of bubbles at the bottom of both grids"""
-	print("Overtime: Spawning bubble row")
+	"""Request overtime bubble rows to spawn on next turn"""
+	print("Overtime: Requesting bubble row spawn on next turn")
 	
 	# Play warning sound
 	AudioManager.play_garbage_incoming()
 	
-	# Spawn on player grid
+	# Request spawn on player grid
 	if player_grid:
-		player_grid.spawn_bottom_bubble_row()
+		player_grid.request_overtime_bubble_spawn()
 	
-	# Spawn on AI grid
+	# Request spawn on AI grid
 	if ai_grid:
-		ai_grid.spawn_bottom_bubble_row()
+		ai_grid.request_overtime_bubble_spawn()
 
 func _input(event):
 	if event.is_action_pressed("pause") and game_active:
