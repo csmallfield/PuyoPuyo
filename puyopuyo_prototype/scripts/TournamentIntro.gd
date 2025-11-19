@@ -104,7 +104,7 @@ func _on_difficulty_pressed(difficulty: String):
 	tween.tween_callback(show_opponent_portraits)
 
 func show_opponent_portraits():
-	"""Display all opponent portraits in the lineup"""
+	"""Display all opponent portraits in the lineup - EXCLUDES BOSS"""
 	shuffle_panel.show()
 	shuffle_panel.modulate.a = 0.0
 	
@@ -113,13 +113,28 @@ func show_opponent_portraits():
 		child.queue_free()
 	portrait_nodes.clear()
 	
-	# Get all opponents from roster
-	var all_opponents = tournament_roster.opponents
+	# IMPORTANT: Initialize tournament NOW to get the actual order
+	var difficulty_enum = TournamentManager.Difficulty.NORMAL
+	match selected_difficulty:
+		"Easy":
+			difficulty_enum = TournamentManager.Difficulty.EASY
+		"Normal":
+			difficulty_enum = TournamentManager.Difficulty.NORMAL
+		"Hard":
+			difficulty_enum = TournamentManager.Difficulty.HARD
 	
-	print("Loading ", all_opponents.size(), " opponent portraits")
+	TournamentManager.initialize_tournament(tournament_roster, difficulty_enum)
 	
-	for i in range(all_opponents.size()):
-		var opponent = all_opponents[i]
+	# Get NON-BOSS opponents from the queue
+	var display_opponents = []
+	for opponent in TournamentManager.opponent_queue:
+		if not opponent.is_boss:
+			display_opponents.append(opponent)
+	
+	print("Loading ", display_opponents.size(), " opponent portraits (boss excluded)")
+	
+	for i in range(display_opponents.size()):
+		var opponent = display_opponents[i]
 		
 		# Create TextureRect for portrait
 		var portrait = TextureRect.new()
@@ -132,22 +147,21 @@ func show_opponent_portraits():
 			var texture = load(opponent.portrait_path)
 			if texture:
 				portrait.texture = texture
-				print("Loaded portrait for ", opponent.opponent_name, " from ", opponent.portrait_path)
+				print("Loaded portrait for ", opponent.opponent_name)
 			else:
 				print("WARNING: Failed to load portrait from ", opponent.portrait_path)
-				# Create fallback colored rect
 				portrait.modulate = Color(randf(), randf(), randf())
 		else:
 			print("WARNING: No portrait path for ", opponent.opponent_name)
-			# Create fallback colored rect
 			portrait.modulate = Color(randf(), randf(), randf())
 		
 		# Add to container
 		portrait_grid.add_child(portrait)
 		portrait_nodes.append(portrait)
 		
-		# Store opponent data in metadata
+		# Store opponent data AND index in metadata
 		portrait.set_meta("opponent_data", opponent)
+		portrait.set_meta("opponent_index", i)
 	
 	# Fade in portraits
 	var tween = create_tween()
@@ -157,61 +171,128 @@ func show_opponent_portraits():
 	tween.tween_callback(shuffle_portraits)
 
 func shuffle_portraits():
-	"""Animate portrait shuffling"""
+	"""Animate portrait shuffling - MORE iterations, LONGER duration"""
 	print("Shuffling portraits...")
 	
-	var shuffle_duration = 1.5
-	var shuffle_count = 8
+	# INCREASED: Longer shuffle with more swaps
+	var shuffle_duration = 3.0  # Up from 1.5
+	var shuffle_count = 15      # Up from 8
 	var interval = shuffle_duration / shuffle_count
 	
-	AudioManager.play_button_hover()  # Use hover sound for shuffle
+	shuffle_label.text = "SHUFFLING OPPONENTS..."
 	
+	AudioManager.play_button_hover()
+	
+	# Rapid shuffling phase
 	for i in range(shuffle_count):
 		await get_tree().create_timer(interval).timeout
 		
-		# Swap random portraits visually (not the actual nodes)
+		# Swap random portraits
 		var idx1 = randi() % portrait_nodes.size()
 		var idx2 = randi() % portrait_nodes.size()
 		
 		if idx1 != idx2:
-			# Swap positions with animation
+			# Swap positions with faster animation for more chaotic feel
 			var pos1 = portrait_nodes[idx1].position
 			var pos2 = portrait_nodes[idx2].position
 			
 			var tween = create_tween()
 			tween.set_parallel(true)
-			tween.tween_property(portrait_nodes[idx1], "position", pos2, 0.2)
-			tween.tween_property(portrait_nodes[idx2], "position", pos1, 0.2)
+			tween.tween_property(portrait_nodes[idx1], "position", pos2, 0.12)
+			tween.tween_property(portrait_nodes[idx2], "position", pos1, 0.12)
 	
-	# Select opponent after shuffle
-	await get_tree().create_timer(0.3).timeout
-	select_random_opponent()
+	# NEW: Show the final playing order clearly
+	await show_final_order()
 
-func select_random_opponent():
-	"""Select and present a random opponent"""
-	# Convert string difficulty to enum
-	var difficulty_enum = TournamentManager.Difficulty.NORMAL  # Default
-	match selected_difficulty:
-		"Easy":
-			difficulty_enum = TournamentManager.Difficulty.EASY
-		"Normal":
-			difficulty_enum = TournamentManager.Difficulty.NORMAL
-		"Hard":
-			difficulty_enum = TournamentManager.Difficulty.HARD
+func show_final_order():
+	"""Display the final opponent order clearly - REARRANGE portraits in grid"""
+	print("Revealing final opponent order...")
 	
-	# Initialize tournament (roster, difficulty)
-	TournamentManager.initialize_tournament(tournament_roster, difficulty_enum)
+	# Update label to show this is the final order
+	shuffle_label.text = "YOUR OPPONENTS - IN ORDER:"
 	
-	# Get first opponent
+	AudioManager.play_button_click()
+	
+	# Get the actual ordered opponents (non-boss) from tournament queue
+	var ordered_opponents = []
+	for opponent in TournamentManager.opponent_queue:
+		if not opponent.is_boss:
+			ordered_opponents.append(opponent)
+	
+	# CRITICAL: Remove all portraits from grid and clear the array
+	for portrait in portrait_nodes:
+		portrait_grid.remove_child(portrait)
+	
+	var old_portraits = portrait_nodes.duplicate()
+	portrait_nodes.clear()
+	
+	# Re-add portraits in the CORRECT ORDER
+	for i in range(ordered_opponents.size()):
+		var opponent = ordered_opponents[i]
+		
+		# Create new portrait for this opponent
+		var portrait = TextureRect.new()
+		portrait.custom_minimum_size = Vector2(256, 256)
+		portrait.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		
+		# Load portrait image
+		if opponent.portrait_path and opponent.portrait_path != "":
+			var texture = load(opponent.portrait_path)
+			if texture:
+				portrait.texture = texture
+		else:
+			portrait.modulate = Color(randf(), randf(), randf())
+		
+		# Add to grid in order (upper-left to lower-right)
+		portrait_grid.add_child(portrait)
+		portrait_nodes.append(portrait)
+		
+		# Store metadata
+		portrait.set_meta("opponent_data", opponent)
+		portrait.set_meta("opponent_index", i)
+		
+		print("  Position ", i + 1, ": ", opponent.opponent_name)
+	
+	# Clean up old portraits
+	for old_portrait in old_portraits:
+		old_portrait.queue_free()
+	
+	# Brief pause to let grid layout settle
+	await get_tree().create_timer(0.2).timeout
+	
+	# Animate each portrait in sequence to emphasize order (left to right, top to bottom)
+	for i in range(portrait_nodes.size()):
+		var portrait = portrait_nodes[i]
+		
+		var tween = create_tween()
+		tween.set_parallel(true)
+		tween.tween_property(portrait, "scale", Vector2(1.15, 1.15), 0.2)
+		tween.tween_property(portrait, "modulate", Color(1.2, 1.2, 1.2), 0.2)
+		tween.tween_property(portrait, "scale", Vector2(1.0, 1.0), 0.15).set_delay(0.2)
+		tween.tween_property(portrait, "modulate", Color(1.0, 1.0, 1.0), 0.15).set_delay(0.2)
+		
+		await get_tree().create_timer(0.15).timeout
+	
+	# HOLD on the final order so player can see it clearly
+	await get_tree().create_timer(2.5).timeout
+	
+	# Now proceed to show the first opponent
+	present_first_opponent()
+
+func present_first_opponent():
+	"""Present the first opponent (tournament already initialized)"""
 	current_opponent = TournamentManager.get_current_opponent()
 	
 	if not current_opponent:
 		push_error("Failed to get first opponent")
 		return
 	
-	print("Selected first opponent: ", current_opponent.opponent_name)
+	print("Presenting first opponent: ", current_opponent.opponent_name)
 	AudioManager.play_button_click()
 	present_selected_opponent()
+
+
 
 func present_selected_opponent():
 	"""Present the selected opponent with details"""
