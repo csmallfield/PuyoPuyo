@@ -21,7 +21,7 @@ const BombController = preload("res://scripts/BombController.gd")
 @onready var music_player = $MusicPlayer
 @onready var bomb_type_label: Label = $UI/PausePanel/VBoxContainer/BombTypeLabel
 @onready var change_bomb_type_button: Button = $UI/PausePanel/VBoxContainer/ChangeBombTypeButton
-@onready var timer_label: Label = $TimerLabel
+@onready var timer_label: Label = $UI/TimerLabel
 
 var game_start_time = 0.0
 

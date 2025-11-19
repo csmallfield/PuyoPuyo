@@ -226,24 +226,23 @@ Up to Spin
 Space to Fast Drop
 P to Pause game"
 
+[node name="TimerLabel" type="Label" parent="UI"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -940.0
+offset_top = 169.0
+offset_right = -794.0
+offset_bottom = 206.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.7, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "Time : 0:00"
+vertical_alignment = 1
+
 [node name="MusicPlayer" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("4_rarhs")
 volume_db = -12.0
 
 [node name="DynamicBG" parent="." instance=ExtResource("4_vcsgt")]
-
-[node name="TimerLabel" type="Label" parent="."]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -30.5
-offset_top = 99.0
-offset_right = 30.5
-offset_bottom = 136.0
-grow_horizontal = 2
-theme_override_colors/font_color = Color(0.7, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 28
-text = "0:00"
-horizontal_alignment = 1
-vertical_alignment = 1
