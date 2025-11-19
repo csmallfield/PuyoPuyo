@@ -174,31 +174,28 @@ func setup_opponent_info():
 
 func load_opponent_music():
 	"""Load and set the opponent's unique music track"""
-	if not current_opponent:
+	if not current_opponent or not music_player:
 		return
 	
 	var music_path = current_opponent.music_track_path
+	
+	# Stop any currently playing music
+	if music_player.playing:
+		music_player.stop()
 	
 	# Check if opponent has a music track defined
 	if music_path and music_path != "":
 		var music_track = load(music_path)
 		
 		if music_track:
-			print("Loading opponent music: ", music_path)
-			
-			# Enable looping for WAV files
-			if music_track is AudioStreamWAV:
-				music_track.loop_mode = AudioStreamWAV.LOOP_FORWARD
-			# Enable looping for OGG files
-			elif music_track is AudioStreamOggVorbis:
-				music_track.loop = true
-			
+			print("✓ Loaded opponent music: ", music_path)
 			music_player.stream = music_track
+			print("  Stream assigned to player")
 		else:
-			print("WARNING: Failed to load music from ", music_path, " - using default")
+			print("✗ Failed to load music from ", music_path)
 	else:
-		print("No music track defined for opponent - using default")
-
+		print("⚠ No music track defined for opponent")
+		
 func start_new_round():
 	"""Start new round"""
 	print("\n=== ROUND ", current_round, " START ===")
@@ -210,6 +207,9 @@ func start_new_round():
 		ai_grid.queue_free()
 	if ai_controller:
 		ai_controller.queue_free()
+		
+	if current_round == 1:
+		load_opponent_music()
 	
 	# Configure game for VS mode
 	GameState.configure_for_game_mode(GameState.GameMode.VS_MODE)
@@ -278,9 +278,12 @@ func start_new_round():
 	
 	AudioManager.play_game_start()
 	
-	if not music_player.playing:
+	if music_player and music_player.stream:
 		music_player.volume_db = -12
 		music_player.play()
+		print("▶ Music started playing")
+	else:
+		print("✗ Music player has no stream!")
 
 func _process(delta):
 	if game_active and round_active and not is_paused:
