@@ -76,7 +76,7 @@ var meter_flash_duration = 0.5
 
 # NEW: Overtime mode variables
 var overtime_enabled = true  # Can be toggled in settings later
-var overtime_threshold = 30.0  # 3 minutes in seconds
+var overtime_threshold = 180.0  # 3 minutes in seconds
 var overtime_active = false
 var overtime_interval = 10.0  # Spawn bubbles every 10 seconds
 var overtime_timer = 0.0
