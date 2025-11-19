@@ -30,6 +30,7 @@ const AIController = preload("res://scripts/AIController.gd")
 @onready var music_player = $MusicPlayer
 
 @onready var dim_overlay: ColorRect = $DimOverlay
+@onready var timer_label: Label = $TimerLabel
 
 
 # NEW: Debug mode controls
@@ -46,7 +47,7 @@ var ai_controller = null
 var player_ai_controller = null  # NEW: AI controller for player side
 var game_active = false
 var is_paused = false
-
+var match_start_time = 0.0
 # Track scores separately for each player
 var player_score = 0
 var ai_score = 0
@@ -250,6 +251,7 @@ func _process(delta):
 		update_score_labels()
 		update_level_labels()
 		update_garbage_meters(delta)
+		update_timer_label()
 
 func update_score_labels():
 	player_score_label.text = "Score: " + str(player_score)
@@ -294,6 +296,17 @@ func update_garbage_meters(delta):
 				ai_garbage_meter.modulate = Color(1.0, 0.7, 0.3)
 			else:
 				ai_garbage_meter.modulate = Color(0.5, 0.5, 0.5)
+
+func update_timer_label():
+	"""Update the timer display"""
+	if not timer_label or not game_active:
+		return
+	
+	var elapsed_seconds = (Time.get_ticks_msec() / 1000.0) - match_start_time
+	var minutes = int(elapsed_seconds) / 60
+	var seconds = int(elapsed_seconds) % 60
+	
+	timer_label.text = "%d:%02d" % [minutes, seconds]
 
 func check_player_level_up():
 	"""Check if player should level up based on score"""

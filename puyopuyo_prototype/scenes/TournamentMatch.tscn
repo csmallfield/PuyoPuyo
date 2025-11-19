@@ -188,9 +188,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -128.0
-offset_top = -340.0
+offset_top = -290.0
 offset_right = 128.0
-offset_bottom = -84.0
+offset_bottom = -34.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -228,9 +228,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -100.0
-offset_top = -386.0
+offset_top = -339.0
 offset_right = 100.0
-offset_bottom = -346.0
+offset_bottom = -299.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 22
@@ -337,6 +337,21 @@ custom_minimum_size = Vector2(0, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "NO - Quit"
+
+[node name="TimerLabel" type="Label" parent="UI"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -30.5
+offset_top = 153.0
+offset_right = 30.5
+offset_bottom = 190.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.7, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "0:00"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="MenuLayer" type="CanvasLayer" parent="."]
 

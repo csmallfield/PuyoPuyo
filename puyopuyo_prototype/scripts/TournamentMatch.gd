@@ -1,5 +1,5 @@
 extends Control
-# TournamentMatch.gd - Phase 3 Tournament Match
+# TournamentMatch.gd - Phase 3 Tournament Match with Timer and Overtime Mode
 
 const BombController = preload("res://scripts/BombController.gd")
 const Grid = preload("res://scenes/Grid.tscn")
@@ -20,6 +20,7 @@ const AIController = preload("res://scripts/AIController.gd")
 # Tournament UI
 @onready var series_score_label = $UI/SeriesScorePanel/SeriesScoreLabel
 @onready var round_indicator = $UI/RoundIndicator
+@onready var timer_label = $UI/TimerLabel  # NEW: Timer display
 @onready var opponent_portrait_small = $UI/OpponentInfoPanel/OpponentPortrait
 @onready var opponent_name_label = $UI/OpponentInfoPanel/OpponentName
 @onready var continues_label = $UI/ContinuesLabel
@@ -34,8 +35,6 @@ const AIController = preload("res://scripts/AIController.gd")
 @onready var continue_yes_button = $UI/ContinueOverlay/VBoxContainer/YesButton
 @onready var continue_no_button = $UI/ContinueOverlay/VBoxContainer/NoButton
 
-
-
 # Pause
 @onready var pause_panel = $MenuLayer/PausePanel
 @onready var pause_resume_button = $MenuLayer/PausePanel/VBoxContainer/ResumeButton
@@ -49,10 +48,8 @@ const AIController = preload("res://scripts/AIController.gd")
 
 @onready var dim_overlay: ColorRect = $MenuLayer/DimOverlay
 
-
 # Debug
 @onready var debug_autowin_button: Button = $MenuLayer/PausePanel/VBoxContainer/Autowin
-
 
 # State variables
 var player_grid = null
@@ -77,8 +74,12 @@ var player_meter_flash_timer = 0.0
 var ai_meter_flash_timer = 0.0
 var meter_flash_duration = 0.5
 
-
-
+# NEW: Overtime mode variables
+var overtime_enabled = true  # Can be toggled in settings later
+var overtime_threshold = 30.0  # 3 minutes in seconds
+var overtime_active = false
+var overtime_interval = 10.0  # Spawn bubbles every 10 seconds
+var overtime_timer = 0.0
 
 func _ready():
 	# Allow input processing even when paused (for pause toggle)
@@ -127,6 +128,7 @@ func _ready():
 	update_series_score()
 	update_round_indicator()
 	update_continues_label()
+	update_timer_label(0.0)  # NEW: Initialize timer
 	
 	# Hide overlays
 	round_result_overlay.hide()
@@ -166,6 +168,7 @@ func setup_opponent_info():
 	print("=== TOURNAMENT MATCH ===")
 	print("Opponent: ", current_opponent.opponent_name)
 	print("Difficulty: ", TournamentManager.get_difficulty_name())
+	print("Overtime Mode: ", "ENABLED" if overtime_enabled else "DISABLED")
 	print("========================")
 
 func start_new_round():
@@ -193,6 +196,10 @@ func start_new_round():
 	ai_round_score = 0
 	last_global_score = 0
 	round_start_time = Time.get_ticks_msec() / 1000.0
+	
+	# NEW: Reset overtime state
+	overtime_active = false
+	overtime_timer = 0.0
 	
 	# Create player grid
 	player_grid = Grid.instantiate()
@@ -251,6 +258,93 @@ func _process(delta):
 	if game_active and round_active and not is_paused:
 		update_score_labels()
 		update_garbage_meters(delta)
+		
+		# NEW: Update timer and check for overtime
+		var elapsed_time = get_round_elapsed_time()
+		update_timer_label(elapsed_time)
+		
+		if overtime_enabled:
+			check_and_handle_overtime(delta, elapsed_time)
+
+# NEW: Get round elapsed time
+func get_round_elapsed_time() -> float:
+	"""Get elapsed time for current round in seconds"""
+	return (Time.get_ticks_msec() / 1000.0) - round_start_time
+
+# NEW: Update timer label
+func update_timer_label(elapsed_seconds: float):
+	"""Update the timer display"""
+	if not timer_label:
+		return
+	
+	var minutes = int(elapsed_seconds) / 60
+	var seconds = int(elapsed_seconds) % 60
+	
+	# Change color when approaching overtime
+	if overtime_enabled and elapsed_seconds >= overtime_threshold - 30.0:
+		# Flash red when close to overtime
+		if overtime_active:
+			timer_label.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2, 1.0))
+		else:
+			var flash = abs(sin(elapsed_seconds * 3.0))
+			timer_label.add_theme_color_override("font_color", Color(1.0, flash * 0.5, 0.0, 1.0))
+	else:
+		timer_label.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0, 1.0))
+	
+	timer_label.text = "%d:%02d" % [minutes, seconds]
+
+# NEW: Overtime mode handling
+func check_and_handle_overtime(delta: float, elapsed_time: float):
+	"""Check if overtime should activate and handle overtime spawning"""
+	if not overtime_active and elapsed_time >= overtime_threshold:
+		activate_overtime()
+	
+	if overtime_active:
+		overtime_timer += delta
+		
+		# Spawn bubble row every 10 seconds
+		if overtime_timer >= overtime_interval:
+			overtime_timer -= overtime_interval
+			spawn_overtime_bubbles()
+
+# NEW: Activate overtime mode
+func activate_overtime():
+	"""Activate overtime mode - start spawning pressure bubbles"""
+	overtime_active = true
+	overtime_timer = 0.0
+	
+	print("=== OVERTIME ACTIVATED ===")
+	print("Bubble rows will spawn every ", overtime_interval, " seconds")
+	
+	# Visual/audio feedback
+	AudioManager.play_danger_warning()
+	
+	# Flash the timer
+	if timer_label:
+		timer_label.add_theme_color_override("font_color", Color(1.0, 0.0, 0.0, 1.0))
+	
+	# Show warning notification on both grids
+	if player_grid and player_grid.event_notification:
+		player_grid.event_notification.show_notification("OVERTIME!", player_grid.event_notification.NotificationType.DANGER, 2.0)
+	
+	if ai_grid and ai_grid.event_notification:
+		ai_grid.event_notification.show_notification("OVERTIME!", ai_grid.event_notification.NotificationType.DANGER, 2.0)
+
+# NEW: Spawn overtime bubble rows
+func spawn_overtime_bubbles():
+	"""Spawn a row of bubbles at the bottom of both grids"""
+	print("Overtime: Spawning bubble row")
+	
+	# Play warning sound
+	AudioManager.play_garbage_incoming()
+	
+	# Spawn on player grid
+	if player_grid:
+		player_grid.spawn_bottom_bubble_row()
+	
+	# Spawn on AI grid
+	if ai_grid:
+		ai_grid.spawn_bottom_bubble_row()
 
 func _input(event):
 	if event.is_action_pressed("pause") and game_active:
@@ -302,7 +396,7 @@ func _on_ai_loses_round():
 	print("Round ", current_round, " - Player wins!")
 	
 	# Calculate round time and speed bonus
-	var round_time = (Time.get_ticks_msec() / 1000.0) - round_start_time
+	var round_time = get_round_elapsed_time()
 	var speed_bonus = TournamentManager.calculate_speed_bonus(round_time)
 	
 	print("Round time: ", round_time, "s - Speed bonus: ", speed_bonus)
@@ -335,7 +429,7 @@ func show_round_result_overlay(player_won: bool):
 	round_result_overlay.show()
 	
 	var tween = create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)  # ADD THIS LINE
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(round_result_overlay, "modulate:a", 1.0, 0.3)
 	tween.tween_interval(2.0)
 	tween.tween_property(round_result_overlay, "modulate:a", 0.0, 0.3)
@@ -359,7 +453,7 @@ func show_match_victory_overlay():
 	round_result_overlay.show()
 	
 	var tween = create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)  # ADD THIS LINE
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(round_result_overlay, "modulate:a", 1.0, 0.3)
 	tween.tween_interval(2.5)
 	tween.tween_property(round_result_overlay, "modulate:a", 0.0, 0.3)
@@ -390,7 +484,7 @@ func show_continue_prompt():
 	continue_overlay.show()
 	
 	var tween = create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)  # ADD THIS LINE
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(continue_overlay, "modulate:a", 1.0, 0.3)
 	
 	await get_tree().create_timer(0.1, true).timeout
@@ -462,6 +556,7 @@ func proceed_to_next_opponent():
 		get_tree().change_scene_to_file("res://scenes/TournamentVictory.tscn")
 	else:
 		get_tree().change_scene_to_file("res://scenes/TournamentIntro.tscn")
+
 func update_series_score():
 	"""Update the series score display"""
 	series_score_label.text = str(player_round_wins) + " - " + str(ai_round_wins)
@@ -542,7 +637,7 @@ func toggle_pause():
 	"""Toggle pause state"""
 	if not is_paused:
 		is_paused = true
-		dim_overlay.show()  # ADD THIS
+		dim_overlay.show()
 		pause_panel.show()
 		get_tree().paused = true
 		AudioManager.play_pause()
@@ -550,7 +645,7 @@ func toggle_pause():
 		pause_resume_button.grab_focus()
 	else:
 		is_paused = false
-		dim_overlay.hide()  # ADD THIS
+		dim_overlay.hide()
 		pause_panel.hide()
 		get_tree().paused = false
 		AudioManager.play_unpause()

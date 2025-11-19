@@ -985,3 +985,53 @@ func get_average_column_height() -> float:
 				total += GameState.grid_height - y
 				break
 	return total / float(GameState.grid_width)
+
+# ============================================
+# OVERTIME MODE
+# ============================================
+
+
+func spawn_bottom_bubble_row():
+	"""Spawn a full row of bubbles at the bottom, pushing everything up (for overtime mode)"""
+	print("Spawning bottom bubble row - pushing grid up")
+	
+	# First, check if pushing up would cause game over
+	# If top row has pieces, game over
+	if has_pieces_in_spawn_zone_after_push():
+		print("Cannot push up - would cause game over")
+		emit_signal("game_over")
+		return
+	
+	# Shift all existing pieces up by one row
+	for y in range(1, GameState.grid_height):
+		var source_row = GameState.grid_height - y
+		var dest_row = source_row - 1
+		
+		for x in range(GameState.grid_width):
+			if grid_data[source_row][x] != null:
+				var piece = grid_data[source_row][x]
+				grid_data[dest_row][x] = piece
+				grid_data[source_row][x] = null
+				
+				# Animate piece to new position
+				piece.animate_to_position(grid_to_pixel(Vector2(x, dest_row)))
+	
+	# Spawn bubbles in the bottom row
+	for x in range(GameState.grid_width):
+		var bubble = Piece.instantiate()
+		add_child(bubble)
+		bubble.set_as_bubble()
+		
+		var bottom_row = GameState.grid_height - 1
+		grid_data[bottom_row][x] = bubble
+		bubble.set_position_immediately(grid_to_pixel(Vector2(x, bottom_row)))
+	
+	print("Bottom bubble row spawned")
+
+func has_pieces_in_spawn_zone_after_push() -> bool:
+	"""Check if pushing the grid up would put pieces in the spawn zone"""
+	# Check if row 1 (which would become row 0) has any pieces
+	for x in range(GameState.grid_width):
+		if grid_data[1][x] != null:
+			return true
+	return false

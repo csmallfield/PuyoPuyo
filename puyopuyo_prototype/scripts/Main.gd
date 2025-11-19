@@ -21,6 +21,9 @@ const BombController = preload("res://scripts/BombController.gd")
 @onready var music_player = $MusicPlayer
 @onready var bomb_type_label: Label = $UI/PausePanel/VBoxContainer/BombTypeLabel
 @onready var change_bomb_type_button: Button = $UI/PausePanel/VBoxContainer/ChangeBombTypeButton
+@onready var timer_label: Label = $TimerLabel
+
+var game_start_time = 0.0
 
 func _ready():
 	# Connect signals
@@ -119,6 +122,7 @@ func start_new_game():
 	game_over_panel.hide()
 	pause_panel.hide()
 	get_tree().paused = false
+	game_start_time = Time.get_ticks_msec() / 1000.0
 	
 	# Configure for single player mode BEFORE resetting game
 	GameState.configure_for_game_mode(GameState.GameMode.SINGLE_PLAYER)
@@ -166,6 +170,21 @@ func _on_level_changed(new_level):
 		var speed_index = min(new_level - 1, GameState.level_speeds.size() - 1)
 		grid.set_fall_speed(GameState.level_speeds[speed_index])
 		print("Level ", new_level, " - Speed set to: ", GameState.level_speeds[speed_index])
+
+func _process(delta):
+	if GameState.current_state == GameState.State.PLAYING:
+		update_timer_label()
+
+func update_timer_label():
+	"""Update the timer display"""
+	if not timer_label:
+		return
+	
+	var elapsed_seconds = (Time.get_ticks_msec() / 1000.0) - game_start_time
+	var minutes = int(elapsed_seconds) / 60
+	var seconds = int(elapsed_seconds) % 60
+	
+	timer_label.text = "Time: %d:%02d" % [minutes, seconds]
 
 func show_level_up_notification(level):
 	# Skip notification for level 1 (game start)
