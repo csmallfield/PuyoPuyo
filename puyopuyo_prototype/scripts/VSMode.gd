@@ -47,7 +47,6 @@ var ai_controller = null
 var player_ai_controller = null  # NEW: AI controller for player side
 var game_active = false
 var is_paused = false
-var match_start_time = 0.0
 # Track scores separately for each player
 var player_score = 0
 var ai_score = 0
@@ -56,6 +55,11 @@ var last_global_score = 0
 # Track levels separately for each player
 var player_level = 1
 var ai_level = 1
+
+# NEW: Timer tracking
+var match_start_time = 0.0
+var pause_start_time = 0.0
+var total_paused_time = 0.0
 
 # Garbage meter flash effect
 var player_meter_flash_timer = 0.0
@@ -137,6 +141,11 @@ func start_new_game():
 	ai_level = 1
 	player_has_sent_attack = false
 	ai_has_sent_attack = false
+	
+	# NEW: Reset timer tracking
+	match_start_time = Time.get_ticks_msec() / 1000.0
+	pause_start_time = 0.0
+	total_paused_time = 0.0
 	
 	# Create player grid
 	player_grid = Grid.instantiate()
@@ -302,7 +311,18 @@ func update_timer_label():
 	if not timer_label or not game_active:
 		return
 	
-	var elapsed_seconds = (Time.get_ticks_msec() / 1000.0) - match_start_time
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var raw_elapsed = current_time - match_start_time
+	
+	# Subtract total paused time
+	var elapsed_minus_pauses = raw_elapsed - total_paused_time
+	
+	# If currently paused, also subtract the current pause duration
+	if is_paused:
+		var current_pause_duration = current_time - pause_start_time
+		elapsed_minus_pauses -= current_pause_duration
+	
+	var elapsed_seconds = max(0.0, elapsed_minus_pauses)
 	var minutes = int(elapsed_seconds) / 60
 	var seconds = int(elapsed_seconds) % 60
 	
@@ -421,6 +441,7 @@ func toggle_pause():
 	if not is_paused:
 		# Pause the game using Godot's pause system
 		is_paused = true
+		pause_start_time = Time.get_ticks_msec() / 1000.0  # NEW: Record when paused
 		dim_overlay.show()
 		pause_panel.show()
 		get_tree().paused = true
@@ -433,6 +454,9 @@ func toggle_pause():
 		pause_resume_button.grab_focus()
 	else:
 		# Unpause the game
+		var pause_duration = (Time.get_ticks_msec() / 1000.0) - pause_start_time  # NEW
+		total_paused_time += pause_duration  # NEW: Accumulate paused time
+		
 		is_paused = false
 		pause_panel.hide()
 		dim_overlay.hide()

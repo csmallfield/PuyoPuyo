@@ -74,6 +74,9 @@ var player_meter_flash_timer = 0.0
 var ai_meter_flash_timer = 0.0
 var meter_flash_duration = 0.5
 
+var pause_start_time = 0.0
+var total_paused_time = 0.0
+
 # NEW: Overtime mode variables
 var overtime_enabled = true  # Can be toggled in settings later
 var overtime_threshold = 180.0  # 3 minutes in seconds
@@ -226,6 +229,10 @@ func start_new_round():
 	last_global_score = 0
 	round_start_time = Time.get_ticks_msec() / 1000.0
 	
+	# NEW: Reset pause tracking
+	pause_start_time = 0.0
+	total_paused_time = 0.0
+	
 	# NEW: Reset overtime state
 	overtime_active = false
 	overtime_timer = 0.0
@@ -298,10 +305,20 @@ func _process(delta):
 		if overtime_enabled:
 			check_and_handle_overtime(delta, elapsed_time)
 
-# NEW: Get round elapsed time
 func get_round_elapsed_time() -> float:
-	"""Get elapsed time for current round in seconds"""
-	return (Time.get_ticks_msec() / 1000.0) - round_start_time
+	"""Get elapsed time for current round in seconds (excluding paused time)"""
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var raw_elapsed = current_time - round_start_time
+	
+	# Subtract total paused time
+	var elapsed_minus_pauses = raw_elapsed - total_paused_time
+	
+	# If currently paused, also subtract the current pause duration
+	if is_paused:
+		var current_pause_duration = current_time - pause_start_time
+		elapsed_minus_pauses -= current_pause_duration
+	
+	return max(0.0, elapsed_minus_pauses)  # Don't go negative
 
 # NEW: Update timer label
 func update_timer_label(elapsed_seconds: float):
@@ -668,7 +685,9 @@ func update_garbage_meters(delta):
 func toggle_pause():
 	"""Toggle pause state"""
 	if not is_paused:
+		# Starting pause
 		is_paused = true
+		pause_start_time = Time.get_ticks_msec() / 1000.0  # Record when we paused
 		dim_overlay.show()
 		pause_panel.show()
 		get_tree().paused = true
@@ -676,6 +695,10 @@ func toggle_pause():
 		await get_tree().create_timer(0.01).timeout
 		pause_resume_button.grab_focus()
 	else:
+		# Ending pause
+		var pause_duration = (Time.get_ticks_msec() / 1000.0) - pause_start_time
+		total_paused_time += pause_duration  # Accumulate paused time
+		
 		is_paused = false
 		dim_overlay.hide()
 		pause_panel.hide()

@@ -24,6 +24,8 @@ const BombController = preload("res://scripts/BombController.gd")
 @onready var timer_label: Label = $UI/TimerLabel
 
 var game_start_time = 0.0
+var pause_start_time = 0.0
+var total_paused_time = 0.0
 
 func _ready():
 	# Connect signals
@@ -98,6 +100,7 @@ func _input(event):
 func toggle_pause():
 	if GameState.current_state == GameState.State.PLAYING:
 		# Pause the game
+		pause_start_time = Time.get_ticks_msec() / 1000.0  # NEW: Record when paused
 		GameState.set_state(GameState.State.PAUSED)
 		pause_panel.show()
 		get_tree().paused = true
@@ -111,6 +114,9 @@ func toggle_pause():
 			pause_resume_button.grab_focus()
 	elif GameState.current_state == GameState.State.PAUSED:
 		# Unpause the game
+		var pause_duration = (Time.get_ticks_msec() / 1000.0) - pause_start_time  # NEW
+		total_paused_time += pause_duration  # NEW: Accumulate paused time
+		
 		GameState.set_state(GameState.State.PLAYING)
 		pause_panel.hide()
 		get_tree().paused = false
@@ -122,12 +128,17 @@ func start_new_game():
 	game_over_panel.hide()
 	pause_panel.hide()
 	get_tree().paused = false
+	
+	# NEW: Reset timer tracking
 	game_start_time = Time.get_ticks_msec() / 1000.0
+	pause_start_time = 0.0
+	total_paused_time = 0.0
 	
 	# Configure for single player mode BEFORE resetting game
 	GameState.configure_for_game_mode(GameState.GameMode.SINGLE_PLAYER)
 	
 	GameState.reset_game()
+	
 	
 	# Set initial fall speed for level 1 and start game
 	if grid:
@@ -180,7 +191,18 @@ func update_timer_label():
 	if not timer_label:
 		return
 	
-	var elapsed_seconds = (Time.get_ticks_msec() / 1000.0) - game_start_time
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var raw_elapsed = current_time - game_start_time
+	
+	# Subtract total paused time
+	var elapsed_minus_pauses = raw_elapsed - total_paused_time
+	
+	# If currently paused, also subtract the current pause duration
+	if GameState.current_state == GameState.State.PAUSED:
+		var current_pause_duration = current_time - pause_start_time
+		elapsed_minus_pauses -= current_pause_duration
+	
+	var elapsed_seconds = max(0.0, elapsed_minus_pauses)
 	var minutes = int(elapsed_seconds) / 60
 	var seconds = int(elapsed_seconds) % 60
 	
